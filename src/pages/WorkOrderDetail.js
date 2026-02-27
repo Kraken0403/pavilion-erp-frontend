@@ -250,6 +250,15 @@ function WorkOrderDetail() {
           </div>
         )}
 
+        {!!String(workOrder.notes || '').trim() && (
+          <div className="quotation-card">
+            <div className="detail-title"><h4>Notes</h4></div>
+            <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', color: '#253a43' }}>
+              {workOrder.notes}
+            </Typography>
+          </div>
+        )}
+
         <div className="quotation-card">
           <WorkOrderItemsSection items={workOrder.items} />
         </div>

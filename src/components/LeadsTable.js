@@ -34,7 +34,7 @@ import React, {
 
           if (value === null || value === undefined || value === '') return '—';
 
-          if (field === 'follow_up_date') {
+          if (field === 'follow_up_date' || field === 'event_date') {
             return formatLocalDate(value) || '—';
           }
 

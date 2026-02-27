@@ -36,6 +36,8 @@ import KOTBoard from './pages/KOTBoard';
 import KOTSettings from './pages/KOTSettings';
 import DeliveryBoard from './pages/DeliveryBoard';
 import Reports from './pages/Reports';
+import PaymentReminders from './pages/PaymentReminders';
+import PaymentReminderSettings from './pages/PaymentReminderSettings';
 import { getFirstAccessibleModuleRoute } from './config/modulePermissions';
 
 
@@ -103,6 +105,28 @@ const App = () => {
                             </Layout>
                         </PrivateRoute>
                     }
+                    />
+
+                    <Route
+                        path="/payment-reminders"
+                        element={
+                            <PrivateRoute requiredModule="payment_reminders">
+                                <Layout>
+                                    <PaymentReminders />
+                                </Layout>
+                            </PrivateRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/payment-reminders/settings"
+                        element={
+                            <PrivateRoute requiredModule="payment_reminders">
+                                <Layout>
+                                    <PaymentReminderSettings />
+                                </Layout>
+                            </PrivateRoute>
+                        }
                     />
 
                     <Route

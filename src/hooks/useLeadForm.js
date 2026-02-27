@@ -15,6 +15,20 @@ const toDateOnly = (value) => {
     return String(value).trim().split('T')[0].split(' ')[0];
 };
 
+const toTimeOnly = (value) => {
+    if (!value) return '';
+    const raw = String(value).trim();
+    const fromString = raw.match(/^(\d{2}:\d{2})(?::\d{2})?$/);
+    if (fromString) return fromString[1];
+
+    const parsed = new Date(raw);
+    if (Number.isNaN(parsed.getTime())) return '';
+
+    const hh = String(parsed.getHours()).padStart(2, '0');
+    const mm = String(parsed.getMinutes()).padStart(2, '0');
+    return `${hh}:${mm}`;
+};
+
 const sanitizeLeadDates = (lead) => {
     const source = String(lead?.source || '').toLowerCase();
     const isWebsiteLead = source.includes('website');
@@ -70,6 +84,8 @@ const useLeadForm = (initialLeadData, isEdit = false, leadId = null) => {
                 setLeadData(prev => ({
                     ...prev,
                     ...lead,
+                    event_date: toDateOnly(lead.event_date),
+                    event_time: toTimeOnly(lead.event_time),
                     custom_fields: lead.custom_fields || []
                 }));
 

@@ -1,0 +1,190 @@
+@import './variables';
+
+.payment-reminder-page {
+  .payment-reminder-card {
+    margin-bottom: 14px;
+  }
+
+  .payment-reminder-header {
+    padding: 18px 20px;
+    border-bottom: 1px solid $edit-tab-border;
+
+    h2 {
+      margin: 0;
+      color: $label-title-color;
+      font-size: 22px;
+      font-weight: 700;
+    }
+
+    p {
+      margin-top: 6px;
+      color: $btn-text;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+  }
+
+  .payment-reminder-summary {
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    gap: 12px;
+
+    .summary-item {
+      border: 1px solid $edit-tab-border;
+      border-radius: 10px;
+      padding: 12px 14px;
+      background: $white;
+
+      .summary-label {
+        font-size: 12px;
+        color: $btn-text;
+        font-weight: 500;
+      }
+
+      .summary-value {
+        margin-top: 4px;
+        font-size: 24px;
+        font-weight: 700;
+        color: $label-color;
+      }
+    }
+  }
+
+  .payment-reminder-search {
+    padding: 16px 20px;
+    border-bottom: 1px solid $edit-tab-border;
+
+    .input {
+      max-width: 420px;
+    }
+  }
+
+  .table-empty {
+    text-align: center;
+    padding: 34px;
+    color: $btn-text;
+    font-weight: 500;
+  }
+
+  .payment-reminder-settings-body {
+    padding: 20px;
+  }
+
+  .auto-toggle-card {
+    border: 1px solid $edit-tab-border;
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+
+    .title {
+      color: $label-color;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .subtitle {
+      margin-top: 2px;
+      color: $btn-text;
+      font-size: 13px;
+    }
+
+    .toggle-btn {
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      border: 1px solid $btn-secondary-border;
+      background: $white;
+      color: $label-color;
+      cursor: pointer;
+    }
+
+    .toggle-btn.running {
+      border-color: $green;
+      background: rgba(45, 134, 71, 0.1);
+      color: $dark-green;
+    }
+
+    .toggle-btn.stopped {
+      border-color: #d46a6a;
+      background: #fff6f6;
+      color: #a53a3a;
+    }
+  }
+
+  .frequency-section {
+    margin-top: 4px;
+
+    .freq-label {
+      display: block;
+      margin-bottom: 10px;
+      color: $label-color;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .frequency-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(140px, 1fr));
+      gap: 10px;
+    }
+
+    .frequency-chip {
+      border-radius: 10px;
+      border: 1px solid $btn-secondary-border;
+      background: $white;
+      color: $label-color;
+      padding: 12px 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .frequency-chip.active {
+      background: $dark-green;
+      border-color: $dark-green;
+      color: $white;
+    }
+  }
+
+  .time-grid {
+    margin-top: 2px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+    gap: 16px;
+
+    .time-field {
+      label {
+        display: block;
+        margin-bottom: 6px;
+        color: $label-color;
+        font-size: 13px;
+        font-weight: 600;
+      }
+    }
+  }
+
+  .whatsapp-toggle-row {
+    margin-top: 2px;
+    padding: 4px 0;
+
+    label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: $label-color;
+      font-size: 14px;
+      font-weight: 500;
+    }
+  }
+
+  .settings-actions {
+    margin-top: 2px;
+  }
+}

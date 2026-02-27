@@ -341,6 +341,12 @@ function KOTBoard() {
                       <strong>Customer:</strong> {kot.customer_name || '—'}
                     </Typography>
 
+                    {!!String(event.notes || '').trim() && (
+                      <Typography variant="body2" sx={{ mb: 1.5, whiteSpace: 'pre-wrap' }}>
+                        <strong>Notes:</strong> {event.notes}
+                      </Typography>
+                    )}
+
                     <Typography variant="subtitle2" sx={{ mb: 1 }}>
                       Items ({kot.items?.length || 0}) • Total Qty: {formatQty(totalQty)}
                     </Typography>

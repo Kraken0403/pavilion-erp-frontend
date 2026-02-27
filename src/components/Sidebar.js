@@ -16,6 +16,7 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import CampaignIcon from '@mui/icons-material/Campaign';
 
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import { useAuth } from '../context/AuthContext';
@@ -37,6 +38,7 @@ const Sidebar = () => {
   const [workOrdersOpen, setWorkOrdersOpen] = useState(false);
   const [quotationsOpen, setQuotationsOpen] = useState(false);
   const [invoicesOpen, setInvoicesOpen] = useState(false);
+  const [paymentRemindersOpen, setPaymentRemindersOpen] = useState(false);
   const [kotOpen, setKotOpen] = useState(false);
   const [deliveryOpen, setDeliveryOpen] = useState(false);
 
@@ -224,6 +226,30 @@ const Sidebar = () => {
                   </ListItemButton>
 
                   <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/invoice-settings')}>
+                    <ListItemIcon><SettingsIcon /></ListItemIcon>
+                    <ListItemText primary="Settings" />
+                  </ListItemButton>
+                </List>
+              </Collapse>
+            </>
+          )}
+
+          {canAccessModule('payment_reminders') && (
+            <>
+              <ListItemButton onClick={() => setPaymentRemindersOpen(!paymentRemindersOpen)}>
+                <ListItemIcon><CampaignIcon /></ListItemIcon>
+                <ListItemText primary="Payment Reminders" />
+                {paymentRemindersOpen ? <ExpandLess /> : <ExpandMore />}
+              </ListItemButton>
+
+              <Collapse in={paymentRemindersOpen} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/payment-reminders')}>
+                    <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
+                    <ListItemText primary="Pending Payments" />
+                  </ListItemButton>
+
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/payment-reminders/settings')}>
                     <ListItemIcon><SettingsIcon /></ListItemIcon>
                     <ListItemText primary="Settings" />
                   </ListItemButton>
