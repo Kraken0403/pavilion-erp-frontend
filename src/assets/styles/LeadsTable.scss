@@ -1,0 +1,168 @@
+@import './variables.scss';
+
+.leads-table-container {
+    width: 100%;
+    background-color: $bg-color;
+}
+
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+  margin: 6px 0;
+    background-color: $white;
+  border: 1px solid $edit-tab-border;
+  border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    .leads-table {
+        width: 100%;
+        table-layout: auto;
+    border-collapse: collapse;
+
+        .edit-icon {
+            color: $green;
+        }
+
+        .delete-icon {
+            color: red;
+        }
+
+        .checkboxes svg {
+            font-size: 18px !important;
+        }
+
+        tr td {
+          border-top: 1px solid $edit-tab-border;
+        }
+
+        tbody tr:hover {
+          background-color: $bg-color;
+        }
+
+        .css-1y5vrnu-MuiButtonBase-root-MuiCheckbox-root {
+            border: 1px solid #f6f6f6;
+        }
+
+        .MuiCheckbox-root .MuiSvgIcon-root {
+            font-size: 18px;
+
+            path {
+                color: $blue;
+                opacity: 0.8;
+            }
+        }
+
+        input,
+        select {
+            padding: 5px;
+            border-radius: 3px;
+            outline: $blue;
+            border: 1px solid $blue;
+            background-color: $white;
+        }
+
+        th {
+          font-size: 12px;
+            text-transform: uppercase;
+          font-weight: 700;
+            text-align: left;
+            color: $label-color;
+            line-height: 1.4;
+          background-color: $bg-color;
+        }
+
+        td {
+            font-size: 14px;
+            color: $text-color;
+            line-height: 1.4;
+        }
+
+        th,
+        td {
+          padding: 10px 12px;
+            text-align: left;
+            white-space: nowrap;
+            min-width: 125px;
+            max-width: 200px;
+
+            &:first-child {
+                width: 50px;
+                text-align: left;
+                min-width: 50px;
+            }
+        }
+
+        /* 🔥 ELLIPSIS HANDLING */
+        .cell-text {
+            display: block;
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    }
+
+    .clickable-row {
+        cursor: pointer;
+    }
+}
+
+
+.quotation-version-row {
+    background: #fafafa;
+    font-size: 0.95em;
+  }
+  
+  .quotation-version-row td:first-child {
+    padding-left: 24px;
+  }
+  
+  .quotation-version-row td {
+    color: #666;
+  }
+  
+.leads-table th:nth-child(6),
+.leads-table td:nth-child(6) {
+  width: 80px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+
+.status-pill {
+    display: inline-block;
+  padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+    cursor: pointer;
+    user-select: none;
+  }
+  
+  .status-pending {
+    background: #fff3cd;
+    color: #856404;
+  }
+  
+  .status-approved {
+    background: #d4edda;
+    color: #155724;
+  }
+  
+  .status-rejected {
+    background: #f8d7da;
+    color: #721c24;
+  }
+  
+  .status-converted {
+    background: #d1ecf1;
+    color: #0c5460;
+  }
+  
+  .status-select-inline {
+    font-size: 12px;
+    padding: 2px 6px;
+  }

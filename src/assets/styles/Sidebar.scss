@@ -1,0 +1,25 @@
+@import './variables.scss';
+
+.sidebar {
+
+    .MuiTypography-root {
+        color: $text-color;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
+    .MuiButtonBase-root {
+        .MuiListItemIcon-root {
+            min-width: 40px;
+        }
+       svg{
+            fill: $blue;
+            font-size: 22px;
+            // opacity: 0.85;
+       } 
+    }
+
+    .MuiCollapse-root{
+        background-color: #f6f6f6;
+    }
+}

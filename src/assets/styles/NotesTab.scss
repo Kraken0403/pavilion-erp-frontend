@@ -1,0 +1,107 @@
+@import "./variables.scss";
+
+.notes-tab {
+  display: flex;
+  gap: 24px;
+
+  /* LEFT */
+  .notes-left {
+    width: 50%;
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+
+    h3 {
+      margin-bottom: 16px;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      resize: vertical;
+      font-size: 14px;
+    }
+
+    button {
+      margin-top: 10px;
+    }
+  }
+
+  /* RIGHT */
+  .notes-right {
+    width: 50%;
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+
+    h3 {
+      margin-bottom: 16px;
+    }
+  }
+
+  /* NOTES LIST */
+  .notes-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .note-item {
+    background: #fafafa;
+    border-left: 2px solid $blue;
+    padding: 14px;
+    border-radius: 6px;
+
+    p {
+      font-size: 13px;
+      color: $text-color;
+      margin-bottom: 10px;
+    }
+
+    textarea {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+    }
+
+    .save-btn {
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .note-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      small {
+        font-size: 11px;
+        opacity: 0.6;
+      }
+    }
+
+    .note-actions {
+      display: flex;
+      gap: 10px;
+
+      svg {
+        font-size: 18px;
+        cursor: pointer;
+        opacity: 0.7;
+
+        &:hover {
+          opacity: 1;
+        }
+
+        &:last-child {
+          color: #d32f2f;
+        }
+      }
+    }
+  }
+}

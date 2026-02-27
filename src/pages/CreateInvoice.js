@@ -1,0 +1,311 @@
+import React, { useEffect, useState } from 'react'
+import { Container } from '@mui/material'
+import { useNavigate } from 'react-router-dom'
+
+import NotificationSnackbar from '../components/ui/NotificationSnackbar'
+
+import InvoiceHeader from '../components/invoices/InvoiceHeader'
+import InvoiceContactSection from '../components/invoices/InvoiceContactSection'
+import InvoiceItemsSection from '../components/invoices/InvoiceItemsSection'
+import InvoiceSummary from '../components/invoices/InvoiceSummary'
+import InvoiceFooterSection from '../components/invoices/InvoiceFooterSection'
+
+import {
+  fetchAllProducts,
+  createProduct,
+  updateProduct
+} from '../services/productServices'
+
+import { fetchLeads } from '../services/leadService'
+import { createInvoice } from '../services/invoiceService'
+import { getInvoiceSettings } from '../services/invoiceService'
+import Topbar from '../components/Topbar'
+
+function CreateInvoice() {
+  const navigate = useNavigate()
+
+  /* ---------------------------------------
+     SETTINGS
+  --------------------------------------- */
+
+  const [gstPricingMode, setGstPricingMode] = useState('EXCLUSIVE')
+  const [currency, setCurrency] = useState('₹')
+
+  /* ---------------------------------------
+     BASIC STATE
+  --------------------------------------- */
+
+  const [leadId, setLeadId] = useState('')
+  const [leads, setLeads] = useState([])
+
+  const [invoiceDate, setInvoiceDate] = useState(
+    new Date().toISOString().split('T')[0]
+  )
+  const [dueDate, setDueDate] = useState('')
+  const [notes, setNotes] = useState('')
+
+  const [items, setItems] = useState([])
+
+  const [products, setProducts] = useState([])
+
+  const [notif, setNotif] = useState({
+    open: false,
+    message: '',
+    severity: 'success'
+  })
+
+  /* ---------------------------------------
+     LOAD PRODUCTS
+  --------------------------------------- */
+
+  useEffect(() => {
+    fetchAllProducts()
+      .then(res => {
+        const list =
+          Array.isArray(res) ? res :
+            Array.isArray(res?.data) ? res.data :
+              Array.isArray(res?.products) ? res.products : []
+        setProducts(list)
+      })
+      .catch(err => console.error('Failed to load products', err))
+  }, [])
+
+  /* ---------------------------------------
+     LOAD LEADS
+  --------------------------------------- */
+
+  useEffect(() => {
+    fetchLeads()
+      .then(res => {
+        const arr =
+          Array.isArray(res) ? res :
+            Array.isArray(res?.data) ? res.data :
+              Array.isArray(res?.leads) ? res.leads : []
+        setLeads(arr)
+      })
+      .catch(err => console.error('Failed to load leads', err))
+  }, [])
+
+  /* ---------------------------------------
+     LOAD INVOICE SETTINGS
+  --------------------------------------- */
+
+  useEffect(() => {
+    getInvoiceSettings()
+      .then(settings => {
+        setGstPricingMode(settings?.gst_pricing_mode || 'EXCLUSIVE')
+        setCurrency(settings?.currency_code || '₹')
+      })
+      .catch(() => { })
+  }, [])
+
+  /* ---------------------------------------
+     ITEM MANAGEMENT
+  --------------------------------------- */
+
+  const addItem = () => {
+    setItems(prev => [
+      ...prev,
+      {
+        product: null,
+        quantity: 1,
+        selling_price: 0,
+        gst_rate: 0,
+        variant_id: null
+      }
+    ])
+  }
+
+  const updateItem = (index, updates) => {
+    setItems(prev => {
+      const copy = [...prev]
+      copy[index] = { ...copy[index], ...updates }
+      return copy
+    })
+  }
+
+  const removeItem = (index) => {
+    setItems(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const handleProductSelect = (index, product) => {
+    if (!product) return
+
+    updateItem(index, {
+      product,
+      quantity: 1,
+      selling_price: Number(product.selling_price || 0),
+      gst_rate: Number(product.gst_rate || 0),
+      variant_id: product.variantId || null
+    })
+  }
+
+  /* ---------------------------------------
+     TOTAL CALCULATION (CLIENT SIDE PREVIEW)
+  --------------------------------------- */
+
+  const calculateTotals = () => {
+    let subtotal = 0
+    let cgst_total = 0
+    let sgst_total = 0
+    let igst_total = 0
+
+    items.forEach(item => {
+      const qty = Number(item.quantity || 0)
+      const price = Number(item.selling_price || 0)
+      const gst = Number(item.gst_rate || 0)
+
+      const lineBase = qty * price
+
+      subtotal += lineBase
+
+      if (gstPricingMode === 'EXCLUSIVE') {
+        const gstAmount = (lineBase * gst) / 100
+
+        // Simplified assumption (split equally)
+        cgst_total += gstAmount / 2
+        sgst_total += gstAmount / 2
+      } else {
+        const base = lineBase / (1 + gst / 100)
+        const gstAmount = lineBase - base
+        cgst_total += gstAmount / 2
+        sgst_total += gstAmount / 2
+      }
+    })
+
+    return {
+      subtotal,
+      cgst_total,
+      sgst_total,
+      igst_total,
+      grand_total: subtotal + cgst_total + sgst_total + igst_total
+    }
+  }
+
+  const totals = calculateTotals()
+
+  /* ---------------------------------------
+     SUBMIT
+  --------------------------------------- */
+
+  const handleSubmit = async () => {
+
+    if (!leadId)
+      return showNotification('Customer is required', 'warning')
+
+    if (!invoiceDate)
+      return showNotification('Invoice date is required', 'warning')
+
+    const validItems = items.filter(
+      i =>
+        i.product?.id &&
+        Number(i.quantity) > 0 &&
+        Number(i.selling_price) >= 0
+    )
+
+    if (validItems.length !== items.length)
+      return showNotification('Please check item quantities and prices', 'warning')
+
+    const payload = {
+      lead_id: leadId,
+      issue_date: invoiceDate,
+      due_date: dueDate || null,
+      notes: notes || null,
+      source_type: 'MANUAL',
+      items: validItems.map(i => ({
+        product_id: i.product.id,
+        quantity: Number(i.quantity),
+        unit_price: Number(i.selling_price),
+        gst_rate: Number(i.gst_rate || 0)
+      }))
+    }
+
+    try {
+      await createInvoice(payload)
+
+      showNotification('✅ Invoice created successfully')
+
+      // redirect to invoices list after a brief delay so the user sees the success message
+      setTimeout(() => navigate('/invoices'), 1000)
+
+    } catch (err) {
+      showNotification(
+        err?.response?.data?.error ||
+        err.message ||
+        'Failed to create invoice',
+        'error'
+      )
+    }
+  }
+
+  const showNotification = (message, severity = 'success') =>
+    setNotif({ open: true, message, severity })
+
+  /* ---------------------------------------
+     UI
+  --------------------------------------- */
+
+  return (
+    <div className="quotations">
+      <Container>
+        <Topbar />
+
+        <InvoiceHeader
+          invoice={{
+            invoice_number: 'NEW',
+            status: 'issued'
+          }}
+        />
+
+        {/* CONTACT */}
+        <div className="quotation-card">
+          <InvoiceContactSection
+            leadId={leadId}
+            setLeadId={setLeadId}
+            leads={leads}
+            invoiceDate={invoiceDate}
+            setInvoiceDate={setInvoiceDate}
+            dueDate={dueDate}
+            setDueDate={setDueDate}
+            notes={notes}
+            setNotes={setNotes}
+          />
+        </div>
+
+        {/* ITEMS */}
+        <div className="quotation-card">
+          <InvoiceItemsSection
+            items={items}
+            updateItem={updateItem}
+            addItem={addItem}
+            removeItem={removeItem}
+            products={products}
+            handleProductSelect={handleProductSelect}
+          />
+        </div>
+
+        {/* SUMMARY */}
+        <div className="quotation-card">
+          <InvoiceSummary
+            totals={totals}
+            currency={currency}
+          />
+          <InvoiceFooterSection
+            handleSubmit={handleSubmit}
+          />
+        </div>
+
+        <NotificationSnackbar
+          open={notif.open}
+          message={notif.message}
+          severity={notif.severity}
+          onClose={() =>
+            setNotif(p => ({ ...p, open: false }))
+          }
+        />
+      </Container>
+    </div>
+  )
+}
+
+export default CreateInvoice

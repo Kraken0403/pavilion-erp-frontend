@@ -1,0 +1,185 @@
+@import './variables.scss';
+
+
+.quotation-detail-container {
+  // padding: 20px;
+  background: $bg-color;
+}
+
+.quotation-header {
+  background: $white;
+  padding: 15px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 3px;
+
+  h2 {
+    font-size: 18px;
+    font-weight: 600;
+    color: $label-title-color;
+  }
+
+  .muted {
+    font-size: 12px;
+    color: $label-color;
+  }
+}
+
+.quotation-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-chip {
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.status-warning { background: #fff3cd; }
+.status-success { background: #d4edda; }
+.status-error { background: #f8d7da; }
+.status-info { background: #d1ecf1; }
+
+.quotation-card {
+  background: $white;
+  padding: 15px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 20px;
+  margin-bottom: 3px;
+}
+
+button {
+  font-family: 'Poppins', sans-serif;
+  padding: 6px 14px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.btn-primary {
+  background: #212121;
+  color: #fff;
+  border: none;
+
+  &:hover {
+    background: #000;
+  }
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid $btn-secondary-border;
+}
+
+.mt {
+  margin-top: 12px;
+}
+
+.totals {
+  text-align: right;
+  font-weight: 600;
+  margin-top: 10px;
+}
+
+.quotation-loading {
+  padding: 40px;
+  text-align: center;
+}
+
+
+.quotation-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  .qh-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    h2 {
+      color: #253a43;
+      font-size: 17px;
+      font-weight: 500;
+    }
+    p{
+      padding: 5px 10px;
+      background-color: #bcfcc4;
+      border-radius: 50px;
+      font-size: 11px;
+    }
+  }
+
+  .quotation-meta{
+    color: #253a43;
+    font-size: 14px;
+    font-weight: 400;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    .chip span {
+      padding:4px 10px;
+      background-color: $btn-primary;
+      color: $white;
+      border-radius: 50px;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+  }
+}
+
+.quotation-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Base select */
+.status-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  padding: 8px 36px 8px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid transparent;
+  cursor: pointer;
+  outline: none;
+  min-width: 140px;
+  text-align: center;
+
+  /* Dropdown arrow */
+  background-image: url("data:image/svg+xml;utf8,<svg fill='%23333' height='20' viewBox='0 0 24 24' width='20' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 18px;
+}
+
+/* 🟡 PENDING — yellow */
+.status-pending {
+  background-color: #fef9c3; // soft yellow
+  color: #854d0e;
+  border-color: #fde68a;
+}
+
+/* 🟢 APPROVED */
+.status-approved {
+  background-color: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+
+/* 🔴 REJECTED */
+.status-rejected {
+  background-color: #fef2f2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.status-select:hover {
+  filter: brightness(0.97);
+}

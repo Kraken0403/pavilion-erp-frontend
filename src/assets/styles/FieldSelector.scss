@@ -1,0 +1,48 @@
+@import './variables.scss';
+
+.field-selector {
+    width: 100%;
+
+    .field-wrapper {
+        display: flex;
+    }
+
+    .field-checks {
+        width: 50%;
+        .check-inputs {
+            display: flex;
+            // flex-direction: column;
+            // flex: 0.5;
+            flex-wrap: wrap;
+            margin-top: 15px;
+            // border: 1px solid $black;
+            gap: 10px;
+            label {
+                width: 30%;
+                font-size: 14px;
+                color: $text-color;
+                font-weight: 400;
+                input {
+                    margin-right: 5px;
+                }
+            }
+        }
+    }
+
+    .field-order{
+        width: 50%;
+        ul {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+            width: 100%;
+            li{
+                padding: 10px 15px;
+                width: 100%;
+                border: 1px solid $btn-secondary-border;
+                margin-bottom: 5px;
+                background-color: $bg-color;
+            }
+        }
+    }
+}

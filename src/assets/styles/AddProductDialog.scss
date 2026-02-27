@@ -1,0 +1,55 @@
+@import './variables.scss';
+
+.add-product-dialog {
+    max-width: 520px;
+    max-height: 100vh;
+    width: 100%;
+    margin: 0 auto;
+    .dialog-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: $label-title-color;
+      background-color: $bg-color;
+      border-bottom: 1px solid $btn-secondary-border;
+      margin-bottom: 0.5rem;
+      padding: 10px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+  
+    .dialog-content {
+      padding: 3rem 1.5rem;
+      background-color: $white;
+    }
+
+    .field-label {
+        // margin-top: 10px;
+        padding-bottom: 3px;
+        color: $text-color;
+    }
+  
+    .product-input {
+      margin-bottom: 12px;
+      font-family: 'Poppins', sans-serif;
+      border: 1px solid $input-border-color;
+
+      &:focus {
+        border: 1px solid $input-border-color;
+
+      }
+    }
+  
+    .MuiButton-contained {
+      background-color: #212121;
+      &:hover {
+        background-color: #000;
+      }
+    }
+
+    .dialog-actions {
+      background-color: $bg-color;
+      border-top: 1px solid $btn-secondary-border;
+
+    }
+  }

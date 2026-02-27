@@ -1,0 +1,168 @@
+@import './variables.scss';
+
+.quotation-summary {
+    background: #fff;
+  }
+  
+  .qs-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  
+  .qs-label {
+    font-size: 14px;
+    color: #374151;
+  }
+  
+  .qs-label.muted {
+    color: #6b7280;
+  }
+  
+  .qs-value {
+    font-weight: 500;
+  }
+  
+  .qs-sub {
+    margin-left: 6px;
+    font-size: 12px;
+    color: #6b7280;
+  }
+  
+  .qs-divider {
+    height: 1px;
+    background: #e5e7eb;
+    margin: 14px 0;
+  }
+  
+  .qs-divider.strong {
+    background: #d1d5db;
+  }
+  
+  .qs-discount {
+    gap: 10px;
+  }
+  
+  .qs-grand {
+    margin-top: 8px;
+  }
+  
+  .qs-grand-value {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  
+
+  .quotation-summary {
+    background-color: $white;
+  
+    /* ---------------------------------------
+       SECTION TITLE
+    --------------------------------------- */
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: $blue;
+      font-weight: 600;
+      font-size: 16px;
+      margin-bottom: 1rem;
+  
+      .sep {
+        display: block;
+        height: 30px;
+        width: 3px;
+        border-radius: 15px;
+        background-color: $blue;
+      }
+    }
+  
+    /* ---------------------------------------
+       FIELD LABELS (CONSISTENT WITH CONTACT)
+    --------------------------------------- */
+    .field-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #253858;
+      padding-bottom: 6px;
+    }
+  
+    /* ---------------------------------------
+       STANDARD INPUTS (MATCH CONTACT SECTION)
+    --------------------------------------- */
+    .form-input {
+      font-family: 'Poppins', sans-serif;
+  
+      .MuiInputBase-root {
+        background-color: $white;
+        border-radius: 10px;
+        min-height: 40px;
+      }
+  
+      .MuiOutlinedInput-notchedOutline {
+        border-color: $input-border-color;
+      }
+  
+      &:hover .MuiOutlinedInput-notchedOutline {
+        border-color: darken($input-border-color, 5%);
+      }
+  
+      &.Mui-focused .MuiOutlinedInput-notchedOutline {
+        border-color: $input-border-color;
+        border-width: 1px;
+      }
+  
+      input,
+      textarea {
+        font-size: 14px;
+        padding: 10px 12px;
+      }
+    }
+  
+    /* Read-only fields should not look disabled */
+    .MuiInputBase-root.Mui-disabled,
+    .MuiInputBase-root[readonly] {
+      background-color: #fafafa;
+      color: $text-color;
+    }
+  
+    /* ---------------------------------------
+       ADD ITEM BUTTON
+    --------------------------------------- */
+    .add-item-btn {
+      margin-top: 12px;
+      font-weight: 600;
+      color: $blue;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+  
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+  
+
+  .qs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  
+  .qs-col {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .qs-col-left {
+    background: #f9fafb;
+    border-radius: 6px;
+    padding: 12px;
+  }
+  
+  .qs-col-right {
+    padding: 12px;
+  }
+  

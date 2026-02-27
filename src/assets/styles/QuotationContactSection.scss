@@ -1,0 +1,94 @@
+@import './variables.scss';
+
+
+.quotation-contact-section {
+  width: 100%;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: $label-title-color;
+  margin-bottom: 10px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.span-2 {
+  grid-column: span 2;
+}
+
+.span-4 {
+  grid-column: span 4;
+}
+
+.field-label {
+  font-size: 13px;
+  color: $text-color;
+  margin-bottom: 6px;
+}
+
+.required {
+  color: red;
+}
+
+.form-input,
+.form-textarea {
+  font-family: 'Poppins', sans-serif;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid $input-border-color;
+  background-color: $white;
+  outline: none;
+  font-size: 14px;
+
+  &:read-only {
+    background-color: #f9f9f9;
+  }
+
+  &:focus {
+    border-color: $blue;
+  }
+}
+
+.form-textarea {
+  resize: vertical;
+}
+
+.form-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .form-col {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .col-3 { width: calc(25% - 12px); }
+  .col-6 { width: calc(50% - 12px); }
+  .col-12 { width: 100%; }
+  
+  @media (max-width: 768px) {
+    .col-3,
+    .col-6 {
+      width: 100%;
+    }
+  }
+  
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 12px;
+  }
+  

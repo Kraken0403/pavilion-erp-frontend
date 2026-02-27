@@ -1,0 +1,97 @@
+import React from 'react'
+import { Grid, TextField, Typography, MenuItem, IconButton } from '@mui/material'
+import DeleteIcon from '@mui/icons-material/Delete'
+import Autocomplete from '@mui/material/Autocomplete'
+
+function InvoiceItemsSection({
+  items,
+  updateItem,
+  addItem,
+  products,
+  handleProductSelect
+}) {
+  return (
+    <div className="quotation-items-section">
+      <Typography className="section-title">
+        <span className="sep"></span>
+        Invoice Items
+      </Typography>
+
+      {items.map((item, index) => (
+        <Grid container spacing={2} key={index} sx={{ mb: 2 }}>
+          {/* PRODUCT */}
+          <Grid item xs={12} md={4}>
+            <Typography className="field-label">Product</Typography>
+            <Autocomplete
+              options={products}
+              getOptionLabel={(p) => p.name || ''}
+              onChange={(e, value) =>
+                handleProductSelect(index, value)
+              }
+              renderInput={(params) => (
+                <TextField {...params} className="form-input" />
+              )}
+            />
+          </Grid>
+
+          {/* QTY */}
+          <Grid item xs={12} md={2}>
+            <Typography className="field-label">Qty</Typography>
+            <TextField
+              className="form-input"
+              type="number"
+              fullWidth
+              value={item.quantity}
+              onChange={(e) =>
+                updateItem(index, { quantity: e.target.value })
+              }
+            />
+          </Grid>
+
+          {/* PRICE */}
+          <Grid item xs={12} md={2}>
+            <Typography className="field-label">Unit Price</Typography>
+            <TextField
+              className="form-input"
+              type="number"
+              fullWidth
+              value={item.selling_price}
+              onChange={(e) =>
+                updateItem(index, { selling_price: e.target.value })
+              }
+            />
+          </Grid>
+
+          {/* GST */}
+          <Grid item xs={12} md={2}>
+            <Typography className="field-label">GST %</Typography>
+            <TextField
+              className="form-input"
+              type="number"
+              fullWidth
+              value={item.gst_rate}
+              onChange={(e) =>
+                updateItem(index, { gst_rate: e.target.value })
+              }
+            />
+          </Grid>
+
+          {/* DELETE */}
+          <Grid item xs={12} md={2} sx={{ display: 'flex', alignItems: 'end' }}>
+            <IconButton onClick={() =>
+              updateItem(index, { _delete: true })
+            }>
+              <DeleteIcon />
+            </IconButton>
+          </Grid>
+        </Grid>
+      ))}
+
+      <button className="add-item-btn" onClick={addItem}>
+        + Add Item
+      </button>
+    </div>
+  )
+}
+
+export default InvoiceItemsSection

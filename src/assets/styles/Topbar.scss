@@ -1,0 +1,22 @@
+.topbar {
+
+    background-color: #f7f7f7;
+    &-page-title{
+        h2 {
+            font-size: 16px;
+            font-weight: 400;
+        }
+    }
+    
+    &-wrapper {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    &-ops {
+        display: flex;
+        gap: 5px;
+        align-items: center;
+    }
+}

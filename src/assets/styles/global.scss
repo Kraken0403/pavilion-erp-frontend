@@ -1,0 +1,257 @@
+@import './variables';
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&display=swap');
+// colors.scss
+:root {
+    --bg-color: #f7f7f7;
+    --secondary-color: #2ecc71;
+    --text-color: #333;
+  }
+
+  
+body,html {
+    font-family: "Poppins", "Inter", sans-serif!important;
+    font-optical-sizing: auto;
+    font-style: normal;
+}
+
+button{
+    cursor: pointer!important;
+}
+
+body {
+    background-color: $white;
+}
+
+.sidebar-container{
+    width: 200px;
+}
+
+.main-container {
+    width: calc(100% - 205px);
+    padding: 10px 2px 0;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Poppins", "Inter", sans-serif!important;
+
+}
+
+.container-custom {
+    width: 100%;
+    position: relative;
+    padding: 15px 0;
+}
+
+.submit-button{
+    cursor: pointer;
+    border: 1px solid $dark-blue;
+    background-color: $blue;
+    font-size: 16px;
+    color: $white;
+    font-weight: 500;
+    padding: 8px 15px;
+    border-radius: 4px;
+    box-shadow: 1px 1px 3px #C3C3C3;
+    transition: all 0.2s ease;
+
+    &:hover{
+        background-color: $dark-blue;
+        transition: all 0.2s ease;
+    }
+}
+
+.settings-wrapper {
+    padding: 20px 0;
+    width: 100%;
+}
+.css-5c1adp-MuiContainer-root{
+    margin-left: 16px !important;
+    margin-right: 16px !important;
+    min-width: 100% !important;
+}
+.css-u4uvlt-MuiContainer-root{
+    margin-left: 16px !important;
+    margin-right: 16px !important;
+    min-width: 100% !important;
+}
+
+// Global Inputs 
+
+
+.form-input input {
+    padding: 0px!important;   
+}
+
+.form-input {
+    
+  .MuiOutlinedInput-root {
+    border-radius: 6px; // Optional: change border radius
+
+    &:hover .MuiOutlinedInput-notchedOutline {
+      border-color: $blue; // Hover border color
+    }
+
+    &.Mui-focused .MuiOutlinedInput-notchedOutline {
+      border-color: $blue; // Focused border color
+        }
+    }
+    .MuiInputLabel-root.Mui-focused {
+        color: $blue;
+    }
+}
+
+// .form-input {
+
+// }
+
+.form-input div {
+    border-radius: 5px;
+    padding: 10px 8px;
+}
+
+.form-input div div {
+    padding: 0px;
+}
+  
+.secondary-btn {
+    padding: 6px 14px;
+    border-radius: 10px;
+    min-height: 38px;
+    background-color: $white;
+    // box-shadow: 1px 1px 3px #C3C3C3;
+    border: 1px solid $btn-secondary-border;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    svg {
+        font-size: 20px;
+        fill: $dark-green;
+    }
+    p{
+        color: $btn-text;
+        font-size: 14px;
+        font-weight: 600;
+        
+    }
+}
+
+.primary-btn {
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 1px solid $green;
+    background-color: $green;
+    color: $white;
+    display: flex;
+    min-width: 70px;
+    align-items: center;
+    gap: 6px;
+    min-height: 38px;
+    font-size: 14px;
+
+    font-weight: 600;
+    text-align: center;
+    justify-content: center;
+    // box-shadow: 1px 1px 3px #C3C3C3;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    svg {
+        font-size: 20px;
+    }
+    &:hover{
+        background-color: $dark-green;
+        transition: all 0.2s ease;
+    }
+    p {
+        font-size: 14px;
+
+        font-weight: 600;
+        line-height: 1.4;
+    }
+
+    &:disabled {
+        background-color: #e5e7eb; // light gray
+        color: #9ca3af;           // muted text
+        cursor: not-allowed;
+        box-shadow: none;
+        opacity: 1;    
+        border: 1px solid $bg-color;
+    
+      }
+    // letter-spacing: 1px;
+}
+
+.save-btn-x {
+    color: $white;
+    padding: 6px 25px;
+    border-radius: 4px;
+    box-shadow: none;
+    font-size: 16px;
+    border: 0px;
+    cursor: pointer;
+    border: 1px solid $green;
+    background-color: $green;
+    transition: all 0.2s ease;
+
+    &:hover{
+        background-color: $dark-green;
+        transition: all 0.2s ease;
+    }
+}
+
+.cancel-btn {
+    color: $black;
+    padding: 6px 25px;
+    border-radius: 4px;
+    box-shadow: none;
+    font-size: 16px;
+    border: 0px;
+    cursor: pointer;
+    border: 1px solid $btn-secondary-border;
+    background-color: transparent;
+    transition: all 0.2s ease;
+    
+    &:hover{
+        background-color: rgb(224, 224, 224);
+        transition: all 0.2s ease;
+    }
+
+
+}
+
+.detail-title {
+    padding-bottom: 10px;
+    border-bottom: 1px solid $edit-tab-border;
+    margin-bottom: 10px;
+
+h4 {
+    color: $label-color;
+    font-weight: 600;
+    font-size: 15px;
+   }     
+}
+
+label {
+    font-size: 13px;
+    // width: 40% !important;
+    // text-align: right;
+    width: fit-content;
+    color: $label-color;
+  }
+
+  input, textarea {
+    color: $text-color;
+    font-size: 15px;
+  }
+
+.quotation-footer {
+    width: 100%;
+    padding: 15px 0 30px 0;
+    background: $white;
+    border-top: 1px solid $edit-tab-border;
+    display: flex;
+    justify-content: end;
+}

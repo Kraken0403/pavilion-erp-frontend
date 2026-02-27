@@ -1,0 +1,21 @@
+.wo-event-section {
+    padding: 10px 0;
+  
+    .wo-field {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 8px;
+    }
+  
+    .wo-label {
+      font-weight: 600;
+      font-size: 14px;
+      color: #666;
+    }
+  
+    .wo-value {
+      font-size: 15px;
+      color: #222;
+    }
+  }
+  
