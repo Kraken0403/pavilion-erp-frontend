@@ -1,5 +1,6 @@
 import React from 'react'
 import { Typography } from '@mui/material'
+import { formatStatusLabel } from '../../utils/statusFormatter'
 
 function InvoiceHeader({ invoice }) {
   return (
@@ -8,7 +9,7 @@ function InvoiceHeader({ invoice }) {
         Invoice: {invoice?.invoice_number || 'NEW'}
       </Typography>
       <Typography className="quotation-status">
-        Status: {invoice?.status || 'issued'}
+        Status: {formatStatusLabel(invoice?.status || 'issued')}
       </Typography>
     </div>
   )

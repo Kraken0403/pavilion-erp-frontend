@@ -12,6 +12,7 @@ import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
 import { createInvoiceFromWorkOrder } from '../../services/invoiceService'
 import RestaurantMenuOutlinedIcon from '@mui/icons-material/RestaurantMenuOutlined'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
+import { formatStatusLabel } from '../../utils/statusFormatter'
 
 
 function WorkOrderHeader({
@@ -91,7 +92,7 @@ function WorkOrderHeader({
 
           {/* STATUS CAPSULE */}
           <span className={`status-pill status-${status}`}>
-            {status}
+            {formatStatusLabel(status)}
           </span>
 
           {/* ACTIONS */}

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { TextField, MenuItem, Button, Grid, Box, Tab, Tabs } from '@mui/material';
 import { addLead } from '../services/leadService';  // Assuming the API call
 import EditTabs from './EditTabs';  // Assuming EditTabs handles Tab components
+import { formatStatusLabel } from '../utils/statusFormatter';
 
 const LeadForm = ({ onAddSuccess, onAddFailure }) => {
     const [activeTab, setActiveTab] = useState(0);
@@ -199,7 +200,7 @@ const LeadForm = ({ onAddSuccess, onAddFailure }) => {
                         >
                             {['new', 'in-progress', 'closed', 'won', 'lost'].map((status) => (
                                 <MenuItem key={status} value={status}>
-                                    {status}
+                                    {formatStatusLabel(status)}
                                 </MenuItem>
                             ))}
                         </TextField>

@@ -14,6 +14,7 @@ import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { toInputDateTimeValue } from '../utils/dateFormatter';
 import { useSettings } from '../context/SettingsContext';
+import { formatStatusLabel } from '../utils/statusFormatter';
 
 import {
   IconButton,
@@ -667,7 +668,7 @@ const EditForm = ({
                     value={leadData.company_name} onChange={handleChange} />
                   <InputField label="Status" type="select" id="lead_status" name="lead_status"
                     value={leadData.lead_status} onChange={handleChange}
-                    options={statusOptions.map((o) => ({ label: o, value: o }))} />
+                    options={statusOptions.map((o) => ({ label: formatStatusLabel(o), value: o }))} />
                 </div>
 
                 <div className="detail-input-row">

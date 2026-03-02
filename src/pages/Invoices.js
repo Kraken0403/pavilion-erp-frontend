@@ -17,6 +17,7 @@ import CreateInvoiceDialog from "../components/invoices/CreateInvoiceDialog";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import "../assets/styles/LeadsTable.scss";
+import { formatStatusLabel } from "../utils/statusFormatter";
 
 const INVOICES_PER_PAGE = 20;
 
@@ -115,7 +116,7 @@ function Invoices() {
         "Customer": `${inv.first_name || ""} ${inv.last_name || ""}`.trim(),
         "Date": formatDate(inv.issue_date),
         "Total": Number(inv.grand_total || 0).toFixed(2),
-        "Status": inv.status,
+        "Status": formatStatusLabel(inv.status),
       }));
 
     const ws = XLSX.utils.json_to_sheet(selectedData);
@@ -320,7 +321,7 @@ function Invoices() {
 
                 <td onClick={(e) => e.stopPropagation()}>
                   <Chip
-                    label={inv.status}
+                    label={formatStatusLabel(inv.status)}
                     color={statusColors[inv.status] || "default"}
                     size="small"
                     onClick={(e) => handleStatusChipClick(e, inv.id)}

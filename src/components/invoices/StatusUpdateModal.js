@@ -29,6 +29,7 @@ import {
     getInvoiceById,
     downloadReceiptPdf,
 } from "../../services/invoiceService";
+import { formatStatusLabel } from "../../utils/statusFormatter";
 
 const statusColors = {
     draft: "default",
@@ -116,22 +117,22 @@ function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
 
     const getStatusOptions = () => {
         if (currentStatus === "cancelled") {
-            return [{ label: "Cancelled", value: "cancelled" }];
+            return [{ value: "cancelled" }];
         }
         if (currentStatus === "paid") {
-            return [{ label: "Paid", value: "paid" }];
+            return [{ value: "paid" }];
         }
 
         const options = [
-            { label: "Draft", value: "draft" },
-            { label: "Issued", value: "issued" },
-            { label: "Part-Payment", value: "part-payment" },
-            { label: "Cancelled", value: "cancelled" },
+            { value: "draft" },
+            { value: "issued" },
+            { value: "part-payment" },
+            { value: "cancelled" },
         ];
 
         // Only show "Paid" if no existing payments (to force payment recording flow)
         if (!payments || payments.length === 0) {
-            options.splice(2, 0, { label: "Paid", value: "paid" });
+            options.splice(2, 0, { value: "paid" });
         }
 
         return options;
@@ -300,7 +301,7 @@ function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
                                 Invoice: <strong>{invoice?.invoice_number}</strong>
                             </Typography>
                             <Chip
-                                label={currentStatus}
+                                label={formatStatusLabel(currentStatus)}
                                 color={statusColors[currentStatus] || "default"}
                                 size="small"
                             />
@@ -366,7 +367,7 @@ function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
                                     {getStatusOptions().map((opt) => (
                                         <MenuItem key={opt.value} value={opt.value}>
                                             <Chip
-                                                label={opt.label}
+                                                label={formatStatusLabel(opt.value)}
                                                 color={statusColors[opt.value] || "default"}
                                                 size="small"
                                             />

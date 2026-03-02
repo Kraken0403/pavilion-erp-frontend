@@ -31,11 +31,10 @@ import { useSettings } from '../context/SettingsContext';
 import api from '../services/api';
 import { downloadPdfFromResponse, printPdfFromResponse } from '../utils/pdfHelpers';
 import { formatDateTime, parseDateInput, toInputDateValue } from '../utils/dateFormatter';
+import { formatStatusLabel } from '../utils/statusFormatter';
 
 const STATUS_OPTIONS = ['pending', 'preparing', 'ready', 'completed'];
 const RANGE_OPTIONS = ['today', 'tomorrow', 'upcoming', 'all'];
-
-const pretty = (value = '') => value.replace('_', ' ').replace(/\b\w/g, (m) => m.toUpperCase());
 
 const formatQty = (qty) => {
   const num = Number(qty || 0);
@@ -234,7 +233,7 @@ function KOTBoard() {
                 key={option}
                 clickable
                 color={range === option ? 'primary' : 'default'}
-                label={pretty(option)}
+                label={formatStatusLabel(option)}
                 onClick={() => setRange(option)}
               />
             ))}
@@ -263,7 +262,7 @@ function KOTBoard() {
                 >
                   <MenuItem value="all">All Statuses</MenuItem>
                   {STATUS_OPTIONS.map((status) => (
-                    <MenuItem key={status} value={status}>{pretty(status)}</MenuItem>
+                    <MenuItem key={status} value={status}>{formatStatusLabel(status)}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -319,7 +318,7 @@ function KOTBoard() {
                           onChange={(e) => handleStatusChange(kot, e.target.value)}
                         >
                           {STATUS_OPTIONS.map((status) => (
-                            <MenuItem key={status} value={status}>{pretty(status)}</MenuItem>
+                            <MenuItem key={status} value={status}>{formatStatusLabel(status)}</MenuItem>
                           ))}
                         </Select>
                       </FormControl>

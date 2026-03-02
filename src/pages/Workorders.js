@@ -13,12 +13,14 @@ import {
   fetchWorkOrders,
   updateWorkOrderStatus
 } from '../services/workOrderServices'
+import { formatStatusLabel, normalizeStatusValue } from '../utils/statusFormatter'
 
 import { useSettings } from '../context/SettingsContext'
 
 const statusOptions = [
-  'issued',
-  'in_progress',
+  'pending',
+  'preparing',
+  'ready',
   'completed',
   'cancelled'
 ]
@@ -26,6 +28,13 @@ const statusOptions = [
 const formatDate = (iso) => {
   if (!iso) return '—'
   return new Date(iso).toLocaleDateString('en-IN')
+}
+
+const normalizeWorkOrderStatus = (status) => {
+  const raw = normalizeStatusValue(status)
+  if (raw === 'issued') return 'pending'
+  if (raw === 'in_progress') return 'preparing'
+  return raw
 }
 
 const ITEMS_PER_PAGE = 20
@@ -163,7 +172,7 @@ function WorkOrders() {
                   {editingStatusId === o.id ? (
                     <select
                       className="status-select-inline"
-                      value={o.status}
+                      value={normalizeWorkOrderStatus(o.status)}
                       autoFocus
                       onBlur={() => setEditingStatusId(null)}
                       onChange={async (e) => {
@@ -172,7 +181,7 @@ function WorkOrders() {
                       }}
                     >
                       {statusOptions.map(s => (
-                        <option key={s} value={s}>{s}</option>
+                        <option key={s} value={s}>{formatStatusLabel(s)}</option>
                       ))}
                     </select>
                   ) : (
@@ -180,7 +189,7 @@ function WorkOrders() {
                       className={`status-pill status-${o.status}`}
                       onClick={() => setEditingStatusId(o.id)}
                     >
-                      {o.status}
+                      {formatStatusLabel(normalizeWorkOrderStatus(o.status))}
                     </span>
                   )}
                 </td>

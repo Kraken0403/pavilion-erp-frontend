@@ -26,11 +26,10 @@ import Topbar from '../components/Topbar';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import { fetchDeliveries, updateDeliveryStatus, updateDeliveryNotes } from '../services/deliveryService';
 import { formatDateTime, parseDateInput, toInputDateValue } from '../utils/dateFormatter';
+import { formatStatusLabel } from '../utils/statusFormatter';
 
 const STATUS_OPTIONS = ['pending', 'out_for_delivery', 'delivered', 'failed'];
 const RANGE_OPTIONS = ['today', 'all'];
-
-const pretty = (value = '') => value.replace(/_/g, ' ').replace(/\b\w/g, (m) => m.toUpperCase());
 
 const formatQty = (qty) => {
   const num = Number(qty || 0);
@@ -254,7 +253,7 @@ function DeliveryBoard() {
                 key={option}
                 clickable
                 color={range === option ? 'primary' : 'default'}
-                label={pretty(option)}
+                label={formatStatusLabel(option)}
                 onClick={() => setRange(option)}
               />
             ))}
@@ -280,7 +279,7 @@ function DeliveryBoard() {
               >
                 <MenuItem value="all">All Statuses</MenuItem>
                 {STATUS_OPTIONS.map((status) => (
-                  <MenuItem key={status} value={status}>{pretty(status)}</MenuItem>
+                  <MenuItem key={status} value={status}>{formatStatusLabel(status)}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -333,7 +332,7 @@ function DeliveryBoard() {
                             onChange={(e) => handleStatusChange(delivery.id, e.target.value)}
                           >
                             {STATUS_OPTIONS.map((status) => (
-                              <MenuItem key={status} value={status}>{pretty(status)}</MenuItem>
+                              <MenuItem key={status} value={status}>{formatStatusLabel(status)}</MenuItem>
                             ))}
                           </Select>
                         </FormControl>
@@ -341,7 +340,7 @@ function DeliveryBoard() {
 
                       <Box sx={{ mb: 1, p: 1, bgcolor: getStatusColor(delivery.status), borderRadius: 1, color: 'white' }}>
                         <Typography variant="caption" fontWeight={700}>
-                          {pretty(delivery.status)}
+                          {formatStatusLabel(delivery.status)}
                         </Typography>
                       </Box>
 

@@ -12,6 +12,7 @@ import React, {
   import * as XLSX from 'xlsx';
   import { formatDate as formatLocalDate } from '../utils/dateFormatter';
   import { toInputDateTimeValue } from '../utils/dateFormatter';
+  import { formatStatusLabel } from '../utils/statusFormatter';
   
   const LeadsTable = ({
     leads,
@@ -36,6 +37,10 @@ import React, {
 
           if (field === 'follow_up_date' || field === 'event_date') {
             return formatLocalDate(value) || '—';
+          }
+
+          if (field === 'lead_status') {
+            return formatStatusLabel(value);
           }
 
           return value;
@@ -261,7 +266,7 @@ import React, {
                               : priorityOptions
                             ).map((option) => (
                               <option key={option} value={option}>
-                                {option}
+                                {field === 'lead_status' ? formatStatusLabel(option) : option}
                               </option>
                             ))}
                           </select>

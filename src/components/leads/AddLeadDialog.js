@@ -15,6 +15,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import { addLead } from "../../services/leadService";
 import { getAllCustomFields } from "../../services/customFieldServices";
 import { getAllUsers } from "../../services/userServices";
+import { formatStatusLabel } from "../../utils/statusFormatter";
 
 import "../../assets/styles/AddProductDialog.scss"; // reuse same styling
 
@@ -239,7 +240,7 @@ function AddLeadDialog({ open, onClose, onLeadCreated, showNotification, prefill
         <Typography className="field-label" sx={{ mt: 2 }}>Status</Typography>
         <TextField className="form-input" select fullWidth name="lead_status" value={form.lead_status} onChange={handleChange}>
           {["new","in-progress","closed","won","lost"].map(s =>
-            <MenuItem key={s} value={s}>{s}</MenuItem>
+            <MenuItem key={s} value={s}>{formatStatusLabel(s)}</MenuItem>
           )}
         </TextField>
 

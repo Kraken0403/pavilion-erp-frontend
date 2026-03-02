@@ -6,6 +6,7 @@ import UtilsBar from '../UtilsBar';
 import PaginationBar from '../ui/PaginationBar';
 import { sendQuotationEmailToCustomer, updateQuotationStatus } from '../../services/quotationService';
 import { useSettings } from "../../context/SettingsContext";
+import { formatStatusLabel, normalizeStatusValue } from '../../utils/statusFormatter';
 
 const statusOptions = ['pending', 'approved', 'rejected', 'converted'];
 
@@ -230,7 +231,7 @@ const QuotationsTable = ({
                     {editingStatusId === q.id ? (
                       <select
                         className="status-select-inline"
-                        value={q.status}
+                        value={normalizeStatusValue(q.status)}
                         autoFocus
                         onBlur={() => setEditingStatusId(null)}
                         onChange={async (e) => {
@@ -240,7 +241,7 @@ const QuotationsTable = ({
                       >
                         {statusOptions.map(s => (
                           <option key={s} value={s}>
-                            {s}
+                            {formatStatusLabel(s)}
                           </option>
                         ))}
                       </select>
@@ -249,7 +250,7 @@ const QuotationsTable = ({
                         className={`status-pill status-${q.status}`}
                         onClick={() => setEditingStatusId(q.id)}
                       >
-                        {q.status}
+                        {formatStatusLabel(q.status)}
                       </span>
                     )}
                   </td>

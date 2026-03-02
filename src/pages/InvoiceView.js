@@ -10,6 +10,7 @@ import {
   downloadInvoicePdf,
 } from "../services/invoiceService";
 import { formatDate as formatLocalDate } from "../utils/dateFormatter";
+import { formatStatusLabel } from "../utils/statusFormatter";
 
 import "../assets/styles/LeadsTable.scss";
 
@@ -101,7 +102,7 @@ function InvoiceView() {
               </h2>
 
               <Chip
-                label={invoice.status}
+                label={formatStatusLabel(invoice.status)}
                 color={statusColors[invoice.status] || "default"}
                 size="small"
               />
