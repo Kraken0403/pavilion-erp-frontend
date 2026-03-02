@@ -19,4 +19,14 @@
         gap: 5px;
         align-items: center;
     }
+
+    &-profile {
+        display: flex;
+        align-items: center;
+    }
+
+    .profile-picture {
+        display: flex;
+        align-items: center;
+    }
 }

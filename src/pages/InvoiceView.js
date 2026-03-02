@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { Chip, CircularProgress } from "@mui/material";
+import { useParams } from "react-router-dom";
+import { Box, Chip, CircularProgress, Divider, Grid, Typography } from "@mui/material";
 import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
 import Topbar from "../components/Topbar";
 import NotificationSnackbar from "../components/ui/NotificationSnackbar";
@@ -13,6 +13,7 @@ import { formatDate as formatLocalDate } from "../utils/dateFormatter";
 import { formatStatusLabel } from "../utils/statusFormatter";
 
 import "../assets/styles/LeadsTable.scss";
+import "../assets/styles/QuotationDetail.scss";
 
 const statusColors = {
   draft: "default",
@@ -24,7 +25,6 @@ const statusColors = {
 
 function InvoiceView() {
   const { id } = useParams();
-  const navigate = useNavigate();
 
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -53,6 +53,23 @@ function InvoiceView() {
     }
   };
 
+  const formatMoney = (value) => `₹ ${Number(value || 0).toFixed(2)}`;
+
+  const customerName = [invoice?.first_name, invoice?.last_name]
+    .filter(Boolean)
+    .join(" ")
+    .trim() || "—";
+
+  const customerEmail =
+    invoice?.lead?.email ||
+    invoice?.billing_snapshot?.email ||
+    "—";
+
+  const customerPhone =
+    invoice?.lead?.phone ||
+    invoice?.billing_snapshot?.phone ||
+    "—";
+
   useEffect(() => {
     loadInvoice();
   }, [id]);
@@ -74,41 +91,39 @@ function InvoiceView() {
   /* ================= UI ================= */
 
   return (
-    <div className="leads-table-container">
+    <div className="quotation-detail-container">
       <Topbar />
 
       {loading ? (
-        <div style={{ padding: "60px 0", textAlign: "center" }}>
+        <div className="quotation-card" style={{ padding: "60px 0", textAlign: "center" }}>
           <CircularProgress />
         </div>
       ) : !invoice ? (
-        <div style={{ padding: "60px 0", textAlign: "center" }}>
-          No invoice found
+        <div className="quotation-card" style={{ padding: "60px 0", textAlign: "center" }}>
+          <Typography variant="h6">No invoice found</Typography>
         </div>
       ) : (
         <>
-          {/* HEADER */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "20px",
-            }}
-          >
-            <div>
-              <h2 style={{ marginBottom: "6px" }}>
-                Invoice #{invoice.invoice_number}
-              </h2>
+          <div className="quotation-header">
+            <div className="quotation-head">
+              <div className="qh-content">
+                <h2>Invoice #{invoice.invoice_number}</h2>
+              </div>
+              <div className="quotation-meta">
+                <span>Issue Date: {formatLocalDate(invoice.issue_date) || "—"}</span>
+                <span className="chip">
+                  <span>{formatStatusLabel(invoice.status)}</span>
+                </span>
+              </div>
+            </div>
 
+            <div className="quotation-actions">
               <Chip
                 label={formatStatusLabel(invoice.status)}
                 color={statusColors[invoice.status] || "default"}
                 size="small"
               />
-            </div>
 
-            <div style={{ display: 'flex', gap: '10px' }}>
               <button
                 className="secondary-btn"
                 onClick={handleExportPdf}
@@ -120,51 +135,39 @@ function InvoiceView() {
             </div>
           </div>
 
+          <div className="quotation-card">
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+              Customer Details
+            </Typography>
 
-          {/* CUSTOMER DETAILS */}
-          <div
-            className="table-container"
-            style={{ marginBottom: "25px" }}
-          >
-            <table className="leads-table">
-              <tbody>
-                <tr>
-                  <th>Customer</th>
-                  <td>
-                    {invoice.first_name && invoice.last_name
-                      ? `${invoice.first_name} ${invoice.last_name}`
-                      : "—"}
-                  </td>
-                </tr>
-
-                <tr>
-                  <th>Issue Date</th>
-                  <td>{formatLocalDate(invoice.issue_date) || '—'}</td>
-                </tr>
-
-                <tr>
-                  <th>Email</th>
-                  <td>
-                    {invoice.lead?.email ||
-                      invoice.billing_snapshot?.email ||
-                      "—"}
-                  </td>
-                </tr>
-
-                <tr>
-                  <th>Phone</th>
-                  <td>
-                    {invoice.lead?.phone ||
-                      invoice.billing_snapshot?.phone ||
-                      "—"}
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+            <Grid container spacing={2}>
+              <Grid item xs={12} md={6}>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>Customer</Typography>
+                <Typography variant="body1">{customerName}</Typography>
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>Issue Date</Typography>
+                <Typography variant="body1">{formatLocalDate(invoice.issue_date) || "—"}</Typography>
+              </Grid>
+              <Grid item xs={12} md={3}>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>Due Date</Typography>
+                <Typography variant="body1">{formatLocalDate(invoice.due_date) || "—"}</Typography>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>Email</Typography>
+                <Typography variant="body1">{customerEmail}</Typography>
+              </Grid>
+              <Grid item xs={12} md={6}>
+                <Typography variant="caption" sx={{ color: "text.secondary" }}>Phone</Typography>
+                <Typography variant="body1">{customerPhone}</Typography>
+              </Grid>
+            </Grid>
           </div>
 
-          {/* ITEMS TABLE */}
-          <div className="table-container">
+          <div className="quotation-card table-container">
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+              Invoice Items
+            </Typography>
             <table className="leads-table">
               <thead>
                 <tr>
@@ -177,69 +180,53 @@ function InvoiceView() {
               </thead>
 
               <tbody>
-                {invoice.items?.map((item) => (
+                {(invoice.items || []).length ? invoice.items.map((item) => (
                   <tr key={item.id}>
                     <td>{item.description}</td>
                     <td>{item.quantity}</td>
                     <td>
-                      ₹ {Number(item.unit_price || 0).toFixed(2)}
+                      {formatMoney(item.unit_price)}
                     </td>
                     <td>{item.gst_rate}%</td>
                     <td>
-                      ₹ {Number(item.line_total || 0).toFixed(2)}
+                      {formatMoney(item.line_total)}
                     </td>
                   </tr>
-                ))}
+                )) : (
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: "center" }}>No items found</td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </div>
 
-          {/* TOTAL SECTION */}
-          <div
-            style={{
-              marginTop: "25px",
-              display: "flex",
-              justifyContent: "flex-end",
-            }}
-          >
-            <div
-              style={{
-                minWidth: "280px",
-                padding: "20px",
-                border: "1px solid #eee",
-                borderRadius: "6px",
-                background: "#fafafa",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "10px",
-                }}
-              >
-                <span>Subtotal</span>
-                <span>
-                  ₹ {Number(invoice.subtotal || 0).toFixed(2)}
-                </span>
-              </div>
+          <div className="quotation-card">
+            <Box sx={{ maxWidth: 360, ml: "auto" }}>
+              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                <Typography variant="body2" color="text.secondary">Subtotal</Typography>
+                <Typography variant="body2">{formatMoney(invoice.subtotal)}</Typography>
+              </Box>
+              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                <Typography variant="body2" color="text.secondary">CGST</Typography>
+                <Typography variant="body2">{formatMoney(invoice.cgst_total)}</Typography>
+              </Box>
+              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                <Typography variant="body2" color="text.secondary">SGST</Typography>
+                <Typography variant="body2">{formatMoney(invoice.sgst_total)}</Typography>
+              </Box>
+              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">IGST</Typography>
+                <Typography variant="body2">{formatMoney(invoice.igst_total)}</Typography>
+              </Box>
 
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontWeight: 600,
-                  fontSize: "16px",
-                  borderTop: "1px solid #ddd",
-                  paddingTop: "10px",
-                }}
-              >
-                <span>Grand Total</span>
-                <span>
-                  ₹ {Number(invoice.grand_total || 0).toFixed(2)}
-                </span>
-              </div>
-            </div>
+              <Divider sx={{ mb: 1.5 }} />
+
+              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Grand Total</Typography>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{formatMoney(invoice.grand_total)}</Typography>
+              </Box>
+            </Box>
           </div>
         </>
       )}

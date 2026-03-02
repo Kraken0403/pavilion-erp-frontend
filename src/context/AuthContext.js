@@ -20,9 +20,19 @@ export const AuthProvider = ({ children }) => {
 
     try {
       const data = await getUserVisibilityPermissions(userId);
-      setModulePermissions(normalizeModulePermissions(data?.permissions));
+      const normalized = normalizeModulePermissions(data?.permissions);
+      const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+      if (storedUser?.role !== 'admin') {
+        normalized.users = false;
+      }
+      setModulePermissions(normalized);
     } catch (error) {
-      setModulePermissions(getDefaultModulePermissions());
+      const defaults = getDefaultModulePermissions();
+      const storedUser = JSON.parse(localStorage.getItem('user') || 'null');
+      if (storedUser?.role !== 'admin') {
+        defaults.users = false;
+      }
+      setModulePermissions(defaults);
     }
   };
 
@@ -71,7 +81,15 @@ export const AuthProvider = ({ children }) => {
   const canAccessModule = (moduleKey) => {
     const normalized = normalizeModulePermissions(modulePermissions);
     if (!moduleKey) return true;
+    if (moduleKey === 'users' && currentUser?.role !== 'admin') return false;
     return normalized[moduleKey] !== false;
+  };
+
+  const updateCurrentUser = (nextUser) => {
+    if (!nextUser) return;
+    const merged = { ...(currentUser || {}), ...nextUser };
+    localStorage.setItem('user', JSON.stringify(merged));
+    setCurrentUser(merged);
   };
 
   return (
@@ -86,6 +104,7 @@ export const AuthProvider = ({ children }) => {
         setModulePermissions,
         loadUserPermissions,
         canAccessModule,
+        updateCurrentUser,
       }}
     >
       {!loading && children}

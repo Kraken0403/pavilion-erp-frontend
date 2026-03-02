@@ -38,6 +38,8 @@ import DeliveryBoard from './pages/DeliveryBoard';
 import Reports from './pages/Reports';
 import PaymentReminders from './pages/PaymentReminders';
 import PaymentReminderSettings from './pages/PaymentReminderSettings';
+import OrderFeedbacks from './pages/OrderFeedbacks';
+import OrderFeedbackSettings from './pages/OrderFeedbackSettings';
 import { getFirstAccessibleModuleRoute } from './config/modulePermissions';
 
 
@@ -292,6 +294,28 @@ const App = () => {
                             <PrivateRoute requiredModule="reports">
                                 <Layout>
                                     <Reports/>
+                                </Layout>
+                            </PrivateRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/feedbacks"
+                        element={
+                            <PrivateRoute requiredModule="reports">
+                                <Layout>
+                                    <OrderFeedbacks />
+                                </Layout>
+                            </PrivateRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/feedbacks/settings"
+                        element={
+                            <PrivateRoute requiredModule="reports">
+                                <Layout>
+                                    <OrderFeedbackSettings />
                                 </Layout>
                             </PrivateRoute>
                         }

@@ -4,7 +4,6 @@ import DashboardIcon from '@mui/icons-material/Dashboard';
 import CategoryIcon from '@mui/icons-material/Category';
 import ListItemButton from '@mui/material/ListItemButton';
 import ProductionQuantityLimitsIcon from '@mui/icons-material/ProductionQuantityLimits';
-import LogoutIcon from '@mui/icons-material/Logout';
 // import SettingsIcon from '@mui/icons-material/Settings';
 import PeopleIcon from '@mui/icons-material/People';
 import ArticleIcon from '@mui/icons-material/Article';
@@ -22,43 +21,52 @@ import ExpandMore from '@mui/icons-material/ExpandMore';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import { useNavigate } from 'react-router-dom';
+import { useLayout } from '../context/LayoutContext';
 import '../assets/styles/Sidebar.scss';
 
 const drawerWidth = 200;
+const MAX_EXPANDED_MODULES = 1;
 
 const Sidebar = () => {
-  const { logout, canAccessModule } = useAuth();
+  const { currentUser, canAccessModule } = useAuth();
   const { settings } = useSettings();
+  const { sidebarOpen } = useLayout();
   const navigate = useNavigate();
 
   const isCateringBusiness = settings?.business_type === 'CATERING';
 
-  const [leadsOpen, setLeadsOpen] = useState(false);
-  const [productsOpen, setProductsOpen] = useState(false);
-  const [workOrdersOpen, setWorkOrdersOpen] = useState(false);
-  const [quotationsOpen, setQuotationsOpen] = useState(false);
-  const [invoicesOpen, setInvoicesOpen] = useState(false);
-  const [paymentRemindersOpen, setPaymentRemindersOpen] = useState(false);
-  const [kotOpen, setKotOpen] = useState(false);
-  const [deliveryOpen, setDeliveryOpen] = useState(false);
+  const [expandedModules, setExpandedModules] = useState([]);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  const isExpanded = (moduleKey) => expandedModules.includes(moduleKey);
+
+  const toggleModule = (moduleKey) => {
+    setExpandedModules((prev) => {
+      if (prev.includes(moduleKey)) {
+        return prev.filter((item) => item !== moduleKey);
+      }
+
+      const next = [...prev, moduleKey];
+      if (next.length <= MAX_EXPANDED_MODULES) return next;
+      return next.slice(next.length - MAX_EXPANDED_MODULES);
+    });
   };
 
   return (
     <div className="sidebar">
       <Drawer
+          open={sidebarOpen}
         sx={{
           width: drawerWidth,
           flexShrink: 0,
           '& .MuiDrawer-paper': {
             width: drawerWidth,
             boxSizing: 'border-box',
+            height: '100vh',
+            position: 'fixed',
+            overflowY: 'auto',
           },
         }}
-        variant="permanent"
+          variant="persistent"
         anchor="left"
       >
         <Toolbar />
@@ -73,12 +81,12 @@ const Sidebar = () => {
 
           {canAccessModule('leads') && (
             <>
-              <ListItemButton onClick={() => setLeadsOpen(!leadsOpen)}>
+              <ListItemButton onClick={() => toggleModule('leads')}>
                 <ListItemIcon><PeopleIcon /></ListItemIcon>
                 <ListItemText primary="Leads" />
-                {leadsOpen ? <ExpandLess /> : <ExpandMore />}
+                {isExpanded('leads') ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
-              <Collapse in={leadsOpen} timeout="auto" unmountOnExit>
+              <Collapse in={isExpanded('leads')} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/leads')}>
                     <ListItemIcon><PeopleIcon /></ListItemIcon>
@@ -98,12 +106,12 @@ const Sidebar = () => {
           {/* PRODUCTS */}
           {canAccessModule('products') && (
             <>
-              <ListItemButton onClick={() => setProductsOpen(!productsOpen)}>
+              <ListItemButton onClick={() => toggleModule('products')}>
                 <ListItemIcon><Inventory2Icon /></ListItemIcon>
                 <ListItemText primary="Products" />
-                {productsOpen ? <ExpandLess /> : <ExpandMore />}
+                {isExpanded('products') ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
-              <Collapse in={productsOpen} timeout="auto" unmountOnExit>
+              <Collapse in={isExpanded('products')} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/products/list')}>
                     <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
@@ -125,13 +133,13 @@ const Sidebar = () => {
           {/* QUOTATIONS DROPDOWN */}
           {canAccessModule('quotations') && (
             <>
-              <ListItemButton onClick={() => setQuotationsOpen(!quotationsOpen)}>
+              <ListItemButton onClick={() => toggleModule('quotations')}>
                 <ListItemIcon><ArticleIcon /></ListItemIcon>
                 <ListItemText primary="Quotations" />
-                {quotationsOpen ? <ExpandLess /> : <ExpandMore />}
+                {isExpanded('quotations') ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
 
-              <Collapse in={quotationsOpen} timeout="auto" unmountOnExit>
+              <Collapse in={isExpanded('quotations')} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/quotations')}>
                     <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
@@ -151,12 +159,12 @@ const Sidebar = () => {
                     {/* WORK ORDERS DROPDOWN */}
           {canAccessModule('work_orders') && (
             <>
-              <ListItemButton onClick={() => setWorkOrdersOpen(!workOrdersOpen)}>
+              <ListItemButton onClick={() => toggleModule('work_orders')}>
                 <ListItemIcon><ProductionQuantityLimitsIcon /></ListItemIcon>
                 <ListItemText primary="Work Orders" />
-                {workOrdersOpen ? <ExpandLess /> : <ExpandMore />}
+                {isExpanded('work_orders') ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
-              <Collapse in={workOrdersOpen} timeout="auto" unmountOnExit>
+              <Collapse in={isExpanded('work_orders')} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/workorders')}>
                     <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
@@ -170,12 +178,12 @@ const Sidebar = () => {
           {/* KOT (Kitchen Order Ticket) - CATERING ONLY */}
           {isCateringBusiness && canAccessModule('kots') && (
             <>
-              <ListItemButton onClick={() => setKotOpen(!kotOpen)}>
+              <ListItemButton onClick={() => toggleModule('kots')}>
                 <ListItemIcon><RestaurantMenuIcon /></ListItemIcon>
                 <ListItemText primary="KOT" />
-                {kotOpen ? <ExpandLess /> : <ExpandMore />}
+                {isExpanded('kots') ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
-              <Collapse in={kotOpen} timeout="auto" unmountOnExit>
+              <Collapse in={isExpanded('kots')} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/kots')}>
                     <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
@@ -193,12 +201,12 @@ const Sidebar = () => {
           {/* DELIVERY - CATERING ONLY */}
           {isCateringBusiness && canAccessModule('deliveries') && (
             <>
-              <ListItemButton onClick={() => setDeliveryOpen(!deliveryOpen)}>
+              <ListItemButton onClick={() => toggleModule('deliveries')}>
                 <ListItemIcon><LocalShippingIcon /></ListItemIcon>
                 <ListItemText primary="Delivery" />
-                {deliveryOpen ? <ExpandLess /> : <ExpandMore />}
+                {isExpanded('deliveries') ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
-              <Collapse in={deliveryOpen} timeout="auto" unmountOnExit>
+              <Collapse in={isExpanded('deliveries')} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/deliveries')}>
                     <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
@@ -212,13 +220,13 @@ const Sidebar = () => {
           {/* INVOICES DROPDOWN */}
           {canAccessModule('invoices') && (
             <>
-              <ListItemButton onClick={() => setInvoicesOpen(!invoicesOpen)}>
+              <ListItemButton onClick={() => toggleModule('invoices')}>
                 <ListItemIcon><ReceiptLongIcon /></ListItemIcon>
                 <ListItemText primary="Invoices" />
-                {invoicesOpen ? <ExpandLess /> : <ExpandMore />}
+                {isExpanded('invoices') ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
 
-              <Collapse in={invoicesOpen} timeout="auto" unmountOnExit>
+              <Collapse in={isExpanded('invoices')} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/invoices')}>
                     <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
@@ -236,13 +244,13 @@ const Sidebar = () => {
 
           {canAccessModule('payment_reminders') && (
             <>
-              <ListItemButton onClick={() => setPaymentRemindersOpen(!paymentRemindersOpen)}>
+              <ListItemButton onClick={() => toggleModule('payment_reminders')}>
                 <ListItemIcon><CampaignIcon /></ListItemIcon>
                 <ListItemText primary="Payment Reminders" />
-                {paymentRemindersOpen ? <ExpandLess /> : <ExpandMore />}
+                {isExpanded('payment_reminders') ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
 
-              <Collapse in={paymentRemindersOpen} timeout="auto" unmountOnExit>
+              <Collapse in={isExpanded('payment_reminders')} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
                   <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/payment-reminders')}>
                     <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
@@ -272,17 +280,36 @@ const Sidebar = () => {
             </ListItemButton>
           )}
 
-          {canAccessModule('users') && (
+          {canAccessModule('reports') && (
+            <>
+              <ListItemButton onClick={() => toggleModule('feedback')}>
+                <ListItemIcon><CampaignIcon /></ListItemIcon>
+                <ListItemText primary="Feedback" />
+                {isExpanded('feedback') ? <ExpandLess /> : <ExpandMore />}
+              </ListItemButton>
+
+              <Collapse in={isExpanded('feedback')} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/feedbacks')}>
+                    <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
+                    <ListItemText primary="Feedback List" />
+                  </ListItemButton>
+
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/feedbacks/settings')}>
+                    <ListItemIcon><SettingsIcon /></ListItemIcon>
+                    <ListItemText primary="Settings" />
+                  </ListItemButton>
+                </List>
+              </Collapse>
+            </>
+          )}
+
+          {currentUser?.role === 'admin' && canAccessModule('users') && (
             <ListItemButton onClick={() => navigate('/users')}>
               <ListItemIcon><PeopleIcon /></ListItemIcon>
               <ListItemText primary="Users" />
             </ListItemButton>
           )}
-
-          <ListItemButton onClick={handleLogout}>
-            <ListItemIcon><LogoutIcon /></ListItemIcon>
-            <ListItemText primary="Logout" />
-          </ListItemButton>
 
         </List>
       </Drawer>

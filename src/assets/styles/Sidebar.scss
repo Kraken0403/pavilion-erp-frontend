@@ -1,11 +1,18 @@
 @import './variables.scss';
 
 .sidebar {
+    height: 100vh;
+    overflow: hidden;
 
     .MuiTypography-root {
         color: $text-color;
         font-size: 14px;
         font-weight: 500;
+    }
+
+    .MuiDrawer-paper {
+        height: 100vh;
+        overflow-y: auto;
     }
 
     .MuiButtonBase-root {

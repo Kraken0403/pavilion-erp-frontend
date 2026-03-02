@@ -106,3 +106,21 @@ export const getEffectiveUserVisibilityPermissions = async (userId) => {
     handleError(error, `Failed to fetch effective visibility permissions for user ${userId}`);
   }
 };
+
+export const getMyProfile = async () => {
+  try {
+    const res = await api.get('/users/me/profile');
+    return res.data;
+  } catch (error) {
+    handleError(error, 'Failed to fetch profile');
+  }
+};
+
+export const updateMyProfile = async (payload) => {
+  try {
+    const res = await api.put('/users/me/profile', payload);
+    return res.data;
+  } catch (error) {
+    handleError(error, 'Failed to update profile');
+  }
+};
