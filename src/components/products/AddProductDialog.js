@@ -16,7 +16,13 @@ import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import ReactQuill from 'react-quill'
 
-import { getCategories, getAllAttributes, getAttributeOptions, uploadProductImage } from "../../services/productServices";
+import {
+  fetchAllProducts,
+  getCategories,
+  getAllAttributes,
+  getAttributeOptions,
+  uploadProductImage
+} from "../../services/productServices";
 
 import "../../assets/styles/AddProductDialog.scss";
 import { BACKEND_URL } from '../../config/env'
@@ -48,7 +54,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
   const [sellingPriceQty, setSellingPriceQty] = useState(1);
 
   const [gstRate, setGstRate] = useState(0);
-  const [hsnSac, setHsnSac] = useState(""); 
+  const [hsnSac, setHsnSac] = useState("");
 
   /* ---------------- VARIANTS + ATTRIBUTES ---------------- */
   const [attributes, setAttributes] = useState([]);
@@ -60,11 +66,13 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
 
   /* ---------------- SUPPORT DATA ---------------- */
   const [categories, setCategoriesState] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
+  const [selectedAddOnProducts, setSelectedAddOnProducts] = useState([]);
   const [previewUrl, setPreviewUrl] = useState("")
 
   const [imageFile, setImageFile] = useState(null)
   const [uploadingImage, setUploadingImage] = useState(false)
-  
+
 
   /* ---------------- SUBMIT ---------------- */
   const [submitting, setSubmitting] = useState(false);
@@ -79,6 +87,9 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
 
       const attrs = await getAllAttributes();
       setAttributes(attrs);
+
+      const products = await fetchAllProducts();
+      setAllProducts(Array.isArray(products) ? products : []);
     })();
   }, [open]);
 
@@ -124,6 +135,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
 
     setGstRate(productToEdit.gst_rate ?? 0);
     setHsnSac(productToEdit.hsn_sac || "");
+    setSelectedAddOnProducts(productToEdit.add_on_products || []);
 
     // If backend returns variants inside productToEdit (it should from getProductById)
     if (productToEdit.type === "variable" && Array.isArray(productToEdit.variants)) {
@@ -182,9 +194,9 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
 
   const handleImageUpload = async (file) => {
     if (!file) return
-  
+
     setUploadingImage(true)
-  
+
     try {
       const res = await uploadProductImage(file)
       setImageUrl(res.url)
@@ -196,8 +208,8 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
       setUploadingImage(false)
     }
   }
-  
-  
+
+
 
   const generateVariants = () => {
     const optionGroups = Object.values(selectedOptions).filter(arr => arr && arr.length);
@@ -246,6 +258,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
     setAttributeOptionsState({});
     setSelectedOptions({});
     setVariants([]);
+    setSelectedAddOnProducts([]);
     setPreviewUrl("")
 
     setImageFile(null)
@@ -278,7 +291,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
       setSubmitting(false);
       alert("GST rate must be between 0 and 28%");
       return;
-    }    
+    }
 
     const payload = {
       name: name.trim(),
@@ -319,14 +332,16 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
       variants:
         type === "variable"
           ? variants.map(v => ({
-              id: v.id && String(v.id).startsWith("tmp_") ? undefined : v.id, // safety
-              sku: v.sku || "",
-              stock: Number(v.stock || 0),
-              cost_price: v.cost_price === "" ? undefined : Number(v.cost_price || 0),
-              cost_price_unit: v.cost_price_unit || costPriceUnit,
-              attribute_option_ids: (v.attributes || []).map(a => a.id)
-            }))
-          : []
+            id: v.id && String(v.id).startsWith("tmp_") ? undefined : v.id, // safety
+            sku: v.sku || "",
+            stock: Number(v.stock || 0),
+            cost_price: v.cost_price === "" ? undefined : Number(v.cost_price || 0),
+            cost_price_unit: v.cost_price_unit || costPriceUnit,
+            attribute_option_ids: (v.attributes || []).map(a => a.id)
+          }))
+          : [],
+
+      add_on_product_ids: selectedAddOnProducts.map(p => p.id)
     };
 
     try {
@@ -358,12 +373,32 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
           onChange={e => setName(e.target.value)}
         />
 
-<        Typography className="field-label" sx={{ mt: 2 }}>Brand Name</Typography>    
+        <Typography className="field-label" sx={{ mt: 2 }}>Brand Name</Typography>
         <TextField
           className="form-input"
           fullWidth
           value={brand}
           onChange={e => setBrand(e.target.value)}
+        />
+
+        <Typography className="field-label" sx={{ mt: 2 }}>
+          Add-on Products
+        </Typography>
+        <Autocomplete
+          multiple
+          options={allProducts.filter(p => p.id !== productToEdit?.id)}
+          value={selectedAddOnProducts}
+          isOptionEqualToValue={(option, value) => option.id === value.id}
+          getOptionLabel={o => `${o?.name || ''}${o?.selling_price != null ? ` (₹ ${o.selling_price})` : ''}`}
+          onChange={(e, value) => setSelectedAddOnProducts(value || [])}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              className="form-input"
+              fullWidth
+              placeholder="Search and select add-on products"
+            />
+          )}
         />
 
         {/* DESCRIPTION */}
@@ -408,17 +443,17 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
               onChange={(e) => {
                 const file = e.target.files?.[0]
                 if (!file) return
-              
+
                 setImageFile(file)
-              
+
                 // 🔥 INSTANT local preview
                 const localPreview = URL.createObjectURL(file)
                 setPreviewUrl(localPreview)
-              
+
                 handleImageUpload(file)
               }}
-              
-              
+
+
             />
           </Button>
 
@@ -632,35 +667,35 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
         </Grid>
 
 
-          <Grid container spacing={2} sx={{ mt: 2 }}>
-            <Grid item xs={6}>
-              <Typography className="field-label">
-                GST Rate (%)
-              </Typography>
-              <TextField
-                className="form-input"
-                fullWidth
-                type="number"
-                value={gstRate}
-                onChange={e => setGstRate(e.target.value)}
-                inputProps={{ min: 0, max: 28, step: 0.01 }}
-                helperText="GST is inclusive or exclusive is based on your settings"
-              />
-            </Grid>
-
-            <Grid item xs={6}>
-              <Typography className="field-label">
-                HSN / SAC
-              </Typography>
-              <TextField
-                className="form-input"
-                fullWidth
-                value={hsnSac}
-                onChange={e => setHsnSac(e.target.value)}
-                placeholder="e.g. 9403 / 998391"
-              />
-            </Grid>
+        <Grid container spacing={2} sx={{ mt: 2 }}>
+          <Grid item xs={6}>
+            <Typography className="field-label">
+              GST Rate (%)
+            </Typography>
+            <TextField
+              className="form-input"
+              fullWidth
+              type="number"
+              value={gstRate}
+              onChange={e => setGstRate(e.target.value)}
+              inputProps={{ min: 0, max: 28, step: 0.01 }}
+              helperText="GST is inclusive or exclusive is based on your settings"
+            />
           </Grid>
+
+          <Grid item xs={6}>
+            <Typography className="field-label">
+              HSN / SAC
+            </Typography>
+            <TextField
+              className="form-input"
+              fullWidth
+              value={hsnSac}
+              onChange={e => setHsnSac(e.target.value)}
+              placeholder="e.g. 9403 / 998391"
+            />
+          </Grid>
+        </Grid>
 
         {/* VARIABLE PRODUCT: ATTRIBUTES + VARIANTS */}
         {type === "variable" && (
