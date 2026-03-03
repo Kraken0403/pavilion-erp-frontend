@@ -16,6 +16,7 @@ import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import CampaignIcon from '@mui/icons-material/Campaign';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import { useAuth } from '../context/AuthContext';
@@ -51,10 +52,19 @@ const Sidebar = () => {
     });
   };
 
+  const go = (path) => {
+    navigate(path, { state: { refreshAt: Date.now() } });
+    window.dispatchEvent(
+      new CustomEvent('crm:refresh-data', {
+        detail: { path, source: 'sidebar' },
+      })
+    );
+  };
+
   return (
     <div className="sidebar">
       <Drawer
-          open={sidebarOpen}
+        open={sidebarOpen}
         sx={{
           width: drawerWidth,
           flexShrink: 0,
@@ -66,14 +76,14 @@ const Sidebar = () => {
             overflowY: 'auto',
           },
         }}
-          variant="persistent"
+        variant="persistent"
         anchor="left"
       >
         <Toolbar />
         <List>
 
           {canAccessModule('dashboard') && (
-            <ListItemButton onClick={() => navigate('/dashboard')}>
+            <ListItemButton onClick={() => go('/dashboard')}>
               <ListItemIcon><DashboardIcon /></ListItemIcon>
               <ListItemText primary="Dashboard" />
             </ListItemButton>
@@ -88,11 +98,11 @@ const Sidebar = () => {
               </ListItemButton>
               <Collapse in={isExpanded('leads')} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/leads')}>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/leads')}>
                     <ListItemIcon><PeopleIcon /></ListItemIcon>
                     <ListItemText primary="View Leads" />
                   </ListItemButton>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/leads/settings')}>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/leads/settings')}>
                     <ListItemIcon><SettingsIcon /></ListItemIcon>
                     <ListItemText primary="Lead Settings" />
                   </ListItemButton>
@@ -101,34 +111,6 @@ const Sidebar = () => {
             </>
           )}
 
-
-
-          {/* PRODUCTS */}
-          {canAccessModule('products') && (
-            <>
-              <ListItemButton onClick={() => toggleModule('products')}>
-                <ListItemIcon><Inventory2Icon /></ListItemIcon>
-                <ListItemText primary="Products" />
-                {isExpanded('products') ? <ExpandLess /> : <ExpandMore />}
-              </ListItemButton>
-              <Collapse in={isExpanded('products')} timeout="auto" unmountOnExit>
-                <List component="div" disablePadding>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/products/list')}>
-                    <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
-                    <ListItemText primary="Product List" />
-                  </ListItemButton>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/products/categories')}>
-                    <ListItemIcon><CategoryIcon /></ListItemIcon>
-                    <ListItemText primary="Categories" />
-                  </ListItemButton>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/products/attributes')}>
-                    <ListItemIcon><SettingsIcon /></ListItemIcon>
-                    <ListItemText primary="Attributes" />
-                  </ListItemButton>
-                </List>
-              </Collapse>
-            </>
-          )}
 
           {/* QUOTATIONS DROPDOWN */}
           {canAccessModule('quotations') && (
@@ -141,12 +123,12 @@ const Sidebar = () => {
 
               <Collapse in={isExpanded('quotations')} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/quotations')}>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/quotations')}>
                     <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
                     <ListItemText primary="Quotation List" />
                   </ListItemButton>
 
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/quotations-settings')}>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/quotations-settings')}>
                     <ListItemIcon><SettingsIcon /></ListItemIcon>
                     <ListItemText primary="Settings" />
                   </ListItemButton>
@@ -156,7 +138,7 @@ const Sidebar = () => {
           )}
 
 
-                    {/* WORK ORDERS DROPDOWN */}
+          {/* WORK ORDERS DROPDOWN */}
           {canAccessModule('work_orders') && (
             <>
               <ListItemButton onClick={() => toggleModule('work_orders')}>
@@ -166,7 +148,7 @@ const Sidebar = () => {
               </ListItemButton>
               <Collapse in={isExpanded('work_orders')} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/workorders')}>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/workorders')}>
                     <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
                     <ListItemText primary="Work Order List" />
                   </ListItemButton>
@@ -185,11 +167,11 @@ const Sidebar = () => {
               </ListItemButton>
               <Collapse in={isExpanded('kots')} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/kots')}>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/kots')}>
                     <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
                     <ListItemText primary="KOT Board" />
                   </ListItemButton>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/kots/settings')}>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/kots/settings')}>
                     <ListItemIcon><SettingsIcon /></ListItemIcon>
                     <ListItemText primary="KOT Settings" />
                   </ListItemButton>
@@ -208,7 +190,7 @@ const Sidebar = () => {
               </ListItemButton>
               <Collapse in={isExpanded('deliveries')} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/deliveries')}>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/deliveries')}>
                     <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
                     <ListItemText primary="Delivery Board" />
                   </ListItemButton>
@@ -228,14 +210,37 @@ const Sidebar = () => {
 
               <Collapse in={isExpanded('invoices')} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/invoices')}>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/invoices')}>
                     <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
                     <ListItemText primary="Invoice List" />
                   </ListItemButton>
 
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/invoice-settings')}>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/invoice-settings')}>
                     <ListItemIcon><SettingsIcon /></ListItemIcon>
                     <ListItemText primary="Settings" />
+                  </ListItemButton>
+                </List>
+              </Collapse>
+            </>
+          )}
+
+          {canAccessModule('payments') && (
+            <>
+              <ListItemButton onClick={() => toggleModule('payments')}>
+                <ListItemIcon><AccountBalanceWalletIcon /></ListItemIcon>
+                <ListItemText primary="Payments" />
+                {isExpanded('payments') ? <ExpandLess /> : <ExpandMore />}
+              </ListItemButton>
+
+              <Collapse in={isExpanded('payments')} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/payments')}>
+                    <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
+                    <ListItemText primary="Pending Payments" />
+                  </ListItemButton>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/payments/history')}>
+                    <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
+                    <ListItemText primary="Payment History" />
                   </ListItemButton>
                 </List>
               </Collapse>
@@ -252,12 +257,12 @@ const Sidebar = () => {
 
               <Collapse in={isExpanded('payment_reminders')} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/payment-reminders')}>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/payment-reminders')}>
                     <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
                     <ListItemText primary="Pending Payments" />
                   </ListItemButton>
 
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/payment-reminders/settings')}>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/payment-reminders/settings')}>
                     <ListItemIcon><SettingsIcon /></ListItemIcon>
                     <ListItemText primary="Settings" />
                   </ListItemButton>
@@ -266,17 +271,44 @@ const Sidebar = () => {
             </>
           )}
 
-          {canAccessModule('settings') && (
-            <ListItemButton onClick={() => navigate('/settings')}>
-              <ListItemIcon><SettingsIcon /></ListItemIcon>
-              <ListItemText primary="Settings" />
-            </ListItemButton>
+          {/* PRODUCTS */}
+          {canAccessModule('products') && (
+            <>
+              <ListItemButton onClick={() => toggleModule('products')}>
+                <ListItemIcon><Inventory2Icon /></ListItemIcon>
+                <ListItemText primary="Products" />
+                {isExpanded('products') ? <ExpandLess /> : <ExpandMore />}
+              </ListItemButton>
+              <Collapse in={isExpanded('products')} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/products/list')}>
+                    <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
+                    <ListItemText primary="Product List" />
+                  </ListItemButton>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/products/categories')}>
+                    <ListItemIcon><CategoryIcon /></ListItemIcon>
+                    <ListItemText primary="Categories" />
+                  </ListItemButton>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/products/attributes')}>
+                    <ListItemIcon><SettingsIcon /></ListItemIcon>
+                    <ListItemText primary="Attributes" />
+                  </ListItemButton>
+                </List>
+              </Collapse>
+            </>
           )}
 
           {canAccessModule('reports') && (
-            <ListItemButton onClick={() => navigate('/reports')}>
+            <ListItemButton onClick={() => go('/reports')}>
               <ListItemIcon><AssessmentIcon /></ListItemIcon>
               <ListItemText primary="Reports" />
+            </ListItemButton>
+          )}
+
+          {currentUser?.role === 'admin' && canAccessModule('users') && (
+            <ListItemButton onClick={() => go('/users')}>
+              <ListItemIcon><PeopleIcon /></ListItemIcon>
+              <ListItemText primary="Users" />
             </ListItemButton>
           )}
 
@@ -290,12 +322,12 @@ const Sidebar = () => {
 
               <Collapse in={isExpanded('feedback')} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/feedbacks')}>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/feedbacks')}>
                     <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
                     <ListItemText primary="Feedback List" />
                   </ListItemButton>
 
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => navigate('/feedbacks/settings')}>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/feedbacks/settings')}>
                     <ListItemIcon><SettingsIcon /></ListItemIcon>
                     <ListItemText primary="Settings" />
                   </ListItemButton>
@@ -304,10 +336,10 @@ const Sidebar = () => {
             </>
           )}
 
-          {currentUser?.role === 'admin' && canAccessModule('users') && (
-            <ListItemButton onClick={() => navigate('/users')}>
-              <ListItemIcon><PeopleIcon /></ListItemIcon>
-              <ListItemText primary="Users" />
+          {canAccessModule('settings') && (
+            <ListItemButton onClick={() => go('/settings')}>
+              <ListItemIcon><SettingsIcon /></ListItemIcon>
+              <ListItemText primary="Settings" />
             </ListItemButton>
           )}
 

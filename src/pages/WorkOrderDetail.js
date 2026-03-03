@@ -1,7 +1,7 @@
 // src/components/workorders/WorkOrderDetail.js
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Container, CircularProgress, Typography } from '@mui/material'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 
 import Topbar from '../components/Topbar'
 import NotificationSnackbar from '../components/ui/NotificationSnackbar'
@@ -75,7 +75,6 @@ const normalizeItems = (data) => {
 
 function WorkOrderDetail() {
   const { id } = useParams()
-  const navigate = useNavigate()
 
   const [workOrder, setWorkOrder] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -90,22 +89,19 @@ function WorkOrderDetail() {
   const { settings } = useSettings()
   const currency = settings?.currency_code || '₹'
   const isCateringBusiness = settings?.business_type === 'CATERING'
+  const isGeneralBusiness = String(settings?.business_type || 'GENERAL').toUpperCase() === 'GENERAL'
 
   /* ----------------------------------
      NOTIFICATION
   ---------------------------------- */
-  const showNotification = (message, severity = 'success') => {
+  const showNotification = useCallback((message, severity = 'success') => {
     setNotif({ open: true, message, severity })
-  }
+  }, [])
 
   /* ----------------------------------
      LOAD WORK ORDER
   ---------------------------------- */
-  useEffect(() => {
-    loadWorkOrder()
-  }, [id])
-
-  const loadWorkOrder = async () => {
+  const loadWorkOrder = useCallback(async () => {
     try {
       setLoading(true)
       const data = await fetchWorkOrderById(id)
@@ -130,7 +126,11 @@ function WorkOrderDetail() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id, showNotification])
+
+  useEffect(() => {
+    loadWorkOrder()
+  }, [loadWorkOrder])
 
   /* ----------------------------------
      STATUS CHANGE
@@ -224,8 +224,8 @@ function WorkOrderDetail() {
   return (
     <>
       <Topbar />
-        {/* ================= HEADER ================= */}
-        <div className="quotation-detail-container">
+      {/* ================= HEADER ================= */}
+      <div className="quotation-detail-container">
         <WorkOrderHeader
           workOrder={workOrder}
           onStatusChange={handleStatusChange}
@@ -244,7 +244,7 @@ function WorkOrderDetail() {
         </div>
 
         {/* ================= EVENT (CATERING ONLY) ================= */}
-        {workOrder.quotation_mode === 'CATERING' && (
+        {!isGeneralBusiness && (workOrder.quotation_mode === 'CATERING' || workOrder.mode === 'CATERING') && (
           <div className="quotation-card">
             <WorkOrderEventSection workOrder={workOrder} />
           </div>
@@ -270,7 +270,7 @@ function WorkOrderDetail() {
         </div>
 
       </div>
-        
+
       <NotificationSnackbar
         open={notif.open}
         message={notif.message}

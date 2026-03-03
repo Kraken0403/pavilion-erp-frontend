@@ -13,11 +13,11 @@ import {
   downloadInvoicePdf,
   sendInvoiceEmail,
 } from "../services/invoiceService";
-import CreateInvoiceDialog from "../components/invoices/CreateInvoiceDialog";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import "../assets/styles/LeadsTable.scss";
 import { formatStatusLabel } from "../utils/statusFormatter";
+import useAutoRefresh from "../hooks/useAutoRefresh";
 
 const INVOICES_PER_PAGE = 20;
 
@@ -44,8 +44,6 @@ function Invoices() {
   /* ================= SELECTION ================= */
   const [selectedInvoices, setSelectedInvoices] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
-
-  const [openCreateModal, setOpenCreateModal] = useState(false);
 
   /* Status Update Modal */
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -80,9 +78,7 @@ function Invoices() {
     }
   };
 
-  useEffect(() => {
-    loadInvoices();
-  }, []);
+  useAutoRefresh(loadInvoices, { intervalMs: 20000 });
 
   /* ================= SELECTION ================= */
 
@@ -292,7 +288,7 @@ function Invoices() {
               <th>TOTAL</th>
               <th>STATUS</th>
               <th>ACTIONS</th>
-              <th>RECEIPTS</th> {/* NEW HEADER */}
+              <th>RECEIPTS</th>
             </tr>
           </thead>
 
@@ -335,6 +331,7 @@ function Invoices() {
                 >
                   Export PDF
                 </td>
+
                 <td onClick={(e) => e.stopPropagation()}>
                   {inv.payments && inv.payments.length > 0 ? (
                     <Chip
@@ -354,7 +351,7 @@ function Invoices() {
 
             {!currentInvoices.length && (
               <tr>
-                <td colSpan={6} align="center" style={{ padding: "40px 0" }}>
+                <td colSpan={8} align="center" style={{ padding: "40px 0" }}>
                   No invoices found
                 </td>
               </tr>
@@ -406,6 +403,7 @@ function Invoices() {
           setNotification({ open: true, message: msg, severity: "error" });
         }}
       />
+
     </div>
   );
 }

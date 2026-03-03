@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import QuotationsTable from '../components/quotation/QuotationTable';
 import { fetchQuotations } from '../services/quotationService';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import Topbar from '../components/Topbar';
+import useAutoRefresh from '../hooks/useAutoRefresh';
 
 function Quotations() {
   /* ---------------- DATA ---------------- */
@@ -42,9 +43,7 @@ function Quotations() {
     }
   };
 
-  useEffect(() => {
-    loadQuotations();
-  }, []);
+  useAutoRefresh(loadQuotations, { intervalMs: 20000 });
 
   /* ---------------- RENDER ---------------- */
   if (loading) {

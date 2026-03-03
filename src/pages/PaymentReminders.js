@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Topbar from '../components/Topbar';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import { formatDate } from '../utils/dateFormatter';
@@ -8,6 +8,7 @@ import {
 } from '../services/paymentReminderService';
 import '../assets/styles/LeadsTable.scss';
 import '../assets/styles/PaymentReminders.scss';
+import useAutoRefresh from '../hooks/useAutoRefresh';
 
 const formatCurrency = (value) => {
   const num = Number(value || 0);
@@ -47,9 +48,7 @@ const PaymentReminders = () => {
     }
   };
 
-  useEffect(() => {
-    loadPendingRows();
-  }, []);
+  useAutoRefresh(loadPendingRows, { intervalMs: 20000 });
 
   const filteredRows = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();

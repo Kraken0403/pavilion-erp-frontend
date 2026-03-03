@@ -23,6 +23,7 @@ import {
 
 import AddProductDialog from "./AddProductDialog";
 import { useSettings } from "../../context/SettingsContext";
+import useAutoRefresh from "../../hooks/useAutoRefresh";
 
 import "../../assets/styles/LeadsTable.scss"; // reuse Leads table styles
 
@@ -82,22 +83,22 @@ function ProductList() {
   const handleBulkFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-  
+
     // Reset input so same file can be re-uploaded
     e.target.value = '';
-  
+
     try {
       const result = await bulkImportProducts(file);
-  
+
       await loadProducts();
-  
+
       if (result.failed > 0) {
         setNotification({
           open: true,
           severity: 'warning',
           message: `⚠️ Imported ${result.success}/${result.total} products. ${result.failed} failed.`
         });
-  
+
         console.table(result.errors);
       } else {
         setNotification({
@@ -114,7 +115,7 @@ function ProductList() {
       });
     }
   };
-  
+
 
   /* ================= FETCH ================= */
 
@@ -131,14 +132,26 @@ function ProductList() {
     }
   };
 
-  useEffect(() => {
-    loadProducts();
-  }, []);
+  useAutoRefresh(loadProducts, { intervalMs: 20000 });
 
   /* ================= FILTER + SORT ================= */
 
   const processedProducts = useMemo(() => {
     let data = [...products];
+
+    if (dateFilter?.startDate) {
+      data = data.filter(
+        (p) => p.created_at && new Date(p.created_at) >= new Date(dateFilter.startDate)
+      );
+    }
+
+    if (dateFilter?.endDate) {
+      const end = new Date(dateFilter.endDate);
+      end.setHours(23, 59, 59, 999);
+      data = data.filter(
+        (p) => p.created_at && new Date(p.created_at) <= end
+      );
+    }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -171,7 +184,7 @@ function ProductList() {
     }
 
     return data;
-  }, [products, searchQuery, sortValue]);
+  }, [products, searchQuery, sortValue, dateFilter]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -221,11 +234,6 @@ function ProductList() {
   };
 
   /* ================= DELETE ================= */
-
-  const askSingleDelete = (id) => {
-    setProductToDelete(id);
-    setConfirmOpen(true);
-  };
 
   const askBulkDelete = () => {
     if (!selectedProducts.length) return;

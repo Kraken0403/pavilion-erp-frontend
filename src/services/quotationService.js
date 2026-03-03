@@ -1,6 +1,6 @@
 // src/services/quotationService.js
 import api from './api';
-import { openPdfFromResponse } from '../utils/pdfHelpers';
+import { downloadPdfFromResponse } from '../utils/pdfHelpers';
 
 /* ---------------------------------------
    ERROR HANDLER
@@ -124,7 +124,11 @@ export const generateQuotationPdf = async (quotationId) => {
       { responseType: 'blob' } // 👈 IMPORTANT
     );
 
-    await openPdfFromResponse(res, 'Failed to open quotation PDF');
+    await downloadPdfFromResponse(
+      res,
+      `quotation-${quotationId}.pdf`,
+      'Failed to download quotation PDF'
+    );
 
   } catch (error) {
     handleError(error, 'Failed to generate quotation PDF');

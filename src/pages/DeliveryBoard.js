@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   Box,
   Button,
@@ -27,6 +27,7 @@ import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import { fetchDeliveries, updateDeliveryStatus, updateDeliveryNotes } from '../services/deliveryService';
 import { formatDateTime, parseDateInput, toInputDateValue } from '../utils/dateFormatter';
 import { formatStatusLabel } from '../utils/statusFormatter';
+import useAutoRefresh from '../hooks/useAutoRefresh';
 
 const STATUS_OPTIONS = ['pending', 'out_for_delivery', 'delivered', 'failed'];
 const RANGE_OPTIONS = ['today', 'all'];
@@ -135,9 +136,10 @@ function DeliveryBoard() {
     }
   };
 
-  useEffect(() => {
-    loadDeliveries();
-  }, [range]);
+  useAutoRefresh(loadDeliveries, {
+    intervalMs: 15000,
+    watch: [range],
+  });
 
   const sortedDeliveries = useMemo(() => {
     let filtered = [...deliveries];

@@ -38,6 +38,8 @@ import DeliveryBoard from './pages/DeliveryBoard';
 import Reports from './pages/Reports';
 import PaymentReminders from './pages/PaymentReminders';
 import PaymentReminderSettings from './pages/PaymentReminderSettings';
+import Payments from './pages/Payments';
+import PaymentHistory from './pages/PaymentHistory';
 import OrderFeedbacks from './pages/OrderFeedbacks';
 import OrderFeedbackSettings from './pages/OrderFeedbackSettings';
 import { getFirstAccessibleModuleRoute } from './config/modulePermissions';
@@ -46,8 +48,8 @@ import { getFirstAccessibleModuleRoute } from './config/modulePermissions';
 const HomeRoute = () => {
     const { currentUser, modulePermissions } = useAuth();
     return currentUser
-      ? <Navigate to={getFirstAccessibleModuleRoute(modulePermissions)} />
-      : <Login />;
+        ? <Navigate to={getFirstAccessibleModuleRoute(modulePermissions)} />
+        : <Login />;
 };
 
 const App = () => {
@@ -78,35 +80,35 @@ const App = () => {
                     />
 
                     <Route
-                    path="/invoices/:id"
-                    element={
-                        <PrivateRoute requiredModule="invoices">
-                            <Layout>
-                                <InvoiceView />
-                            </Layout>
-                        </PrivateRoute>
-                    }
+                        path="/invoices/:id"
+                        element={
+                            <PrivateRoute requiredModule="invoices">
+                                <Layout>
+                                    <InvoiceView />
+                                </Layout>
+                            </PrivateRoute>
+                        }
                     />
                     <Route
-                    path="/invoices/create"
-                    element={
-                        <PrivateRoute requiredModule="invoices">
-                            <Layout>
-                                <CreateInvoice />
-                            </Layout>
-                        </PrivateRoute>
-                    }
+                        path="/invoices/create"
+                        element={
+                            <PrivateRoute requiredModule="invoices">
+                                <Layout>
+                                    <CreateInvoice />
+                                </Layout>
+                            </PrivateRoute>
+                        }
                     />
 
                     <Route
-                    path="/invoice-settings"
-                    element={
-                        <PrivateRoute requiredModule="invoices">
-                            <Layout>
-                                <InvoiceSettings />
-                            </Layout>
-                        </PrivateRoute>
-                    }
+                        path="/invoice-settings"
+                        element={
+                            <PrivateRoute requiredModule="invoices">
+                                <Layout>
+                                    <InvoiceSettings />
+                                </Layout>
+                            </PrivateRoute>
+                        }
                     />
 
                     <Route
@@ -126,6 +128,28 @@ const App = () => {
                             <PrivateRoute requiredModule="payment_reminders">
                                 <Layout>
                                     <PaymentReminderSettings />
+                                </Layout>
+                            </PrivateRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/payments"
+                        element={
+                            <PrivateRoute requiredModule="payments">
+                                <Layout>
+                                    <Payments />
+                                </Layout>
+                            </PrivateRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/payments/history"
+                        element={
+                            <PrivateRoute requiredModule="payments">
+                                <Layout>
+                                    <PaymentHistory />
                                 </Layout>
                             </PrivateRoute>
                         }
@@ -207,7 +231,7 @@ const App = () => {
                         element={
                             <PrivateRoute requiredModule="work_orders">
                                 <Layout>
-                                    <Workorders/>
+                                    <Workorders />
                                 </Layout>
                             </PrivateRoute>
                         }
@@ -271,7 +295,7 @@ const App = () => {
                         element={
                             <PrivateRoute requiredModule="products">
                                 <Layout>
-                                    <ProductPage/>
+                                    <ProductPage />
                                 </Layout>
                             </PrivateRoute>
                         }
@@ -282,7 +306,7 @@ const App = () => {
                         element={
                             <PrivateRoute requiredModule="settings">
                                 <Layout>
-                                    <Settings/>
+                                    <Settings />
                                 </Layout>
                             </PrivateRoute>
                         }
@@ -293,7 +317,7 @@ const App = () => {
                         element={
                             <PrivateRoute requiredModule="reports">
                                 <Layout>
-                                    <Reports/>
+                                    <Reports />
                                 </Layout>
                             </PrivateRoute>
                         }
@@ -326,17 +350,17 @@ const App = () => {
                         element={
                             <PrivateRoute requiredModule="products">
                                 <Layout>
-                                    <ProductPage/>
+                                    <ProductPage />
                                 </Layout>
                             </PrivateRoute>
                         }
                     />
-                     <Route
+                    <Route
                         path="/products/categories"  // New route for creating a quotation
                         element={
                             <PrivateRoute requiredModule="products">
                                 <Layout>
-                                    <CategoriesPage/>
+                                    <CategoriesPage />
                                 </Layout>
                             </PrivateRoute>
                         }
@@ -352,8 +376,8 @@ const App = () => {
                             </PrivateRoute>
                         }
                     />
-                    
-                     <Route
+
+                    <Route
                         path="/products/:id"  // New route for creating a quotation
                         element={
                             <PrivateRoute requiredModule="products">
@@ -369,14 +393,14 @@ const App = () => {
                         element={
                             <PrivateRoute requiredModule="quotations">
                                 <Layout>
-                                    <Quotations/>
+                                    <Quotations />
                                 </Layout>
                             </PrivateRoute>
                         }
                     />
 
                     <Route
-                        path="/quotations/:id"  
+                        path="/quotations/:id"
                         element={
                             <PrivateRoute requiredModule="quotations">
                                 <Layout>
@@ -385,12 +409,12 @@ const App = () => {
                             </PrivateRoute>
                         }
                     />
-                     <Route
+                    <Route
                         path="/quotations-settings"  // New route for creating a quotation
                         element={
                             <PrivateRoute requiredModule="quotations">
                                 <Layout>
-                                    <QuotationSettings/>
+                                    <QuotationSettings />
                                 </Layout>
                             </PrivateRoute>
                         }

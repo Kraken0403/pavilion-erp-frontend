@@ -1,46 +1,49 @@
 export const MODULE_PERMISSION_KEYS = [
   'dashboard',
   'leads',
-  'products',
   'quotations',
   'work_orders',
   'kots',
   'deliveries',
   'invoices',
   'payment_reminders',
-  'settings',
+  'payments',
+  'products',
   'reports',
   'users',
+  'settings',
 ];
 
 export const MODULE_PERMISSION_LABELS = {
   dashboard: 'Dashboard',
   leads: 'Leads',
-  products: 'Products',
   quotations: 'Quotations',
   work_orders: 'Work Orders',
   kots: 'KOT',
   deliveries: 'Delivery',
   invoices: 'Invoices',
   payment_reminders: 'Payment Reminders',
-  settings: 'Settings',
+  payments: 'Payments',
+  products: 'Products',
   reports: 'Reports',
   users: 'Users',
+  settings: 'Settings',
 };
 
 export const MODULE_DEFAULT_ROUTES = {
   dashboard: '/dashboard',
   leads: '/leads',
-  products: '/products/list',
   quotations: '/quotations',
   work_orders: '/workorders',
   kots: '/kots',
   deliveries: '/deliveries',
   invoices: '/invoices',
   payment_reminders: '/payment-reminders',
-  settings: '/settings',
+  payments: '/payments',
+  products: '/products/list',
   reports: '/reports',
   users: '/users',
+  settings: '/settings',
 };
 
 export const getDefaultModulePermissions = () => {

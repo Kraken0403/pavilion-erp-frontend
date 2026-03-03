@@ -32,6 +32,7 @@ import api from '../services/api';
 import { downloadPdfFromResponse, printPdfFromResponse } from '../utils/pdfHelpers';
 import { formatDateTime, parseDateInput, toInputDateValue } from '../utils/dateFormatter';
 import { formatStatusLabel } from '../utils/statusFormatter';
+import useAutoRefresh from '../hooks/useAutoRefresh';
 
 const STATUS_OPTIONS = ['pending', 'preparing', 'ready', 'completed'];
 const RANGE_OPTIONS = ['today', 'tomorrow', 'upcoming', 'all'];
@@ -49,7 +50,7 @@ function KOTBoard() {
   const [loading, setLoading] = useState(true);
   const [notif, setNotif] = useState({ open: false, message: '', severity: 'success' });
   const [sliderIndex, setSliderIndex] = useState(0);
-  
+
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -77,14 +78,25 @@ function KOTBoard() {
     }
   };
 
-  useEffect(() => {
-    if (isCateringBusiness) {
-      loadKots(range);
-      setSliderIndex(0); // Reset slider when range changes
-    } else {
+  useAutoRefresh(
+    () => {
+      if (isCateringBusiness) {
+        return loadKots(range);
+      }
+
       setLoading(false);
+      return Promise.resolve();
+    },
+    {
+      enabled: true,
+      intervalMs: 15000,
+      watch: [range, isCateringBusiness],
     }
-  }, [range, isCateringBusiness]);
+  );
+
+  useEffect(() => {
+    setSliderIndex(0);
+  }, [range]);
 
   const filteredAndSortedKots = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -147,7 +159,7 @@ function KOTBoard() {
   const handleStatusChange = async (kot, status) => {
     try {
       await updateKotStatus(kot.id, status);
-      
+
       // Auto-create delivery if KOT is marked as completed
       if (status === 'completed') {
         try {
@@ -164,7 +176,7 @@ function KOTBoard() {
       } else {
         showNotification('KOT status updated');
       }
-      
+
       loadKots(range);
     } catch (error) {
       showNotification(
@@ -299,118 +311,118 @@ function KOTBoard() {
               }}
             >
               {filteredAndSortedKots.slice(sliderIndex, sliderIndex + cardsPerView).map((kot) => {
-              const event = kot.event_snapshot || {};
-              const totalQty = (kot.items || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+                const event = kot.event_snapshot || {};
+                const totalQty = (kot.items || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
 
-              return (
-                <Card key={kot.id} sx={{ borderRadius: 2, height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
-                  <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-                    <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
-                      <Typography variant="subtitle1" fontWeight={700}>
-                        {kot.work_order_number}
+                return (
+                  <Card key={kot.id} sx={{ borderRadius: 2, height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+                    <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+                      <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
+                        <Typography variant="subtitle1" fontWeight={700}>
+                          {kot.work_order_number}
+                        </Typography>
+
+                        <FormControl size="small" sx={{ minWidth: 130 }}>
+                          <InputLabel>Status</InputLabel>
+                          <Select
+                            label="Status"
+                            value={kot.status}
+                            onChange={(e) => handleStatusChange(kot, e.target.value)}
+                          >
+                            {STATUS_OPTIONS.map((status) => (
+                              <MenuItem key={status} value={status}>{formatStatusLabel(status)}</MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Stack>
+
+                      <Typography variant="body2" sx={{ mb: 0.5 }}>
+                        <strong>Event:</strong> {event.name || '—'}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mb: 0.5 }}>
+                        <strong>Venue:</strong> {event.venue || '—'}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mb: 0.5 }}>
+                        <strong>PAX:</strong> {event.pax || '—'}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mb: 0.5 }}>
+                        <strong>Scheduled:</strong> {formatDateTime(kot.scheduled_for)}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mb: 1.5 }}>
+                        <strong>Customer:</strong> {kot.customer_name || '—'}
                       </Typography>
 
-                      <FormControl size="small" sx={{ minWidth: 130 }}>
-                        <InputLabel>Status</InputLabel>
-                        <Select
-                          label="Status"
-                          value={kot.status}
-                          onChange={(e) => handleStatusChange(kot, e.target.value)}
-                        >
-                          {STATUS_OPTIONS.map((status) => (
-                            <MenuItem key={status} value={status}>{formatStatusLabel(status)}</MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Stack>
+                      {!!String(event.notes || '').trim() && (
+                        <Typography variant="body2" sx={{ mb: 1.5, whiteSpace: 'pre-wrap' }}>
+                          <strong>Notes:</strong> {event.notes}
+                        </Typography>
+                      )}
 
-                    <Typography variant="body2" sx={{ mb: 0.5 }}>
-                      <strong>Event:</strong> {event.name || '—'}
-                    </Typography>
-                    <Typography variant="body2" sx={{ mb: 0.5 }}>
-                      <strong>Venue:</strong> {event.venue || '—'}
-                    </Typography>
-                    <Typography variant="body2" sx={{ mb: 0.5 }}>
-                      <strong>PAX:</strong> {event.pax || '—'}
-                    </Typography>
-                    <Typography variant="body2" sx={{ mb: 0.5 }}>
-                      <strong>Scheduled:</strong> {formatDateTime(kot.scheduled_for)}
-                    </Typography>
-                    <Typography variant="body2" sx={{ mb: 1.5 }}>
-                      <strong>Customer:</strong> {kot.customer_name || '—'}
-                    </Typography>
-
-                    {!!String(event.notes || '').trim() && (
-                      <Typography variant="body2" sx={{ mb: 1.5, whiteSpace: 'pre-wrap' }}>
-                        <strong>Notes:</strong> {event.notes}
+                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                        Items ({kot.items?.length || 0}) • Total Qty: {formatQty(totalQty)}
                       </Typography>
-                    )}
 
-                    <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                      Items ({kot.items?.length || 0}) • Total Qty: {formatQty(totalQty)}
-                    </Typography>
+                      <Box sx={{ flex: 1, overflow: 'auto', pr: 1, mb: 2 }}>
+                        {(kot.items || []).map((item) => (
+                          <Box
+                            key={item.id}
+                            sx={{ py: 0.75, borderBottom: '1px solid #eee' }}
+                          >
+                            <Stack direction="row" alignItems="center" justifyContent="space-between">
+                              <Typography variant="body2" fontWeight={600}>{item.product_name}</Typography>
+                              <Typography variant="body2" fontWeight={700}>{formatQty(item.quantity)}</Typography>
+                            </Stack>
+                            {item.product_description && (
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: 'block', mt: 0.25 }}
+                                dangerouslySetInnerHTML={{ __html: item.product_description }}
+                              />
+                            )}
+                          </Box>
+                        ))}
+                      </Box>
 
-                    <Box sx={{ flex: 1, overflow: 'auto', pr: 1, mb: 2 }}>
-                      {(kot.items || []).map((item) => (
-                        <Box
-                          key={item.id}
-                          sx={{ py: 0.75, borderBottom: '1px solid #eee' }}
-                        >
-                          <Stack direction="row" alignItems="center" justifyContent="space-between">
-                            <Typography variant="body2" fontWeight={600}>{item.product_name}</Typography>
-                            <Typography variant="body2" fontWeight={700}>{formatQty(item.quantity)}</Typography>
-                          </Stack>
-                          {item.product_description && (
-                            <Typography 
-                              variant="caption" 
-                              color="text.secondary" 
-                              sx={{ display: 'block', mt: 0.25 }}
-                              dangerouslySetInnerHTML={{ __html: item.product_description }}
-                            />
-                          )}
-                        </Box>
-                      ))}
-                    </Box>
-
-                    <Stack direction="row" spacing={1} mt="auto">
-                      <Button
-                        variant="outlined"
-                        color="primary"
-                        size="small"
-                        fullWidth
-                        startIcon={<PrintIcon />}
-                        onClick={() => handlePrintKot(kot.id)}
-                      >
-                        Print
-                      </Button>
-
-                      <Button
-                        variant="outlined"
-                        color="info"
-                        size="small"
-                        fullWidth
-                        startIcon={<DownloadIcon />}
-                        onClick={() => handleDownloadKot(kot.id, kot.work_order_number)}
-                      >
-                        Download
-                      </Button>
-                      
-                      {kot.status !== 'completed' && (
+                      <Stack direction="row" spacing={1} mt="auto">
                         <Button
-                          variant="contained"
-                          color="success"
+                          variant="outlined"
+                          color="primary"
                           size="small"
                           fullWidth
-                          onClick={() => handleStatusChange(kot, 'completed')}
+                          startIcon={<PrintIcon />}
+                          onClick={() => handlePrintKot(kot.id)}
                         >
-                          Complete
+                          Print
                         </Button>
-                      )}
-                    </Stack>
-                  </CardContent>
-                </Card>
-              );
-            })}
+
+                        <Button
+                          variant="outlined"
+                          color="info"
+                          size="small"
+                          fullWidth
+                          startIcon={<DownloadIcon />}
+                          onClick={() => handleDownloadKot(kot.id, kot.work_order_number)}
+                        >
+                          Download
+                        </Button>
+
+                        {kot.status !== 'completed' && (
+                          <Button
+                            variant="contained"
+                            color="success"
+                            size="small"
+                            fullWidth
+                            onClick={() => handleStatusChange(kot, 'completed')}
+                          >
+                            Complete
+                          </Button>
+                        )}
+                      </Stack>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </Box>
 
             <Stack direction="row" alignItems="center" justifyContent="space-between">

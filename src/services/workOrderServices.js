@@ -1,6 +1,6 @@
 // src/services/workOrderServices.js
 import api from './api';
-import { openPdfFromResponse } from '../utils/pdfHelpers';
+import { downloadPdfFromResponse } from '../utils/pdfHelpers';
 
 /* ---------------------------------------
    ERROR HANDLER
@@ -87,7 +87,11 @@ export const generateWorkOrderPdf = async (workOrderId) => {
       }
     );
 
-    await openPdfFromResponse(res, 'Failed to open work order PDF');
+    await downloadPdfFromResponse(
+      res,
+      `work-order-${workOrderId}.pdf`,
+      'Failed to download work order PDF'
+    );
 
   } catch (error) {
     handleError(error, 'Failed to generate work order PDF');

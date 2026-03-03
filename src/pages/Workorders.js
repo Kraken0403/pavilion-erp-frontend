@@ -14,6 +14,7 @@ import {
   updateWorkOrderStatus
 } from '../services/workOrderServices'
 import { formatStatusLabel, normalizeStatusValue } from '../utils/statusFormatter'
+import useAutoRefresh from '../hooks/useAutoRefresh'
 
 import { useSettings } from '../context/SettingsContext'
 
@@ -61,14 +62,26 @@ function WorkOrders() {
     setOrders(res?.workOrders || [])
   }
 
-  useEffect(() => {
-    load()
-  }, [])
+  useAutoRefresh(load, { intervalMs: 15000 })
 
   /* ================= FILTER + SORT ================= */
 
   const processed = useMemo(() => {
     let data = [...orders]
+
+    if (dateFilter?.startDate) {
+      data = data.filter(
+        (o) => o.issue_date && new Date(o.issue_date) >= new Date(dateFilter.startDate)
+      )
+    }
+
+    if (dateFilter?.endDate) {
+      const end = new Date(dateFilter.endDate)
+      end.setHours(23, 59, 59, 999)
+      data = data.filter(
+        (o) => o.issue_date && new Date(o.issue_date) <= end
+      )
+    }
 
     // Search
     if (searchQuery.trim()) {
@@ -87,7 +100,7 @@ function WorkOrders() {
     }
 
     return data
-  }, [orders, searchQuery, sortValue])
+  }, [orders, searchQuery, sortValue, dateFilter])
 
   useEffect(() => {
     setCurrentPage(1)

@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
-import { fetchLeads, deleteLead, addLead, updateLead } from '../services/leadService';
+import { fetchLeads, deleteLead, updateLead } from '../services/leadService';
 import { CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import LeadsTable from '../components/LeadsTable';
 import Topbar from '../components/Topbar';
 import { getFieldOrder } from '../services/leadFieldService';
+import { useSettings } from '../context/SettingsContext';
+import useAutoRefresh from '../hooks/useAutoRefresh';
 
 const Leads = () => {
+    const { settings } = useSettings();
     const [leads, setLeads] = useState([]);
     const [loading, setLoading] = useState(true);
     const [deleteId, setDeleteId] = useState(null);
@@ -20,8 +23,13 @@ const Leads = () => {
     const [sortValue, setSortValue] = useState('latest');
     const [dateFilter, setDateFilter] = useState({ startDate: '', endDate: '' });
 
+    const isGeneralBusiness = String(settings?.business_type || 'GENERAL').toUpperCase() === 'GENERAL';
+    const eventFields = ['event_name', 'event_type', 'event_date', 'event_time', 'event_location', 'venue'];
+    const filteredVisibleFields = isGeneralBusiness
+        ? visibleFields.filter((field) => !eventFields.includes(String(field || '').toLowerCase()))
+        : visibleFields;
+
     useEffect(() => {
-        getLeads();
         fetchFieldOrder();
     }, []);
 
@@ -45,6 +53,8 @@ const Leads = () => {
             setLoading(false);
         }
     };
+
+    useAutoRefresh(getLeads, { intervalMs: 20000 });
 
     const handleDeleteConfirmation = (id) => {
         setDeleteId(id);
@@ -81,7 +91,7 @@ const Leads = () => {
                 ) : (
                     <LeadsTable
                         leads={leads}
-                        visibleFields={visibleFields}
+                        visibleFields={filteredVisibleFields}
                         onDelete={handleDeleteConfirmation}
                         leadStatusOptions={leadStatusOptions}
                         priorityOptions={priorityOptions}

@@ -65,6 +65,14 @@ import { useAuth } from '../context/AuthContext';
 function SignUp() {
   const { currentUser, loadUserPermissions } = useAuth();
 
+  const toTitleCase = (value) => {
+    return String(value || '')
+      .trim()
+      .replace(/[_-]+/g, ' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
   const isAdmin = useMemo(() => {
     return (currentUser?.role || '').toLowerCase() === 'admin';
   }, [currentUser]);
@@ -89,6 +97,7 @@ function SignUp() {
 
   const [openEditUserModal, setOpenEditUserModal] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
+  const [editingUserIsAdmin, setEditingUserIsAdmin] = useState(false);
   const [editingUserForm, setEditingUserForm] = useState({
     name: '',
     email: '',
@@ -236,6 +245,7 @@ function SignUp() {
 
   const handleEditUserStart = (user) => {
     setEditingUserId(user.id);
+    setEditingUserIsAdmin(String(user.role_name || user.role || '').toLowerCase() === 'admin');
     setEditingUserForm({
       name: user.name || '',
       email: user.email || '',
@@ -246,6 +256,16 @@ function SignUp() {
 
   const handleSaveUser = async () => {
     if (!editingUserId) return;
+
+    const selectedUser = users.find((u) => Number(u.id) === Number(editingUserId));
+    const selectedUserIsAdmin = String(selectedUser?.role_name || selectedUser?.role || '').toLowerCase() === 'admin';
+    const roleChanged = Number(editingUserForm.roleId || 0) !== Number(selectedUser?.role_id || 0);
+
+    if (selectedUserIsAdmin && roleChanged) {
+      alert('Admin role cannot be changed');
+      return;
+    }
+
     try {
       await updateUser(editingUserId, {
         name: editingUserForm.name,
@@ -254,6 +274,7 @@ function SignUp() {
       });
       setOpenEditUserModal(false);
       setEditingUserId(null);
+      setEditingUserIsAdmin(false);
       await loadUsersAndRoles();
       alert('User updated successfully');
     } catch (error) {
@@ -534,7 +555,7 @@ function SignUp() {
                 >
                   <MenuItem value="all">All</MenuItem>
                   {roleNames.map((name) => (
-                    <MenuItem key={name} value={name}>{name}</MenuItem>
+                    <MenuItem key={name} value={name}>{toTitleCase(name)}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -572,7 +593,7 @@ function SignUp() {
                           )}
                         </TableCell>
                         <TableCell>{user.email}</TableCell>
-                        <TableCell>{user.role_name || user.role || '-'}</TableCell>
+                        <TableCell>{toTitleCase(user.role_name || user.role || '-')}</TableCell>
                         <TableCell align="right">
                           <IconButton color="primary" onClick={() => handleEditUserStart(user)}>
                             <EditIcon />
@@ -622,7 +643,7 @@ function SignUp() {
 
                     return (
                       <TableRow key={role.id}>
-                        <TableCell>{role.name}</TableCell>
+                        <TableCell>{toTitleCase(role.name)}</TableCell>
                         <TableCell>{role.description || '-'}</TableCell>
                         <TableCell>
                           <Chip
@@ -756,7 +777,7 @@ function SignUp() {
                   required
                 >
                   {roles.map((role) => (
-                    <MenuItem key={role.id} value={String(role.id)}>{role.name}</MenuItem>
+                    <MenuItem key={role.id} value={String(role.id)}>{toTitleCase(role.name)}</MenuItem>
                   ))}
                 </Select>
               </FormControl>
@@ -776,6 +797,7 @@ function SignUp() {
         onClose={() => {
           setOpenEditUserModal(false);
           setEditingUserId(null);
+          setEditingUserIsAdmin(false);
         }}
         fullWidth
         maxWidth="sm"
@@ -806,12 +828,16 @@ function SignUp() {
                 label="Role"
                 value={editingUserForm.roleId}
                 onChange={(e) => setEditingUserForm((prev) => ({ ...prev, roleId: e.target.value }))}
+                disabled={editingUserIsAdmin}
               >
                 {roles.map((role) => (
-                  <MenuItem key={role.id} value={String(role.id)}>{role.name}</MenuItem>
+                  <MenuItem key={role.id} value={String(role.id)}>{toTitleCase(role.name)}</MenuItem>
                 ))}
               </Select>
             </FormControl>
+            {editingUserIsAdmin && (
+              <FormHelperText>Admin role cannot be changed.</FormHelperText>
+            )}
           </Stack>
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
@@ -1011,7 +1037,8 @@ function SignUp() {
               <Alert severity={deleteRoleImpact?.assignedCount > 0 ? 'warning' : 'info'}>
                 {deleteRoleImpact?.assignedCount > 0
                   ? `${deletingRole?.name || 'This role'} is assigned to ${deleteRoleImpact.assignedCount} users. Reassign users before delete.`
-                  : `This will permanently delete role ${deletingRole?.name || ''}.`}
+                  : `This will permanently delete role ${deletingRole?.name || ''}. `}
+                <br />Reassign these users from the Users tab first, then return here to delete this role.
               </Alert>
 
               {deleteRoleImpact?.assignedCount > 0 && (
@@ -1027,18 +1054,13 @@ function SignUp() {
                 </Paper>
               )}
 
-              {deleteRoleImpact?.assignedCount > 0 && (
+              {/* {deleteRoleImpact?.assignedCount > 0 && (
                 <Alert
                   severity="warning"
-                  action={(
-                    <Button color="inherit" size="small" variant="outlined" onClick={handleOpenFilteredUsersForRole}>
-                      Open filtered users now
-                    </Button>
-                  )}
                 >
                   Reassign these users from the Users tab first, then return here to delete this role.
                 </Alert>
-              )}
+              )} */}
             </Stack>
           )}
         </DialogContent>

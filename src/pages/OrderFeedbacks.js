@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Chip,
@@ -17,6 +17,7 @@ import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import { fetchOrderFeedbackById, fetchOrderFeedbacks } from '../services/orderFeedbackService';
 import { formatDate } from '../utils/dateFormatter';
 import '../assets/styles/LeadsTable.scss';
+import useAutoRefresh from '../hooks/useAutoRefresh';
 
 const ratingChipColor = (rating) => {
   const num = Number(rating || 0);
@@ -75,9 +76,7 @@ function OrderFeedbacks() {
     }
   };
 
-  useEffect(() => {
-    loadFeedbacks();
-  }, []);
+  useAutoRefresh(loadFeedbacks, { intervalMs: 20000 });
 
   const handleSearch = async (e) => {
     e.preventDefault();

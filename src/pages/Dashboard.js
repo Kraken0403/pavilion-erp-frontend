@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import {
   Container,
   Paper,
   Typography,
-  Grid,
   CircularProgress,
   Chip,
   Table,
@@ -25,6 +24,7 @@ import { fetchWorkOrders } from '../services/workOrderServices'
 import { fetchKots } from '../services/kotService'
 import { useSettings } from '../context/SettingsContext'
 import { formatDate as formatLocalDate, parseDateInput } from '../utils/dateFormatter'
+import useAutoRefresh from '../hooks/useAutoRefresh'
 
 const Dashboard = () => {
   const navigate = useNavigate()
@@ -39,10 +39,6 @@ const Dashboard = () => {
   const [kots, setKots] = useState([])
 
   const isCateringBusiness = settings?.business_type === 'CATERING';
-
-  useEffect(() => {
-    loadData()
-  }, [])
 
   /* =======================
      FORMAT HELPERS
@@ -113,7 +109,7 @@ const Dashboard = () => {
           ? leadsRes
           : leadsRes?.leads || leadsRes?.data || []
       )
-  // KOTs (only if catering business)
+      // KOTs (only if catering business)
       if (isCateringBusiness && kotsRes) {
         setKots(
           Array.isArray(kotsRes)
@@ -122,7 +118,7 @@ const Dashboard = () => {
         );
       }
 
-    
+
       // 🔥 FIXED WORK ORDER PARSING
       setWorkOrders(
         Array.isArray(workOrdersRes)
@@ -138,6 +134,11 @@ const Dashboard = () => {
       setLoading(false)
     }
   }
+
+  useAutoRefresh(loadData, {
+    intervalMs: 30000,
+    watch: [isCateringBusiness],
+  })
 
   /* =======================
      CALCULATIONS
