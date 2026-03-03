@@ -7,11 +7,13 @@ import Topbar from "../components/Topbar";
 import UtilsBar from "../components/UtilsBar";
 import PaginationBar from "../components/ui/PaginationBar";
 import NotificationSnackbar from "../components/ui/NotificationSnackbar";
+import ChannelSelectModal from "../components/ui/ChannelSelectModal";
 import { formatDate } from "../utils/dateFormatter";
 import {
   getInvoices,
   downloadInvoicePdf,
   sendInvoiceEmail,
+  sendInvoiceWhatsApp,
 } from "../services/invoiceService";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
@@ -62,6 +64,7 @@ function Invoices() {
     message: "",
     severity: "info",
   });
+  const [channelModalOpen, setChannelModalOpen] = useState(false);
 
   /* ================= FETCH ================= */
 
@@ -124,11 +127,21 @@ function Invoices() {
     setSelectAll(false);
   };
 
-  const handleSendReminders = async () => {
+  const handleSendReminders = async ({ sendEmail = true, sendWhatsApp = false } = {}) => {
     if (!selectedInvoices.length) return;
 
     const ids = [...selectedInvoices];
-    const results = await Promise.allSettled(ids.map((id) => sendInvoiceEmail(id)));
+    const tasks = [];
+
+    if (sendEmail) {
+      tasks.push(...ids.map((invoiceId) => sendInvoiceEmail(invoiceId)));
+    }
+
+    if (sendWhatsApp) {
+      tasks.push(...ids.map((invoiceId) => sendInvoiceWhatsApp(invoiceId)));
+    }
+
+    const results = await Promise.allSettled(tasks);
 
     const successCount = results.filter((r) => r.status === "fulfilled").length;
     const failedCount = results.length - successCount;
@@ -137,8 +150,8 @@ function Invoices() {
       open: true,
       message:
         failedCount === 0
-          ? `📩 Reminder sent to ${successCount} invoice(s)`
-          : `⚠️ Sent ${successCount} reminder(s), failed for ${failedCount}`,
+          ? `📩 Notification sent successfully (${successCount} request${successCount > 1 ? "s" : ""})`
+          : `⚠️ Sent ${successCount} request(s), failed for ${failedCount}`,
       severity: failedCount === 0 ? "success" : "warning",
     });
 
@@ -263,7 +276,7 @@ function Invoices() {
 
         selectedCount={selectedInvoices.length}
         onExportSelected={exportToExcel}
-        onSendReminders={handleSendReminders}
+        onSendReminders={() => setChannelModalOpen(true)}
 
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
@@ -374,6 +387,20 @@ function Invoices() {
         onClose={() =>
           setNotification((prev) => ({ ...prev, open: false }))
         }
+      />
+
+      <ChannelSelectModal
+        open={channelModalOpen}
+        onClose={() => setChannelModalOpen(false)}
+        title="Send Invoice Reminders"
+        subtitle="Select channels to notify selected customers"
+        defaultEmail
+        defaultWhatsApp
+        confirmLabel="Send Notifications"
+        onConfirm={async (selection) => {
+          setChannelModalOpen(false);
+          await handleSendReminders(selection);
+        }}
       />
 
       <StatusUpdateModal

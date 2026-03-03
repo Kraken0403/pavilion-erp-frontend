@@ -8,7 +8,7 @@ import {
 } from '../services/leadService';   // ✔ FIXED — correct imports
 
 import { getUserById } from '../services/userServices';
-import { sendEmail } from '../services/spEmailServices';
+import { sendEmail, sendWhatsApp } from '../services/spEmailServices';
 
 const toDateOnly = (value) => {
     if (!value) return '';
@@ -166,6 +166,38 @@ const useLeadForm = (initialLeadData, isEdit = false, leadId = null) => {
         }
     };
 
+    const sendWhatsApptoSp = async () => {
+        try {
+            const sp = await getUserById(leadData.assigned_salesperson);
+
+            if (!sp?.phone_number) {
+                throw new Error("Assigned salesperson has no phone number.");
+            }
+
+            const payload = {
+                ...leadData,
+                custom_fields: customFields,
+                salesperson_phone_number: sp.phone_number
+            };
+
+            await sendWhatsApp(payload);
+
+            setNotification({
+                open: true,
+                message: 'WhatsApp sent successfully!',
+                severity: 'success',
+            });
+
+        } catch (err) {
+            console.error("❌ WhatsApp sending failed:", err);
+            setNotification({
+                open: true,
+                message: err.message || "Failed to send WhatsApp.",
+                severity: "error",
+            });
+        }
+    };
+
 
     // ─────────────────────────────────────────────
     // CREATE / UPDATE LEAD
@@ -237,7 +269,8 @@ const useLeadForm = (initialLeadData, isEdit = false, leadId = null) => {
 
         handleChange,
         handleSubmit,
-        sendEmailtoSp
+        sendEmailtoSp,
+        sendWhatsApptoSp
     };
 };
 

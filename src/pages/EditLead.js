@@ -56,7 +56,7 @@ const EditLead = () => {
   const handleSendQuotation = () => {
     navigate(`/quotation/create/${id}`);
   };
-  
+
   const initialLeadData = {
     first_name: '',
     last_name: '',
@@ -86,7 +86,8 @@ const EditLead = () => {
     handleSubmit,
     handleCloseNotification,
     setActiveTab,
-    sendEmailtoSp
+    sendEmailtoSp,
+    sendWhatsApptoSp
   } = useLeadForm(initialLeadData, true, id);
 
   // Load Lead + Custom Fields
@@ -147,6 +148,7 @@ const EditLead = () => {
         handleCustomFieldsUpdate={handleCustomFieldsUpdate}
         activeTab={activeTab}
         sendEmailtoSp={sendEmailtoSp}
+        sendWhatsApptoSp={sendWhatsApptoSp}
         onSendQuotation={handleSendQuotation}
       />
     </>

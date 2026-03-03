@@ -19,8 +19,8 @@ const NewLead = () => {
         hotness: 1,
         amount: 0,
         notes: '',
-        gst_number: '', 
-        user: 'default_user', 
+        gst_number: '',
+        user: 'default_user',
     };
 
     const {
@@ -33,7 +33,8 @@ const NewLead = () => {
         handleSubmit,
         handleCloseNotification,
         setActiveTab,
-        sendEmailtoSp
+        sendEmailtoSp,
+        sendWhatsApptoSp
     } = useLeadForm(initialLeadData);
 
     return (
@@ -49,6 +50,7 @@ const NewLead = () => {
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
                     sendEmailtoSp={sendEmailtoSp}
+                    sendWhatsApptoSp={sendWhatsApptoSp}
                 />
             </Container>
             <Snackbar

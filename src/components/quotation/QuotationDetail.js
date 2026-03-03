@@ -5,6 +5,7 @@ import Topbar from '../Topbar'
 import NotificationSnackbar from '../ui/NotificationSnackbar'
 import QuotationContactSection from './QuotationContactSection'
 import QuotationItemsSection from './QuotationItemsSection'
+import ChannelSelectModal from '../ui/ChannelSelectModal'
 import AddLeadDialog from '../leads/AddLeadDialog'
 import AddProductDialog from '../products/AddProductDialog'
 import { createWorkOrderFromQuotation } from '../../services/workOrderServices'
@@ -19,7 +20,8 @@ import {
   updateQuotation,
   updateQuotationStatus,
   updateQuotationItems,
-  sendQuotationEmailToCustomer
+  sendQuotationEmailToCustomer,
+  sendQuotationWhatsAppToCustomer
 } from '../../services/quotationService'
 import { fetchLeads } from '../../services/leadService'
 import { useSettings } from '../../context/SettingsContext'
@@ -103,6 +105,7 @@ function QuotationDetail() {
   })
 
   const [selectedLead, setSelectedLead] = useState(null)
+  const [channelModalOpen, setChannelModalOpen] = useState(false)
 
   /* ---------------------------------------
      HELPERS
@@ -561,6 +564,19 @@ function QuotationDetail() {
     }
   }
 
+  const handleSendQuotationWhatsApp = async () => {
+    try {
+      await sendQuotationWhatsAppToCustomer(quotation.id)
+      showNotification('Quotation WhatsApp sent successfully')
+    } catch (err) {
+      console.error(err)
+      showNotification(
+        err?.response?.data?.error || 'Failed to send quotation WhatsApp',
+        'error'
+      )
+    }
+  }
+
   const reorderItems = (from, to) => {
     if (from === to || from == null || to == null) return
 
@@ -638,7 +654,8 @@ function QuotationDetail() {
 
           onCreateWorkOrder={handleCreateWorkOrder}
           onCreateVersion={handleCreateVersion}
-          onSendEmail={handleSendQuotationEmail}
+          onSendEmail={() => setChannelModalOpen(true)}
+          onSendWhatsApp={() => setChannelModalOpen(true)}
         />
 
 
@@ -840,6 +857,25 @@ function QuotationDetail() {
       <AddProductDialog
         open={openProductDialog}
         onClose={() => setOpenProductDialog(false)}
+      />
+
+      <ChannelSelectModal
+        open={channelModalOpen}
+        onClose={() => setChannelModalOpen(false)}
+        title="Send Quotation Notification"
+        subtitle="Choose channels to notify the customer"
+        defaultEmail
+        defaultWhatsApp
+        confirmLabel="Send Notification"
+        onConfirm={async ({ sendEmail = true, sendWhatsApp = false }) => {
+          setChannelModalOpen(false)
+          if (sendEmail) {
+            await handleSendQuotationEmail()
+          }
+          if (sendWhatsApp) {
+            await handleSendQuotationWhatsApp()
+          }
+        }}
       />
 
       <NotificationSnackbar

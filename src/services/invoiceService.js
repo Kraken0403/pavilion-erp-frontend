@@ -102,3 +102,8 @@ export const sendInvoiceEmail = async (id) => {
   const res = await api.post(`/invoices/${id}/send-email`);
   return res.data;
 };
+
+export const sendInvoiceWhatsApp = async (id) => {
+  const res = await api.post(`/invoices/${id}/send-whatsapp`);
+  return res.data;
+};

@@ -19,3 +19,8 @@ export const sendPaymentReminderEmail = async (invoiceId) => {
   const res = await api.post(`/payment-reminders/${invoiceId}/send-email`);
   return res.data;
 };
+
+export const sendPaymentReminderWhatsApp = async (invoiceId) => {
+  const res = await api.post(`/payment-reminders/${invoiceId}/send-whatsapp`);
+  return res.data;
+};

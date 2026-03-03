@@ -4,7 +4,8 @@ import { Checkbox } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import UtilsBar from '../UtilsBar';
 import PaginationBar from '../ui/PaginationBar';
-import { sendQuotationEmailToCustomer, updateQuotationStatus } from '../../services/quotationService';
+import ChannelSelectModal from '../ui/ChannelSelectModal';
+import { sendQuotationEmailToCustomer, sendQuotationWhatsAppToCustomer, updateQuotationStatus } from '../../services/quotationService';
 import { useSettings } from "../../context/SettingsContext";
 import { formatStatusLabel, normalizeStatusValue } from '../../utils/statusFormatter';
 
@@ -35,6 +36,7 @@ const QuotationsTable = ({
   const [selected, setSelected] = useState([]);
   const [selectAll, setSelectAll] = useState(false);
   const [editingStatusId, setEditingStatusId] = useState(null);
+  const [channelModalOpen, setChannelModalOpen] = useState(false);
 
   /* ================= FILTER + SORT ================= */
 
@@ -167,6 +169,27 @@ const QuotationsTable = ({
     }
   };
 
+  const handleSendWhatsApp = async () => {
+    if (!selected.length) return;
+
+    const uniqueSelectedIds = [...new Set(selected)];
+
+    const results = await Promise.allSettled(
+      uniqueSelectedIds.map((quotationId) => sendQuotationWhatsAppToCustomer(quotationId))
+    );
+
+    const successCount = results.filter((r) => r.status === 'fulfilled').length;
+    const failedCount = results.length - successCount;
+
+    if (failedCount === 0) {
+      onNotify?.(`WhatsApp sent for ${successCount} quotation(s)`, 'success');
+    } else if (successCount === 0) {
+      onNotify?.('Failed to send quotation WhatsApp notifications', 'error');
+    } else {
+      onNotify?.(`Sent ${successCount}, failed ${failedCount} quotation WhatsApp notification(s)`, 'warning');
+    }
+  };
+
   return (
     <div className="leads-table-container">
       <UtilsBar
@@ -178,7 +201,7 @@ const QuotationsTable = ({
         sortValue={sortValue}
         onSortChange={setSortValue}
         onDateFilterChange={setDateFilter}
-        onSendEmail={handleSendEmails}
+        onSendEmail={() => setChannelModalOpen(true)}
       />
 
       <div className="table-container">
@@ -267,6 +290,25 @@ const QuotationsTable = ({
         totalItems={processed.length}
         itemsPerPage={itemsPerPage}
         onPageChange={setCurrentPage}
+      />
+
+      <ChannelSelectModal
+        open={channelModalOpen}
+        onClose={() => setChannelModalOpen(false)}
+        title="Send Quotation Notifications"
+        subtitle="Choose channels for selected quotations"
+        defaultEmail
+        defaultWhatsApp
+        confirmLabel="Send Notifications"
+        onConfirm={async ({ sendEmail = true, sendWhatsApp = false }) => {
+          setChannelModalOpen(false);
+          if (sendEmail) {
+            await handleSendEmails();
+          }
+          if (sendWhatsApp) {
+            await handleSendWhatsApp();
+          }
+        }}
       />
     </div>
   );

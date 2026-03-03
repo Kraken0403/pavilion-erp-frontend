@@ -3,6 +3,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsActiveOutlined';
 // import { Chip, Select, MenuItem, Checkbox } from "@mui/material";
 
 import {
@@ -33,6 +34,7 @@ const UtilsBar = ({
   onSortChange,
   onSendReminders,
   onSendEmail,
+  onSendWhatsApp,
 }) => {
   const [filterAnchor, setFilterAnchor] = useState(null);
   const [actionsAnchor, setActionsAnchor] = useState(null);
@@ -41,6 +43,7 @@ const UtilsBar = ({
   const [endDate, setEndDate] = useState('');
 
   const hasSelection = selectedCount > 0;
+  const handleSendNotification = onSendReminders || onSendEmail || onSendWhatsApp;
 
   /* ================= FILTER ACTIVE CHECK ================= */
 
@@ -105,27 +108,16 @@ const UtilsBar = ({
               Import Products
             </MenuItem> */}
 
-            {onSendReminders && (
+            {handleSendNotification && (
               <MenuItem
                 disabled={!hasSelection}
                 onClick={() => {
-                  onSendReminders();
+                  handleSendNotification();
                   setActionsAnchor(null);
                 }}
               >
-                Send Reminders
-              </MenuItem>
-            )}
-
-            {onSendEmail && (
-              <MenuItem
-                disabled={!hasSelection}
-                onClick={() => {
-                  onSendEmail();
-                  setActionsAnchor(null);
-                }}
-              >
-                Send Email
+                <NotificationsActiveOutlinedIcon fontSize="small" style={{ marginRight: 8 }} />
+                Send Notification
               </MenuItem>
             )}
 

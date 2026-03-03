@@ -163,10 +163,11 @@ function KOTBoard() {
       // Auto-create delivery if KOT is marked as completed
       if (status === 'completed') {
         try {
+          const event = kot.event_snapshot || {};
           const deliveryData = {
-            delivery_date: toInputDateValue(new Date()),
-            delivery_time: '09:00', // Default time
-            delivery_status: 'out_for_delivery'
+            delivery_date: event.date || toInputDateValue(new Date()),
+            delivery_time: event.time ? String(event.time).slice(0, 5) : '09:00',
+            delivery_status: 'pending'
           };
           await createDeliveryFromWorkOrder(kot.work_order_id, deliveryData);
           showNotification('KOT completed and delivery created automatically');

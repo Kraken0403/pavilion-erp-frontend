@@ -1,0 +1,116 @@
+.channel-select-modal-paper {
+    border-radius: 14px !important;
+    border: 1px solid #eceff4;
+}
+
+.channel-select-modal-title {
+    font-weight: 700 !important;
+    font-size: 1.1rem !important;
+    padding-bottom: 6px !important;
+}
+
+.channel-select-modal-subtitle {
+    margin: 0 0 14px;
+    color: #5f6c7b;
+    font-size: 0.92rem;
+}
+
+.channel-select-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.channel-option {
+    border: 1px solid #e6ebf1;
+    border-radius: 10px;
+    padding: 6px 12px 6px 14px;
+    background: #fff;
+    min-height: 66px;
+    display: flex;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+
+    &.active {
+        border-color: #1976d2;
+        background: #f5f9ff;
+        box-shadow: 0 0 0 2px rgba(25, 118, 210, 0.08);
+    }
+
+    .MuiFormControlLabel-root {
+        width: 100%;
+        margin: 0;
+        min-height: 52px;
+        display: flex;
+        align-items: center;
+        padding-left: 2px;
+    }
+
+    .MuiFormControlLabel-label {
+        font-weight: 600;
+        color: #1f2937;
+        width: 100%;
+    }
+
+    .MuiCheckbox-root {
+        color: #8b97a8;
+    }
+
+    .MuiCheckbox-root.Mui-checked {
+        color: #1976d2;
+    }
+}
+
+.channel-option-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 42px;
+}
+
+.channel-option-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.channel-option-icon-email {
+    background: rgba(25, 118, 210, 0.12);
+    color: #1976d2;
+}
+
+.channel-option-icon-wa {
+    background: rgba(37, 211, 102, 0.14);
+    color: #22a45c;
+}
+
+.channel-option-text {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    line-height: 1.2;
+    min-height: 34px;
+}
+
+.channel-option-title {
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+
+.channel-option-desc {
+    margin-top: 2px;
+    font-size: 0.78rem;
+    color: #6b7788;
+}
+
+.channel-select-modal-actions {
+    padding: 10px 20px 18px !important;
+    gap: 8px;
+}

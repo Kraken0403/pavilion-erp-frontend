@@ -1,10 +1,12 @@
 import React, { useMemo, useState } from 'react';
 import Topbar from '../components/Topbar';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
+import ChannelSelectModal from '../components/ui/ChannelSelectModal';
 import { formatDate } from '../utils/dateFormatter';
 import {
   getPendingPaymentReminders,
   sendPaymentReminderEmail,
+  sendPaymentReminderWhatsApp,
 } from '../services/paymentReminderService';
 import '../assets/styles/LeadsTable.scss';
 import '../assets/styles/PaymentReminders.scss';
@@ -31,6 +33,8 @@ const PaymentReminders = () => {
     message: '',
     severity: 'info',
   });
+  const [channelModalOpen, setChannelModalOpen] = useState(false);
+  const [activeInvoiceId, setActiveInvoiceId] = useState(null);
 
   const loadPendingRows = async () => {
     setLoading(true);
@@ -75,20 +79,33 @@ const PaymentReminders = () => {
     );
   }, [filteredRows]);
 
-  const handleSendReminder = async (invoiceId) => {
+  const handleSendReminderWithSelection = async (
+    invoiceId,
+    { sendEmail = true, sendWhatsApp = false } = {}
+  ) => {
     setSendingByInvoiceId((prev) => ({ ...prev, [invoiceId]: true }));
 
     try {
-      await sendPaymentReminderEmail(invoiceId);
+      const tasks = [];
+      if (sendEmail) tasks.push(sendPaymentReminderEmail(invoiceId));
+      if (sendWhatsApp) tasks.push(sendPaymentReminderWhatsApp(invoiceId));
+
+      const results = await Promise.allSettled(tasks);
+      const successCount = results.filter((r) => r.status === 'fulfilled').length;
+      const failedCount = results.length - successCount;
+
       setNotification({
         open: true,
-        message: 'Payment reminder sent successfully',
-        severity: 'success',
+        message:
+          failedCount === 0
+            ? 'Payment notification sent successfully'
+            : `Sent ${successCount} request(s), failed ${failedCount}`,
+        severity: failedCount === 0 ? 'success' : 'warning',
       });
     } catch (error) {
       setNotification({
         open: true,
-        message: error?.response?.data?.error || 'Failed to send payment reminder',
+        message: error?.response?.data?.error || 'Failed to send payment notification',
         severity: 'error',
       });
     } finally {
@@ -104,7 +121,7 @@ const PaymentReminders = () => {
         <div className="payment-reminder-header">
           <h2>Payment Reminders</h2>
           <p>
-            Track all pending payments and send reminder emails instantly.
+            Track all pending payments and send reminders through Email or WhatsApp.
           </p>
         </div>
 
@@ -161,10 +178,13 @@ const PaymentReminders = () => {
                   <td>
                     <button
                       className="secondary-btn"
-                      onClick={() => handleSendReminder(row.id)}
-                      disabled={!row.customer_email || sendingByInvoiceId[row.id]}
+                      onClick={() => {
+                        setActiveInvoiceId(row.id);
+                        setChannelModalOpen(true);
+                      }}
+                      disabled={sendingByInvoiceId[row.id]}
                     >
-                      {sendingByInvoiceId[row.id] ? 'Sending...' : 'Send Email'}
+                      {sendingByInvoiceId[row.id] ? 'Sending...' : 'Send Notification'}
                     </button>
                   </td>
                 </tr>
@@ -181,6 +201,27 @@ const PaymentReminders = () => {
       <NotificationSnackbar
         {...notification}
         onClose={() => setNotification((prev) => ({ ...prev, open: false }))}
+      />
+
+      <ChannelSelectModal
+        open={channelModalOpen}
+        onClose={() => {
+          setChannelModalOpen(false);
+          setActiveInvoiceId(null);
+        }}
+        title="Send Payment Reminder"
+        subtitle="Choose how you want to notify this customer"
+        defaultEmail
+        defaultWhatsApp
+        confirmLabel="Send Notification"
+        onConfirm={async (selection) => {
+          const invoiceId = activeInvoiceId;
+          setChannelModalOpen(false);
+          setActiveInvoiceId(null);
+          if (invoiceId) {
+            await handleSendReminderWithSelection(invoiceId, selection);
+          }
+        }}
       />
     </div>
   );

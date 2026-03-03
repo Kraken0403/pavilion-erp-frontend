@@ -5,7 +5,7 @@ import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined'
 import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined'
 import WorkOutlineOutlinedIcon from '@mui/icons-material/WorkOutlineOutlined'
 import FileCopyOutlinedIcon from '@mui/icons-material/FileCopyOutlined'
-import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined'
+import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsActiveOutlined'
 
 import { generateQuotationPdf } from '../../services/quotationService'
 
@@ -19,6 +19,7 @@ function QuotationHeader({
   onCreateWorkOrder,
   onCreateVersion,
   onSendEmail,
+  onSendWhatsApp,
 
   showActions = true
 }) {
@@ -56,7 +57,7 @@ function QuotationHeader({
 
           {version && <p className="muted">Version {version}</p>}
         </div>
-{/* 
+        {/* 
         <div className="quotation-meta">
           {quotation_mode && (
             <p className="chip">
@@ -159,16 +160,16 @@ function QuotationHeader({
               </MenuItem>
             )}
 
-            {/* SEND EMAIL */}
-            {onSendEmail && (
+            {/* SEND NOTIFICATION */}
+            {(onSendEmail || onSendWhatsApp) && (
               <MenuItem
                 onClick={() => {
                   setActionsAnchorEl(null)
-                  onSendEmail()
+                  onSendEmail?.()
                 }}
               >
-                <EmailOutlinedIcon fontSize="small" style={{ marginRight: 10 }} />
-                Send Email
+                <NotificationsActiveOutlinedIcon fontSize="small" style={{ marginRight: 10 }} />
+                Send Notification
               </MenuItem>
             )}
           </Menu>

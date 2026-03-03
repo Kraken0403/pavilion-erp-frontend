@@ -147,3 +147,16 @@ export const sendQuotationEmailToCustomer = async (quotationId) => {
     handleError(error, `Failed to send quotation email for ${quotationId}`);
   }
 };
+
+export const sendQuotationWhatsAppToCustomer = async (quotationId) => {
+  if (!quotationId) {
+    throw new Error('Quotation ID is required');
+  }
+
+  try {
+    const res = await api.post(`/quotations/${quotationId}/send-whatsapp`);
+    return res.data;
+  } catch (error) {
+    handleError(error, `Failed to send quotation WhatsApp for ${quotationId}`);
+  }
+};

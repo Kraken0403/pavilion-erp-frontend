@@ -9,7 +9,7 @@ import NotesTab from "./leads/NotesTab";
 import FilesTab from "./leads/FilesTab";
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
-import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
+import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsActiveOutlined';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import { toInputDateTimeValue } from '../utils/dateFormatter';
@@ -21,6 +21,7 @@ import {
   Menu,
   MenuItem
 } from '@mui/material'
+import ChannelSelectModal from './ui/ChannelSelectModal';
 
 const indianStates = [
   "Andhra Pradesh",
@@ -110,6 +111,7 @@ const EditForm = ({
   leadData,
   handleChange,
   sendEmailtoSp,
+  sendWhatsApptoSp,
   handleSubmit,
   activeTab,
   customFields: initialCustomFields,
@@ -126,14 +128,15 @@ const EditForm = ({
 
   const [actionsAnchorEl, setActionsAnchorEl] = useState(null);
   const actionsOpen = Boolean(actionsAnchorEl);
+  const [channelModalOpen, setChannelModalOpen] = useState(false);
 
   // Dirty check
   const [initialSnapshot, setInitialSnapshot] = useState(null);
   const isDirty = isCreateMode
-  ? true
-  : initialSnapshot
-    ? JSON.stringify(leadData) !== JSON.stringify(initialSnapshot)
-    : false;
+    ? true
+    : initialSnapshot
+      ? JSON.stringify(leadData) !== JSON.stringify(initialSnapshot)
+      : false;
 
 
   const [users, setUsers] = useState([]);
@@ -186,7 +189,7 @@ const EditForm = ({
       });
     }
   }, [sameAsBilling, leadData.billing_address, leadData.billing_city, leadData.billing_state]);
-  
+
 
   const fetchUsers = async () => {
     try {
@@ -348,78 +351,97 @@ const EditForm = ({
           <form className="edit-lead-form" onSubmit={handleSubmit}>
             <div className="detail-wrapper">
 
-            <div className="el-buttons">
+              <div className="el-buttons">
 
-              {/* SAVE CHANGES */}
-              <button
-                type="submit"
-                className="primary-btn"
-                disabled={!isDirty}
-                style={{ opacity: isDirty ? 1 : 0.5 }}
-              >
-                {isCreateMode ? "Create Lead" : "Save Changes"}
-
-              </button>
-
-
-              {/* ACTIONS DROPDOWN */}
-
+                {/* SAVE CHANGES */}
                 <button
-                    onClick={(e) => {
-                      e.preventDefault(); // optional but safe
-                      setActionsAnchorEl(e.currentTarget);
-                    }}
-                  className="secondary-btn"
+                  type="submit"
+                  className="primary-btn"
+                  disabled={!isDirty}
+                  style={{ opacity: isDirty ? 1 : 0.5 }}
                 >
-             
-                    <p>Actions</p>
-                    <ArrowDropDownIcon />
-              
+                  {isCreateMode ? "Create Lead" : "Save Changes"}
 
                 </button>
-     
 
 
+                {/* ACTIONS DROPDOWN */}
 
-              <Menu
-                anchorEl={actionsAnchorEl}
-                open={actionsOpen}
-                onClose={() => setActionsAnchorEl(null)}
-              >
-                <MenuItem
-                  onClick={() => {
-                    setActionsAnchorEl(null);
-                    onSendQuotation();
+                <button
+                  onClick={(e) => {
+                    e.preventDefault(); // optional but safe
+                    setActionsAnchorEl(e.currentTarget);
                   }}
+                  className="secondary-btn"
                 >
-                  <DescriptionOutlinedIcon fontSize="small" style={{ marginRight: 10 }} />
-                  Send Quotation
-                </MenuItem>
 
-                <MenuItem
-                  onClick={() => {
-                    setActionsAnchorEl(null);
-                    sendEmailtoSp();
+                  <p>Actions</p>
+                  <ArrowDropDownIcon />
+
+
+                </button>
+
+
+
+
+                <Menu
+                  anchorEl={actionsAnchorEl}
+                  open={actionsOpen}
+                  onClose={() => setActionsAnchorEl(null)}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      setActionsAnchorEl(null);
+                      onSendQuotation();
+                    }}
+                  >
+                    <DescriptionOutlinedIcon fontSize="small" style={{ marginRight: 10 }} />
+                    Send Quotation
+                  </MenuItem>
+
+                  <MenuItem
+                    onClick={() => {
+                      setActionsAnchorEl(null);
+                      setChannelModalOpen(true);
+                    }}
+                  >
+                    <NotificationsActiveOutlinedIcon fontSize="small" style={{ marginRight: 8 }} />
+                    Send Notification
+                  </MenuItem>
+
+                  <MenuItem
+                    onClick={() => {
+                      setActionsAnchorEl(null);
+                      // 🔥 keep delete logic same as before (or wire later)
+                      console.warn('Delete clicked');
+                    }}
+                    style={{ color: '#d32f2f' }}
+                  >
+                    <DeleteOutlineOutlinedIcon fontSize="small" style={{ marginRight: 8 }} />
+                    Delete
+                  </MenuItem>
+                </Menu>
+
+                <ChannelSelectModal
+                  open={channelModalOpen}
+                  onClose={() => setChannelModalOpen(false)}
+                  title="Send Lead Notification"
+                  subtitle="Choose channels to notify assigned salesperson"
+                  defaultEmail
+                  defaultWhatsApp
+                  confirmLabel="Send Notification"
+                  onConfirm={async ({ sendEmail = true, sendWhatsApp = false }) => {
+                    setChannelModalOpen(false);
+                    if (sendEmail) {
+                      await sendEmailtoSp?.();
+                    }
+                    if (sendWhatsApp) {
+                      await sendWhatsApptoSp?.();
+                    }
                   }}
-                >
-                  <EmailOutlinedIcon fontSize="small" style={{ marginRight: 8 }} />
-                  Send Email
-                </MenuItem>
+                />
 
-                <MenuItem
-                  onClick={() => {
-                    setActionsAnchorEl(null);
-                    // 🔥 keep delete logic same as before (or wire later)
-                    console.warn('Delete clicked');
-                  }}
-                  style={{ color: '#d32f2f' }}
-                >
-                  <DeleteOutlineOutlinedIcon fontSize="small" style={{ marginRight: 8 }} />
-                  Delete
-                </MenuItem>
-              </Menu>
-
-            </div>
+              </div>
 
 
 
@@ -746,17 +768,17 @@ const EditForm = ({
       )}
 
 
-    {activeTab === "activities" && (
-      <ActivitiesTab leadId={leadData.id} />
-    )}
+      {activeTab === "activities" && (
+        <ActivitiesTab leadId={leadData.id} />
+      )}
 
-    {activeTab === "notes" && (
-      <NotesTab leadId={leadData.id} />
-    )}
+      {activeTab === "notes" && (
+        <NotesTab leadId={leadData.id} />
+      )}
 
-    {activeTab === "files" && (
-      <FilesTab leadId={leadData.id} />
-    )}
+      {activeTab === "files" && (
+        <FilesTab leadId={leadData.id} />
+      )}
 
 
     </div>
