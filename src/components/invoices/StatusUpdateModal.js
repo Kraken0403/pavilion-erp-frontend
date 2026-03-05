@@ -30,6 +30,7 @@ import {
     downloadReceiptPdf,
 } from "../../services/invoiceService";
 import { formatStatusLabel } from "../../utils/statusFormatter";
+import { toInputDateValue } from "../../utils/dateFormatter";
 
 const statusColors = {
     draft: "default",
@@ -54,7 +55,7 @@ function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
     const [newPayment, setNewPayment] = useState({
         paymentType: "Cash",
         amount: "",
-        paymentDate: new Date().toISOString().split("T")[0],
+        paymentDate: toInputDateValue(new Date()),
         refNumber: "",
         remark: "",
         bankName: "",
@@ -217,7 +218,7 @@ function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
                         {
                             paymentType: backendPaymentType,
                             amount: paymentAmount,
-                            paymentDate: newPayment.paymentType === "Settlement" ? new Date().toISOString().split("T")[0] : newPayment.paymentDate,
+                            paymentDate: newPayment.paymentType === "Settlement" ? toInputDateValue(new Date()) : newPayment.paymentDate,
                             refNumber: refValue,
                             remark: remarkValue,
                         },
@@ -252,7 +253,7 @@ function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
             setNewPayment({
                 paymentType: "Cash",
                 amount: "",
-                paymentDate: new Date().toISOString().split("T")[0],
+                paymentDate: toInputDateValue(new Date()),
                 refNumber: "",
                 remark: "",
                 bankName: "",

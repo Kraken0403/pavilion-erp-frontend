@@ -28,14 +28,16 @@ import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import { fetchKots, updateKotStatus } from '../services/kotService';
 import { createDeliveryFromWorkOrder } from '../services/deliveryService';
 import { useSettings } from '../context/SettingsContext';
+import { useNotification } from '../context/NotificationContext';
 import api from '../services/api';
 import { downloadPdfFromResponse, printPdfFromResponse } from '../utils/pdfHelpers';
 import { formatDateTime, parseDateInput, toInputDateValue } from '../utils/dateFormatter';
 import { formatStatusLabel } from '../utils/statusFormatter';
 import useAutoRefresh from '../hooks/useAutoRefresh';
+import { useLocation } from 'react-router-dom';
 
 const STATUS_OPTIONS = ['pending', 'preparing', 'ready', 'completed'];
-const RANGE_OPTIONS = ['today', 'tomorrow', 'upcoming', 'all'];
+const RANGE_OPTIONS = ['all', 'today', 'tomorrow', 'upcoming'];
 
 const formatQty = (qty) => {
   const num = Number(qty || 0);
@@ -44,8 +46,10 @@ const formatQty = (qty) => {
 
 function KOTBoard() {
   const { settings } = useSettings();
+  const { getUnreadNotificationFor, markRecordNotificationsSeen } = useNotification();
+  const location = useLocation();
 
-  const [range, setRange] = useState('today');
+  const [range, setRange] = useState('all');
   const [kots, setKots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notif, setNotif] = useState({ open: false, message: '', severity: 'success' });
@@ -98,6 +102,33 @@ function KOTBoard() {
     setSliderIndex(0);
   }, [range]);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || '');
+    const rangeQuery = String(params.get('range') || '').trim().toLowerCase();
+    if (RANGE_OPTIONS.includes(rangeQuery)) {
+      setRange(rangeQuery);
+    }
+
+    const focusWoNo = params.get('focusWoNo');
+    const focusKotId = params.get('focusKotId') || params.get('notification_source_id');
+    const focusQuery = String(focusWoNo || focusKotId || '').trim();
+
+    if (!focusQuery) return;
+
+    setRange('all');
+    setStatusFilter('all');
+    setSearchQuery(focusQuery);
+    setSliderIndex(0);
+
+    // Consume one-time focus query params so refreshes don't keep filtering.
+    params.delete('focusWoNo');
+    params.delete('focusKotId');
+    params.delete('notification_source_id');
+    const nextQuery = params.toString();
+    const nextUrl = `${location.pathname}${nextQuery ? `?${nextQuery}` : ''}`;
+    window.history.replaceState({}, '', nextUrl);
+  }, [location.search]);
+
   const filteredAndSortedKots = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
 
@@ -111,6 +142,7 @@ function KOTBoard() {
       if (!q) return true;
 
       const haystack = [
+        kot.id,
         kot.work_order_number,
         kot.customer_name,
         event.name,
@@ -222,6 +254,14 @@ function KOTBoard() {
     }
   };
 
+  const handleOpenKotRecord = async (kotId) => {
+    try {
+      await markRecordNotificationsSeen('kot', kotId);
+    } catch {
+      // Keep board interaction responsive even if notification update fails.
+    }
+  };
+
   if (!isCateringBusiness) {
     return (
       <>
@@ -314,14 +354,44 @@ function KOTBoard() {
               {filteredAndSortedKots.slice(sliderIndex, sliderIndex + cardsPerView).map((kot) => {
                 const event = kot.event_snapshot || {};
                 const totalQty = (kot.items || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+                const notification = getUnreadNotificationFor('kot', kot.id);
+                const action = String(notification?.action || '').toLowerCase();
+                const badgeLabel = notification ? (/(create|new|added)/.test(action) ? 'NEW' : 'UPDATED') : '';
 
                 return (
-                  <Card key={kot.id} sx={{ borderRadius: 2, height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+                  <Card
+                    key={kot.id}
+                    onClick={() => handleOpenKotRecord(kot.id)}
+                    sx={{ borderRadius: 2, height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
+                  >
                     <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
-                        <Typography variant="subtitle1" fontWeight={700}>
-                          {kot.work_order_number}
-                        </Typography>
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <Typography variant="subtitle1" fontWeight={700}>
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => handleOpenKotRecord(kot.id)}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault();
+                                  handleOpenKotRecord(kot.id);
+                                }
+                              }}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              {kot.work_order_number}
+                            </span>
+                          </Typography>
+                          {badgeLabel ? (
+                            <Chip
+                              label={badgeLabel}
+                              size="small"
+                              color="error"
+                              sx={{ fontWeight: 700 }}
+                            />
+                          ) : null}
+                        </Stack>
 
                         <FormControl size="small" sx={{ minWidth: 130 }}>
                           <InputLabel>Status</InputLabel>

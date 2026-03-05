@@ -20,6 +20,7 @@ import { fetchLeads } from '../services/leadService'
 import { createInvoice } from '../services/invoiceService'
 import { getInvoiceSettings } from '../services/invoiceService'
 import Topbar from '../components/Topbar'
+import { toInputDateValue } from '../utils/dateFormatter'
 
 function CreateInvoice() {
   const navigate = useNavigate()
@@ -39,7 +40,7 @@ function CreateInvoice() {
   const [leads, setLeads] = useState([])
 
   const [invoiceDate, setInvoiceDate] = useState(
-    new Date().toISOString().split('T')[0]
+    toInputDateValue(new Date())
   )
   const [dueDate, setDueDate] = useState('')
   const [notes, setNotes] = useState('')

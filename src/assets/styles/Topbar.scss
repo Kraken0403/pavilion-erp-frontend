@@ -1,13 +1,14 @@
 .topbar {
 
     background-color: #f7f7f7;
-    &-page-title{
+
+    &-page-title {
         h2 {
             font-size: 16px;
             font-weight: 400;
         }
     }
-    
+
     &-wrapper {
         width: 100%;
         display: flex;
@@ -28,5 +29,57 @@
     .profile-picture {
         display: flex;
         align-items: center;
+    }
+
+    .notification-bell {
+        display: flex;
+        align-items: center;
+        margin-right: 4px;
+    }
+
+    .notification-item {
+        max-width: 360px;
+        min-width: 300px;
+        align-items: flex-start;
+
+        &.unseen {
+            background-color: #eef5ff;
+            border-left: 3px solid #3f51b5;
+        }
+
+        .notification-content {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            white-space: normal;
+        }
+
+        .notification-action {
+            font-weight: 600;
+            color: #1f2937;
+            line-height: 1.3;
+        }
+
+        .notification-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+
+            .notification-module {
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: 0.2px;
+                color: #1f3a8a;
+                background: #e0e7ff;
+                border-radius: 999px;
+                padding: 2px 8px;
+            }
+        }
+
+        .notification-meta {
+            color: #6b7280;
+            font-size: 11px;
+        }
     }
 }

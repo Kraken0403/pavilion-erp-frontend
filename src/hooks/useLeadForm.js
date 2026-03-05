@@ -9,10 +9,11 @@ import {
 
 import { getUserById } from '../services/userServices';
 import { sendEmail, sendWhatsApp } from '../services/spEmailServices';
+import { toInputDateValue } from '../utils/dateFormatter';
 
 const toDateOnly = (value) => {
     if (!value) return '';
-    return String(value).trim().split('T')[0].split(' ')[0];
+    return toInputDateValue(value);
 };
 
 const toTimeOnly = (value) => {

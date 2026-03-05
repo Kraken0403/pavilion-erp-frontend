@@ -8,10 +8,11 @@ import EditForm from '../components/EditForm';
 import EditTabs from '../components/EditTabs';
 import { useNavigate } from 'react-router-dom';
 import useLeadForm from '../hooks/useLeadForm';
+import { toInputDateValue } from '../utils/dateFormatter';
 
 const toDateOnly = (value) => {
   if (!value) return '';
-  return String(value).trim().split('T')[0].split(' ')[0];
+  return toInputDateValue(value);
 };
 
 const toTimeOnly = (value) => {

@@ -48,7 +48,7 @@ const Reports = () => {
     return toInputDateValue(d);
   });
   const [endDate, setEndDate] = useState(() => toInputDateValue(new Date()));
-  
+
   const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
   const [summary, setSummary] = useState(null);
@@ -87,7 +87,7 @@ const Reports = () => {
 
     try {
       let result;
-      
+
       switch (reportType) {
         case 'sales':
           result = await generateSalesReport(startDate, endDate, salesType);
@@ -207,6 +207,115 @@ const Reports = () => {
           </Grid>
         ))}
       </Grid>
+    );
+  };
+
+  const parseAmount = (value) => {
+    const n = Number(value || 0);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const toStatusDistribution = (rows = []) => {
+    const map = {};
+    rows.forEach((row) => {
+      const key = String(row?.status || 'unknown').trim() || 'unknown';
+      map[key] = (map[key] || 0) + 1;
+    });
+
+    return Object.entries(map)
+      .map(([label, value]) => ({ label, value }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 6);
+  };
+
+  const getChartRows = () => {
+    if (!Array.isArray(reportData) || !reportData.length) return [];
+
+    if (reportType === 'sales') {
+      return [...reportData]
+        .map((row) => ({
+          label: row.number || row.invoice_number || row.quotation_number || 'Unknown',
+          value: parseAmount(row.total_amount),
+        }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 6);
+    }
+
+    if (reportType === 'customers') {
+      return [...reportData]
+        .map((row) => ({
+          label: row.customer_name || 'Unknown Customer',
+          value: parseAmount(row.total_spent),
+        }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 6);
+    }
+
+    if (reportType === 'products') {
+      return [...reportData]
+        .map((row) => ({
+          label: row.product_name || 'Unknown Product',
+          value: parseAmount(row.total_revenue),
+        }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 6);
+    }
+
+    if (reportType === 'work-orders') {
+      return toStatusDistribution(reportData);
+    }
+
+    return [];
+  };
+
+  const renderCharts = () => {
+    const rows = getChartRows();
+    if (!rows.length) return null;
+
+    const maxValue = Math.max(...rows.map((item) => Number(item.value || 0)), 1);
+    const isCurrency = ['sales', 'customers', 'products'].includes(reportType);
+    const chartTitle = reportType === 'work-orders'
+      ? 'Work Order Status Overview'
+      : 'Top Performance Snapshot';
+
+    return (
+      <Paper sx={{ p: 3, mb: 3, border: '1px solid #d6e6ff' }}>
+        <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
+          {chartTitle}
+        </Typography>
+        <Grid container spacing={2}>
+          {rows.map((item) => {
+            const rawValue = Number(item.value || 0);
+            const widthPercent = Math.max(4, Math.round((rawValue / maxValue) * 100));
+            const labelValue = isCurrency
+              ? `₹${rawValue.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
+              : rawValue.toLocaleString('en-IN');
+
+            return (
+              <Grid item xs={12} key={item.label}>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    {item.label}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    {labelValue}
+                  </Typography>
+                </Box>
+                <Box sx={{ height: 12, borderRadius: 99, background: '#e6edf7', overflow: 'hidden' }}>
+                  <Box
+                    sx={{
+                      height: '100%',
+                      width: `${widthPercent}%`,
+                      borderRadius: 99,
+                      background: 'linear-gradient(90deg, #1e88e5 0%, #42a5f5 100%)',
+                    }}
+                  />
+                </Box>
+              </Grid>
+            );
+          })}
+        </Grid>
+      </Paper>
     );
   };
 
@@ -591,6 +700,9 @@ const Reports = () => {
 
           {/* Summary Cards */}
           {renderSummaryCards()}
+
+          {/* Quick Charts */}
+          {renderCharts()}
 
           {/* Report Table */}
           {reportData && (

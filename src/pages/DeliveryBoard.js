@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   Box,
   Button,
@@ -28,9 +28,11 @@ import { fetchDeliveries, updateDeliveryStatus, updateDeliveryNotes } from '../s
 import { formatDateTime, parseDateInput, toInputDateValue } from '../utils/dateFormatter';
 import { formatStatusLabel } from '../utils/statusFormatter';
 import useAutoRefresh from '../hooks/useAutoRefresh';
+import { useNotification } from '../context/NotificationContext';
+import { useLocation } from 'react-router-dom';
 
 const STATUS_OPTIONS = ['pending', 'out_for_delivery', 'delivered', 'failed'];
-const RANGE_OPTIONS = ['today', 'all'];
+const RANGE_OPTIONS = ['all', 'today'];
 
 const formatQty = (qty) => {
   const num = Number(qty || 0);
@@ -94,7 +96,9 @@ const buildDateTimeInput = (dateValue, timeValue) => {
 };
 
 function DeliveryBoard() {
-  const [range, setRange] = useState('today');
+  const { getUnreadNotificationFor, markRecordNotificationsSeen } = useNotification();
+  const location = useLocation();
+  const [range, setRange] = useState('all');
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notif, setNotif] = useState({ open: false, message: '', severity: 'success' });
@@ -141,18 +145,66 @@ function DeliveryBoard() {
     watch: [range],
   });
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || '');
+    const rangeQuery = String(params.get('range') || '').trim().toLowerCase();
+    if (RANGE_OPTIONS.includes(rangeQuery)) {
+      setRange(rangeQuery);
+    }
+
+    const focusWoNo = params.get('focusWoNo');
+    const focusDeliveryId = params.get('focusDeliveryId') || params.get('notification_source_id');
+    const focusQuery = String(focusWoNo || focusDeliveryId || '').trim();
+
+    if (!focusQuery) return;
+
+    setRange('all');
+    setStatusFilter('all');
+    setSearchQuery(focusQuery);
+    setSliderIndex(0);
+
+    // Consume one-time focus query params so refreshes don't keep filtering.
+    params.delete('focusWoNo');
+    params.delete('focusDeliveryId');
+    params.delete('notification_source_id');
+    const nextQuery = params.toString();
+    const nextUrl = `${location.pathname}${nextQuery ? `?${nextQuery}` : ''}`;
+    window.history.replaceState({}, '', nextUrl);
+  }, [location.search]);
+
   const sortedDeliveries = useMemo(() => {
     let filtered = [...deliveries];
 
     // Search filter
     if (searchQuery) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter(delivery =>
-        delivery.work_order_number?.toLowerCase().includes(query) ||
-        delivery.customer_name?.toLowerCase().includes(query) ||
-        delivery.customer_phone?.toLowerCase().includes(query) ||
-        delivery.delivery_location?.toLowerCase().includes(query)
-      );
+      const query = String(searchQuery || '').trim().toLowerCase();
+      const queryDigits = query.replace(/\D/g, '');
+
+      filtered = filtered.filter((delivery) => {
+        const deliveryId = String(delivery.id || '');
+        const workOrderNo = String(delivery.work_order_number || '');
+        const workOrderNoLower = workOrderNo.toLowerCase();
+        const workOrderDigits = workOrderNo.replace(/\D/g, '');
+        const customerName = String(delivery.customer_name || '').toLowerCase();
+        const customerPhone = String(delivery.customer_phone || '').toLowerCase();
+        const deliveryLocation = String(delivery.delivery_location || '').toLowerCase();
+
+        const textMatch =
+          deliveryId.includes(query) ||
+          workOrderNoLower.includes(query) ||
+          customerName.includes(query) ||
+          customerPhone.includes(query) ||
+          deliveryLocation.includes(query);
+
+        const numberMatch = queryDigits
+          ? (
+            deliveryId.includes(queryDigits) ||
+            workOrderDigits.includes(queryDigits)
+          )
+          : false;
+
+        return textMatch || numberMatch;
+      });
     }
 
     // Status filter
@@ -242,6 +294,14 @@ function DeliveryBoard() {
     closeNotesModal();
   };
 
+  const handleOpenDeliveryRecord = async (deliveryId) => {
+    try {
+      await markRecordNotificationsSeen('delivery', deliveryId);
+    } catch {
+      // Keep board interaction responsive even if notification update fails.
+    }
+  };
+
   return (
     <>
       <Topbar />
@@ -317,14 +377,44 @@ function DeliveryBoard() {
               {sortedDeliveries.slice(sliderIndex, sliderIndex + cardsPerView).map((delivery) => {
                 const event = delivery.event_snapshot || {};
                 const totalQty = (delivery.items || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+                const notification = getUnreadNotificationFor('delivery', delivery.id);
+                const action = String(notification?.action || '').toLowerCase();
+                const badgeLabel = notification ? (/(create|new|added)/.test(action) ? 'NEW' : 'UPDATED') : '';
 
                 return (
-                  <Card key={delivery.id} sx={{ borderRadius: 2, height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column' }}>
+                  <Card
+                    key={delivery.id}
+                    onClick={() => handleOpenDeliveryRecord(delivery.id)}
+                    sx={{ borderRadius: 2, height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
+                  >
                     <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
-                        <Typography variant="subtitle1" fontWeight={700}>
-                          #{delivery.id}
-                        </Typography>
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <Typography variant="subtitle1" fontWeight={700}>
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={() => handleOpenDeliveryRecord(delivery.id)}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                  event.preventDefault();
+                                  handleOpenDeliveryRecord(delivery.id);
+                                }
+                              }}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              #{delivery.id}
+                            </span>
+                          </Typography>
+                          {badgeLabel ? (
+                            <Chip
+                              label={badgeLabel}
+                              size="small"
+                              color="error"
+                              sx={{ fontWeight: 700 }}
+                            />
+                          ) : null}
+                        </Stack>
 
                         <FormControl size="small" sx={{ minWidth: 130 }}>
                           <InputLabel>Status</InputLabel>

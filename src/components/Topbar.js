@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { AccountCircle, Logout, Menu, Person } from '@mui/icons-material';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AccountCircle, Logout, Menu, NotificationsNone, Person } from '@mui/icons-material';
 import {
+  Badge,
   Button,
   Dialog,
   DialogActions,
@@ -17,6 +18,7 @@ import { useLayout } from '../context/LayoutContext';
 import { useAuth } from '../context/AuthContext';
 import { logout as logoutService } from '../services/authService';
 import { getMyProfile, updateMyProfile } from '../services/userServices';
+import { useNotification } from '../context/NotificationContext';
 import ConfirmDialog from './ui/ConfirmDialog';
 import '../assets/styles/Topbar.scss'
 
@@ -25,7 +27,16 @@ function Topbar() {
   const navigate = useNavigate();
   const { toggleSidebar } = useLayout();
   const { currentUser, logout, updateCurrentUser } = useAuth();
+  const {
+    unreadNotifications,
+    totalUnseen,
+    fetchNotifications,
+    fetchBubbleCounts,
+    markNotificationSeen,
+    markAllNotificationsSeen,
+  } = useNotification();
   const [menuAnchor, setMenuAnchor] = useState(null);
+  const [notificationAnchor, setNotificationAnchor] = useState(null);
   const [profileOpen, setProfileOpen] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
   const [profileLoading, setProfileLoading] = useState(false);
@@ -38,6 +49,7 @@ function Topbar() {
   });
 
   const isMenuOpen = Boolean(menuAnchor);
+  const isNotificationOpen = Boolean(notificationAnchor);
 
   // Convert the current URL path to a page title
   const getPageTitle = () => {
@@ -50,6 +62,128 @@ function Topbar() {
 
   const openMenu = (event) => setMenuAnchor(event.currentTarget);
   const closeMenu = () => setMenuAnchor(null);
+
+  const openNotifications = async (event) => {
+    setNotificationAnchor(event.currentTarget);
+    await fetchNotifications();
+    await fetchBubbleCounts();
+  };
+
+  const closeNotifications = () => setNotificationAnchor(null);
+
+  const getNotificationFallbackRoute = (notification) => {
+    if (!notification) return '/dashboard';
+
+    if (notification.module === 'leads' && notification.source_id) {
+      return `/leads/${notification.source_id}/edit`;
+    }
+
+    if (notification.module === 'work_orders' && notification.source_id) {
+      return `/workorders/${notification.source_id}`;
+    }
+
+    if (notification.module === 'kot') return '/kots';
+    if (notification.module === 'delivery') return '/deliveries';
+    if (notification.module === 'feedback') return '/feedbacks';
+
+    return '/dashboard';
+  };
+
+  const formatNotificationTime = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString();
+  };
+
+  const formatModuleLabel = (module) => {
+    const key = String(module || '').trim().toLowerCase();
+    if (key === 'leads') return 'Leads';
+    if (key === 'work_orders') return 'Work Orders';
+    if (key === 'kot') return 'KOT';
+    if (key === 'delivery') return 'Delivery';
+    if (key === 'feedback') return 'Feedback';
+
+    return key
+      .replace(/_/g, ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  const toTitleCase = (value) => {
+    return String(value || '')
+      .split('_')
+      .join(' ')
+      .toLowerCase()
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  };
+
+  const formatNotificationAction = (action) => {
+    const raw = String(action || '').trim();
+    if (!raw) return 'Update';
+
+    // Capitalize status values inside transitions like "(preparing -> completed)".
+    return raw.replace(/\(([^)]+)->([^)]+)\)/g, (_match, fromStatus, toStatus) => {
+      return `(${toTitleCase(fromStatus.trim())} -> ${toTitleCase(toStatus.trim())})`;
+    });
+  };
+
+  const appendQueryParam = (path, key, value) => {
+    if (!path) return path;
+    const safeValue = Number(value || 0);
+    if (!safeValue) return path;
+
+    const joiner = path.includes('?') ? '&' : '?';
+    return `${path}${joiner}${key}=${safeValue}`;
+  };
+
+  const appendTextQueryParam = (path, key, value) => {
+    if (!path) return path;
+    const safeValue = String(value || '').trim();
+    if (!safeValue) return path;
+
+    const joiner = path.includes('?') ? '&' : '?';
+    return `${path}${joiner}${key}=${encodeURIComponent(safeValue)}`;
+  };
+
+  const extractWorkOrderNumber = (notification) => {
+    const action = String(notification?.action || '');
+    const match = action.match(/WO\/\d{4}\/\d+/i);
+    return match ? match[0].toUpperCase() : '';
+  };
+
+  const handleNotificationClick = async (notification) => {
+    if (!notification) return;
+
+    if (!notification.isSeen) {
+      await markNotificationSeen(notification.id);
+    }
+
+    closeNotifications();
+
+    let finalRoute = notification.module === 'leads' && notification.source_id
+      ? `/leads/${notification.source_id}/edit`
+      : (notification.redirect_url || getNotificationFallbackRoute(notification));
+
+    if (notification.module === 'kot' && notification.source_id) {
+      finalRoute = appendQueryParam('/kots', 'focusKotId', notification.source_id);
+      finalRoute = appendTextQueryParam(finalRoute, 'focusWoNo', extractWorkOrderNumber(notification));
+      finalRoute = appendTextQueryParam(finalRoute, 'range', 'all');
+    }
+
+    if (notification.module === 'delivery' && notification.source_id) {
+      finalRoute = appendQueryParam('/deliveries', 'focusDeliveryId', notification.source_id);
+      finalRoute = appendTextQueryParam(finalRoute, 'focusWoNo', extractWorkOrderNumber(notification));
+      finalRoute = appendTextQueryParam(finalRoute, 'range', 'all');
+    }
+
+    navigate(finalRoute);
+    await fetchBubbleCounts();
+  };
+
+  const latestUnreadNotifications = useMemo(() => {
+    return [...unreadNotifications]
+      .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  }, [unreadNotifications]);
 
   const handleOpenProfile = async () => {
     closeMenu();
@@ -135,6 +269,98 @@ function Topbar() {
           </div>
         </div>
         <div className="topbar-profile">
+          <div className="notification-bell">
+            <IconButton onClick={openNotifications}>
+              <Badge badgeContent={totalUnseen} color="error">
+                <NotificationsNone />
+              </Badge>
+            </IconButton>
+
+            <MuiMenu
+              anchorEl={notificationAnchor}
+              open={isNotificationOpen}
+              onClose={closeNotifications}
+              anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+              PaperProps={{
+                sx: {
+                  width: 420,
+                  maxHeight: 520,
+                  borderRadius: 2,
+                  border: '1px solid #e5e9f2',
+                  boxShadow: '0 10px 30px rgba(15, 23, 42, 0.12)',
+                  p: 0,
+                }
+              }}
+            >
+              {unreadNotifications.length ? (
+                <div style={{ padding: '10px 12px', borderBottom: '1px solid #edf1f7', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography variant="subtitle2" sx={{ fontWeight: 800, color: '#1f2937' }}>
+                    Notifications
+                  </Typography>
+                  <Button
+                    size="small"
+                    onClick={async () => {
+                      await markAllNotificationsSeen();
+                      await fetchBubbleCounts();
+                      closeNotifications();
+                    }}
+                    sx={{ textTransform: 'none', fontWeight: 700 }}
+                  >
+                    Mark all as read
+                  </Button>
+                </div>
+              ) : null}
+
+              {latestUnreadNotifications.length ? (
+                latestUnreadNotifications.slice(0, 20).map((notification) => (
+                  <MenuItem
+                    key={notification.id}
+                    onClick={() => handleNotificationClick(notification)}
+                    sx={{
+                      mx: 1,
+                      my: 0.5,
+                      py: 1,
+                      borderRadius: 1.5,
+                      alignItems: 'flex-start',
+                      border: '1px solid #edf1f7',
+                      background: '#fff',
+                      whiteSpace: 'normal',
+                    }}
+                  >
+                    <div style={{ width: '100%' }}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          fontWeight: 700,
+                          color: '#111827',
+                          lineHeight: 1.4,
+                          whiteSpace: 'normal',
+                          wordBreak: 'break-word',
+                          overflowWrap: 'anywhere',
+                        }}
+                      >
+                        {formatNotificationAction(notification.action)}
+                      </Typography>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                        <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                          {formatModuleLabel(notification.module)}
+                        </Typography>
+                        <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                          {formatNotificationTime(notification.created_at)}
+                        </Typography>
+                      </div>
+                    </div>
+                  </MenuItem>
+                ))
+              ) : (
+                <MenuItem disabled>
+                  <Typography variant="body2">No unread notifications</Typography>
+                </MenuItem>
+              )}
+            </MuiMenu>
+          </div>
+
           <div className="profile-picture">
             <IconButton onClick={openMenu}>
               <AccountCircle />

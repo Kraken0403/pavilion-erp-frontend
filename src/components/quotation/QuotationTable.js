@@ -8,12 +8,15 @@ import ChannelSelectModal from '../ui/ChannelSelectModal';
 import { sendQuotationEmailToCustomer, sendQuotationWhatsAppToCustomer, updateQuotationStatus } from '../../services/quotationService';
 import { useSettings } from "../../context/SettingsContext";
 import { formatStatusLabel, normalizeStatusValue } from '../../utils/statusFormatter';
+import { parseDateInput } from '../../utils/dateFormatter';
 
 const statusOptions = ['pending', 'approved', 'rejected', 'converted'];
 
 const formatDate = (iso) => {
   if (!iso) return '—';
-  return new Date(iso).toLocaleDateString('en-IN');
+  const parsed = parseDateInput(iso);
+  if (!parsed) return '—';
+  return parsed.toLocaleDateString('en-IN');
 };
 
 const QuotationsTable = ({
@@ -53,31 +56,62 @@ const QuotationsTable = ({
     });
 
     const groups = Object.values(map);
+    const withMeta = groups.map((group) => {
+      const sortedByVersion = [...group].sort((a, b) => (a.version || 1) - (b.version || 1));
+      const parentRow = sortedByVersion.find((row) => !row.parent_id) || sortedByVersion[0];
+
+      const timestamps = sortedByVersion
+        .map((row) => parseDateInput(row.quotation_date)?.getTime() || 0)
+        .filter((value) => Number.isFinite(value));
+
+      const latestTimestamp = timestamps.length ? Math.max(...timestamps) : 0;
+      const oldestTimestamp = timestamps.length ? Math.min(...timestamps) : 0;
+      const quotationNumber = String(parentRow?.quotation_number || '').trim();
+
+      return {
+        rows: [...sortedByVersion].sort((a, b) => {
+          const versionDiff = Number(b.version || 1) - Number(a.version || 1);
+          if (versionDiff !== 0) return versionDiff;
+          return Number(b.id || 0) - Number(a.id || 0);
+        }),
+        latestTimestamp,
+        oldestTimestamp,
+        quotationNumber,
+        maxId: Math.max(...sortedByVersion.map((row) => Number(row.id || 0)), 0),
+      };
+    });
 
     // Sort groups based on selected sort value
     switch (sort) {
       case 'oldest':
-        groups.sort((a, b) => new Date(a[0].quotation_date) - new Date(b[0].quotation_date));
+        withMeta.sort((a, b) => {
+          const diff = a.oldestTimestamp - b.oldestTimestamp;
+          if (diff !== 0) return diff;
+          return a.maxId - b.maxId;
+        });
         break;
       case 'az':
-        groups.sort((a, b) =>
-          String(a[0].quotation_number || '').localeCompare(String(b[0].quotation_number || ''))
+        withMeta.sort((a, b) =>
+          a.quotationNumber.localeCompare(b.quotationNumber, undefined, { numeric: true, sensitivity: 'base' })
         );
         break;
       case 'za':
-        groups.sort((a, b) =>
-          String(b[0].quotation_number || '').localeCompare(String(a[0].quotation_number || ''))
+        withMeta.sort((a, b) =>
+          b.quotationNumber.localeCompare(a.quotationNumber, undefined, { numeric: true, sensitivity: 'base' })
         );
         break;
       case 'latest':
       default:
-        groups.sort((a, b) => new Date(b[0].quotation_date) - new Date(a[0].quotation_date));
+        withMeta.sort((a, b) => {
+          const diff = b.latestTimestamp - a.latestTimestamp;
+          if (diff !== 0) return diff;
+          return b.maxId - a.maxId;
+        });
         break;
     }
 
-    groups.forEach(group => {
-      group.sort((a, b) => (a.version || 1) - (b.version || 1));
-      result.push(...group);
+    withMeta.forEach((group) => {
+      result.push(...group.rows);
     });
 
     return result;
@@ -89,10 +123,15 @@ const QuotationsTable = ({
     // Date filter
     if (dateFilter.startDate || dateFilter.endDate) {
       data = data.filter(q => {
-        const d = new Date(q.quotation_date);
-        if (dateFilter.startDate && d < new Date(dateFilter.startDate)) return false;
+        const d = parseDateInput(q.quotation_date);
+        if (!d) return false;
+
+        const startDate = dateFilter.startDate ? parseDateInput(dateFilter.startDate) : null;
+        if (startDate && d < startDate) return false;
+
         if (dateFilter.endDate) {
-          const end = new Date(dateFilter.endDate);
+          const end = parseDateInput(dateFilter.endDate);
+          if (!end) return false;
           end.setHours(23, 59, 59, 999);
           if (d > end) return false;
         }

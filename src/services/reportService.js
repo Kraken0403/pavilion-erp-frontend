@@ -1,5 +1,6 @@
 import api from './api';
 import { downloadPdfFromResponse } from '../utils/pdfHelpers';
+import { toInputDateValue } from '../utils/dateFormatter';
 
 /**
  * Generate Sales Report
@@ -85,7 +86,7 @@ export const downloadReportPdf = async (reportType, startDate, endDate, salesTyp
     if (reportType === 'sales') {
       params.reportType = salesType;
     }
-    
+
     const response = await api.get(`/reports/${reportType}/pdf`, {
       params,
       responseType: 'blob'
@@ -93,7 +94,7 @@ export const downloadReportPdf = async (reportType, startDate, endDate, salesTyp
 
     await downloadPdfFromResponse(
       response,
-      `${reportType}-report-${new Date().toISOString().split('T')[0]}.pdf`,
+      `${reportType}-report-${toInputDateValue(new Date())}.pdf`,
       'Failed to download report PDF'
     );
   } catch (error) {

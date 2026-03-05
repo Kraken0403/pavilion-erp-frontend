@@ -264,7 +264,7 @@ function QuotationDetail() {
         setPax(Number(data.pax) || 1)
         setCateringMeta({
           event_name: data.event_name || '',
-          event_date: data.event_date?.substring(0, 10) || '',
+          event_date: data.event_date ? (data.event_date.match(/^\d{4}-\d{2}-\d{2}/) ? data.event_date.substring(0, 10) : data.event_date) : '',
           event_time: data.event_time || '',
           event_location: data.event_location || ''
         })
@@ -272,8 +272,8 @@ function QuotationDetail() {
       // HEADER
       setHeaderForm({
         lead_id: data.lead_id ?? '',
-        quotation_date: data.quotation_date?.substring(0, 10) ?? '',
-        valid_until: data.valid_until?.substring(0, 10) ?? '',
+        quotation_date: data.quotation_date ? (data.quotation_date.match(/^\d{4}-\d{2}-\d{2}/) ? data.quotation_date.substring(0, 10) : data.quotation_date) : '',
+        valid_until: data.valid_until ? (data.valid_until.match(/^\d{4}-\d{2}-\d{2}/) ? data.valid_until.substring(0, 10) : data.valid_until) : '',
         notes: data.notes ?? ''
       })
 
