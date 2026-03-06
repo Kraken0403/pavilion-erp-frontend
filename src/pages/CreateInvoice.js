@@ -11,9 +11,7 @@ import InvoiceSummary from '../components/invoices/InvoiceSummary'
 import InvoiceFooterSection from '../components/invoices/InvoiceFooterSection'
 
 import {
-  fetchAllProducts,
-  createProduct,
-  updateProduct
+  fetchAllProducts
 } from '../services/productServices'
 
 import { fetchLeads } from '../services/leadService'

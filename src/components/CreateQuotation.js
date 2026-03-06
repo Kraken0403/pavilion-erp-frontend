@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Container, Paper } from '@mui/material'
+import { Container } from '@mui/material'
 import { useParams } from 'react-router-dom'
 
 import Topbar from './Topbar'
@@ -12,10 +12,7 @@ import QuotationSummary from './quotation/QuotationSummary'
 import { getSettings } from '../services/settingsService'
 
 import {
-  Autocomplete,
-  Box,
   Grid,
-  MenuItem,
   TextField,
   Typography,
 } from '@mui/material'

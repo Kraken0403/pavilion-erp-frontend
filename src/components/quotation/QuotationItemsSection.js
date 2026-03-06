@@ -1,23 +1,13 @@
 import React, { useMemo, useRef, useState } from 'react'
 import {
   Autocomplete,
-  Box,
-  Grid,
-  MenuItem,
   TextField,
   Typography,
+  Box,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import { useSettings } from '../../context/SettingsContext'
 import '../../assets/styles/QuotationItems.scss'
-
-/* ---------------------------------------
-   ENUMS — MUST MATCH DB
---------------------------------------- */
-const COST_MODES = [
-  { label: 'Absolute', value: 'absolute' },
-  { label: 'Percentage', value: 'percentage' },
-]
 
 function QuotationItemsSection({
   items,
@@ -114,7 +104,7 @@ function QuotationItemsSection({
       tax
     }
   }
-  
+
 
   const removeItem = (index) => {
     setItems(prev => prev.filter((_, i) => i !== index))
@@ -129,10 +119,10 @@ function QuotationItemsSection({
         <span className="sep"></span>
         Quotation Items
       </Typography>
-  
+
       <div className="qi-table-wrap">
         <table className="qi-table">
-        <thead>
+          <thead>
             <tr>
               <th className="col-drag"></th>
               <th className="col-serial">#</th>
@@ -149,7 +139,7 @@ function QuotationItemsSection({
             </tr>
           </thead>
 
-  
+
           <tbody>
             {(items || []).map((item, index) => {
               const cost = safeNumber(item.cost_price)
@@ -161,52 +151,52 @@ function QuotationItemsSection({
               const rowCost = cost * qty
               const margin = rowNetRevenue - rowCost
               const marginPct = rowNetRevenue > 0 ? (margin / rowNetRevenue) * 100 : 0
-              
-  
+
+
               return (
-                <tr   key={index}
-                
-                onDragStart={() => {
-                  dragFromIndex.current = index
-                }}
-                onDragOver={(e) => {
-                  e.preventDefault()
-                  setDragOverIndex(index)
-                }}
-                onDrop={() => {
-                  reorder(dragFromIndex.current, index)
-                  dragFromIndex.current = null
-                  setDragOverIndex(null)
-                }}
-                className={
-                  dragOverIndex === index ? 'qi-row-drag-over' : ''
-                }>
+                <tr key={index}
+
+                  onDragStart={() => {
+                    dragFromIndex.current = index
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault()
+                    setDragOverIndex(index)
+                  }}
+                  onDrop={() => {
+                    reorder(dragFromIndex.current, index)
+                    dragFromIndex.current = null
+                    setDragOverIndex(null)
+                  }}
+                  className={
+                    dragOverIndex === index ? 'qi-row-drag-over' : ''
+                  }>
                   {/* DRAG */}
                   <td className="qi-drag">
-                  <span
-                    className="qi-grip"
-                    draggable={!isLocked}
-                    onDragStart={() => {
-                      dragFromIndex.current = index
-                    }}
-                    onDragOver={(e) => {
-                      e.preventDefault()
-                      setDragOverIndex(index)
-                    }}
-                    onDrop={() => {
-                      reorder(dragFromIndex.current, index)
-                      dragFromIndex.current = null
-                      setDragOverIndex(null)
-                    }}
-                    title="Drag to reorder"
-                  >
-                    ⋮⋮
-                  </span>
+                    <span
+                      className="qi-grip"
+                      draggable={!isLocked}
+                      onDragStart={() => {
+                        dragFromIndex.current = index
+                      }}
+                      onDragOver={(e) => {
+                        e.preventDefault()
+                        setDragOverIndex(index)
+                      }}
+                      onDrop={() => {
+                        reorder(dragFromIndex.current, index)
+                        dragFromIndex.current = null
+                        setDragOverIndex(null)
+                      }}
+                      title="Drag to reorder"
+                    >
+                      ⋮⋮
+                    </span>
                   </td>
 
                   <td className="col-serial">{index + 1}</td>
 
-  
+
                   {/* PRODUCT */}
                   <td>
                     <Autocomplete
@@ -221,7 +211,7 @@ function QuotationItemsSection({
                       }
                       onChange={(e, val) => {
                         if (!val) return
-                      
+
                         const baseItem = {
                           ...items[index],
                           product: val,
@@ -231,15 +221,15 @@ function QuotationItemsSection({
                           discount: items[index].discount ?? 0,
                           quantity: items[index].quantity ?? 1,
                         }
-                      
+
                         const calc = calculateItem(baseItem)
-                      
+
                         updateItem(index, {
                           ...baseItem,
                           ...calc,
                         })
                       }}
-                      
+
                       renderOption={(props, option) => (
                         <li {...props} key={option.__id}>
                           {option.__label}
@@ -271,7 +261,7 @@ function QuotationItemsSection({
                       )}
                     />
                   </td>
-  
+
                   {/* QTY */}
                   <td>
                     <TextField
@@ -282,25 +272,25 @@ function QuotationItemsSection({
 
                       onChange={(e) => {
                         const raw = e.target.value
-                      
+
                         if (raw === '') {
                           updateItem(index, { quantity: '' })
                           return
                         }
-                      
+
                         const quantity = Math.max(1, safeNumber(raw, 1))
                         const calc = calculateItem(item, quantity)
-                      
+
                         updateItem(index, {
                           quantity,
                           ...calc,
                         })
                       }}
-                      
-                      
+
+
                     />
                   </td>
-  
+
                   {/* COST */}
                   <td>
                     <TextField
@@ -311,22 +301,22 @@ function QuotationItemsSection({
 
                       onChange={(e) => {
                         const raw = e.target.value
-                      
+
                         if (raw === '') {
                           updateItem(index, { cost_price: '' })
                           return
                         }
-                      
+
                         updateItem(index, {
                           cost_price: Math.max(0, safeNumber(raw)),
                         })
                       }}
-                      
+
                     />
                   </td>
-  
-            
-  
+
+
+
                   {/* SELL */}
                   <td>
                     <TextField
@@ -337,22 +327,22 @@ function QuotationItemsSection({
 
                       onChange={(e) => {
                         const raw = e.target.value
-                      
+
                         if (raw === '') {
                           updateItem(index, { selling_price: '' })
                           return
                         }
-                      
+
                         const selling_price = safeNumber(raw)
                         const calc = calculateItem({ ...item, selling_price })
-                      
+
                         updateItem(index, {
                           selling_price,
                           ...calc,
                         })
                       }}
-                      
-                      
+
+
                     />
                   </td>
 
@@ -366,21 +356,21 @@ function QuotationItemsSection({
 
                       onChange={(e) => {
                         const raw = e.target.value
-                      
+
                         if (raw === '') {
                           updateItem(index, { discount: '' })
                           return
                         }
-                      
+
                         const discount = Math.max(0, safeNumber(raw))
                         const calc = calculateItem({ ...item, discount })
-                      
+
                         updateItem(index, {
                           discount,
                           ...calc,
                         })
                       }}
-                      
+
                     />
                   </td>
 
@@ -397,7 +387,7 @@ function QuotationItemsSection({
 
 
 
-  
+
                   {/* MARGIN */}
                   <td>
                     <TextField
@@ -421,7 +411,7 @@ function QuotationItemsSection({
 
                     />
                   </td>
-  
+
                   {/* ACTIONS (reserved) */}
                   <td className="col-remove">
                     {!isLocked && (
@@ -441,7 +431,7 @@ function QuotationItemsSection({
           </tbody>
         </table>
       </div>
-  
+
       {!isLocked && (
         <button className="add-item-btn" onClick={addItem}>
           + Add Product
@@ -449,7 +439,7 @@ function QuotationItemsSection({
       )}
     </div>
   )
-  
+
 }
 
 export default QuotationItemsSection

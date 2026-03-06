@@ -3,10 +3,6 @@ import React from 'react'
 import '../../assets/styles/QuotationSummary.scss'
 import '../../assets/styles/QuotationItems.scss'
 import {
-  Autocomplete,
-  Box,
-  Grid,
-  MenuItem,
   TextField,
   Typography,
 } from '@mui/material'
@@ -35,8 +31,8 @@ function QuotationSummary({
 
       <div className="quotation-summary-content qs-grid">
 
-                {/* LEFT COLUMN */}
-      <div className="qs-col qs-col-left">
+        {/* LEFT COLUMN */}
+        <div className="qs-col qs-col-left">
 
           <div className="qs-row">
             <span className="qs-label muted">GST Included</span>
@@ -57,7 +53,7 @@ function QuotationSummary({
             </strong>
           </div>
 
-          </div>
+        </div>
 
         {/* RIGHT COLUMN */}
         <div className="qs-col qs-col-right">
@@ -119,9 +115,9 @@ function QuotationSummary({
 
 
 
-        </div>
+      </div>
 
-      
+
     </div>
   )
 }

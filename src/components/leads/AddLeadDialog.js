@@ -8,7 +8,6 @@ import {
   MenuItem,
   Typography,
   Box,
-  Grid,
   IconButton
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
@@ -18,14 +17,6 @@ import { getAllUsers } from "../../services/userServices";
 import { formatStatusLabel } from "../../utils/statusFormatter";
 
 import "../../assets/styles/AddProductDialog.scss"; // reuse same styling
-
-const indianStates = [
-  "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh","Goa",
-  "Gujarat","Haryana","Himachal Pradesh","Jharkhand","Karnataka","Kerala",
-  "Madhya Pradesh","Maharashtra","Manipur","Meghalaya","Mizoram","Nagaland",
-  "Odisha","Punjab","Rajasthan","Sikkim","Tamil Nadu","Telangana",
-  "Tripura","Uttar Pradesh","Uttarakhand","West Bengal","Delhi"
-];
 
 function AddLeadDialog({ open, onClose, onLeadCreated, showNotification, prefillName = "" }) {
 
@@ -101,10 +92,10 @@ function AddLeadDialog({ open, onClose, onLeadCreated, showNotification, prefill
 
   const handleSave = async () => {
     if (submitting) return;
-  
+
     try {
       setSubmitting(true);
-  
+
       /* -----------------------------
          BASIC VALIDATION
       ----------------------------- */
@@ -112,7 +103,7 @@ function AddLeadDialog({ open, onClose, onLeadCreated, showNotification, prefill
         showNotification("First name is required", "warning");
         return;
       }
-  
+
       /* -----------------------------
          SAFE NUMERIC CONVERSION
       ----------------------------- */
@@ -120,17 +111,17 @@ function AddLeadDialog({ open, onClose, onLeadCreated, showNotification, prefill
         val === "" || val === null || val === undefined
           ? null
           : Number(val);
-  
+
       /* -----------------------------
          CLEAN PAYLOAD
       ----------------------------- */
       const payload = {
         ...form,
-  
+
         // convert numeric fields properly
         hotness: safeNumber(form.hotness),
         amount: safeNumber(form.amount),
-  
+
         // convert empty strings to null for optional text fields
         email: form.email || null,
         phone_number: form.phone_number || null,
@@ -139,55 +130,55 @@ function AddLeadDialog({ open, onClose, onLeadCreated, showNotification, prefill
         follow_up_date: form.follow_up_date || null,
         assigned_salesperson:
           form.assigned_salesperson === "" ? null : form.assigned_salesperson,
-  
+
         billing_address: form.billing_address || null,
         billing_city: form.billing_city || null,
         billing_state: form.billing_state || null,
         billing_pincode: form.billing_pincode || null,
-  
+
         shipping_address: form.shipping_address || null,
         shipping_city: form.shipping_city || null,
         shipping_state: form.shipping_state || null,
         shipping_pincode: form.shipping_pincode || null,
-  
+
         notes: form.notes || null,
-  
+
         custom_fields: Object.entries(customValues).map(([id, val]) => ({
           field_id: Number(id),
           field_value: val || null
         }))
       };
-  
+
       /* -----------------------------
          API CALL
       ----------------------------- */
       const response = await addLead(payload);
-  
+
       /*
         Depending on your backend, response could be:
         { leadId: 27 }
         OR full lead object
       */
-  
+
       const createdLeadId =
         response?.leadId || response?.id || null;
-  
+
       if (!createdLeadId) {
         throw new Error("Lead created but no ID returned from server");
       }
-  
+
       /* -----------------------------
          SUCCESS
       ----------------------------- */
       showNotification("Lead created successfully", "success");
-  
+
       onLeadCreated(createdLeadId);
-  
+
       onClose();
-  
+
     } catch (err) {
       console.error("Error creating lead:", err);
-  
+
       showNotification(
         err?.response?.data?.details ||
         err?.response?.data?.error ||
@@ -239,14 +230,14 @@ function AddLeadDialog({ open, onClose, onLeadCreated, showNotification, prefill
         {/* STATUS + PRIORITY */}
         <Typography className="field-label" sx={{ mt: 2 }}>Status</Typography>
         <TextField className="form-input" select fullWidth name="lead_status" value={form.lead_status} onChange={handleChange}>
-          {["new","in-progress","closed","won","lost"].map(s =>
+          {["new", "in-progress", "closed", "won", "lost"].map(s =>
             <MenuItem key={s} value={s}>{formatStatusLabel(s)}</MenuItem>
           )}
         </TextField>
 
         <Typography className="field-label" sx={{ mt: 2 }}>Priority</Typography>
         <TextField className="form-input" select fullWidth name="priority" value={form.priority} onChange={handleChange}>
-          {["low","medium","high"].map(p =>
+          {["low", "medium", "high"].map(p =>
             <MenuItem key={p} value={p}>{p}</MenuItem>
           )}
         </TextField>

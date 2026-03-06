@@ -27,12 +27,6 @@ const numberingModes = [
   { value: 'monthly', label: 'Reset Every Month' },
 ];
 
-const businessTypes = [
-  { value: 'GENERAL', label: 'General Business' },
-  { value: 'CATERING', label: 'Catering Business (KOT Enabled)' },
-  { value: 'HYBRID', label: 'Hybrid (General + Catering)' },
-];
-
 function QuotationSettings() {
   const [settings, setSettings] = useState({
     layout_option: 'minimal',

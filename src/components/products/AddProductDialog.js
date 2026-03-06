@@ -70,7 +70,6 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
   const [selectedAddOnProducts, setSelectedAddOnProducts] = useState([]);
   const [previewUrl, setPreviewUrl] = useState("")
 
-  const [imageFile, setImageFile] = useState(null)
   const [uploadingImage, setUploadingImage] = useState(false)
 
 
@@ -261,8 +260,6 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
     setSelectedAddOnProducts([]);
     setPreviewUrl("")
 
-    setImageFile(null)
-
   };
 
   const handleClose = () => {
@@ -443,8 +440,6 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
               onChange={(e) => {
                 const file = e.target.files?.[0]
                 if (!file) return
-
-                setImageFile(file)
 
                 // 🔥 INSTANT local preview
                 const localPreview = URL.createObjectURL(file)

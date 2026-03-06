@@ -413,14 +413,6 @@ function SignUp() {
     }
   };
 
-  const handleOpenFilteredUsersForRole = () => {
-    setOpenDeleteRoleModal(false);
-    setDeletingRole(null);
-    setDeleteRoleImpact(null);
-    setActiveTab(0);
-    setRoleFilter(deletingRole?.name || 'all');
-  };
-
   const handleSavePermissions = async () => {
     if (!selectedPermissionUserId) {
       alert('Select a user first');

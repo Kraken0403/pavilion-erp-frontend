@@ -31,7 +31,6 @@ function QuotationHeader({
     id,
     quotation_number,
     version,
-    quotation_mode,
     status
   } = quotation
 

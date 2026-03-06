@@ -14,7 +14,6 @@ import {
   TableCell,
   TableBody,
   TablePagination,
-  CircularProgress,
   Alert,
   Card,
   CardContent,
@@ -49,7 +48,6 @@ const Reports = () => {
   });
   const [endDate, setEndDate] = useState(() => toInputDateValue(new Date()));
 
-  const [loading, setLoading] = useState(false);
   const [reportData, setReportData] = useState(null);
   const [summary, setSummary] = useState(null);
   const [error, setError] = useState('');
@@ -80,7 +78,6 @@ const Reports = () => {
       return;
     }
 
-    setLoading(true);
     setError('');
     setReportData(null);
     setSummary(null);
@@ -113,8 +110,6 @@ const Reports = () => {
     } catch (err) {
       console.error('Error generating report:', err);
       setError('Failed to generate report. Please try again.');
-    } finally {
-      setLoading(false);
     }
   }, [reportType, salesType, startDate, endDate]);
 

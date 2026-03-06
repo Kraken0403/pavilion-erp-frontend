@@ -1,13 +1,12 @@
 // src/components/EditForm.js
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import '../assets/styles/EditForm.scss';
-import { createMeeting, getMeetingsByLead } from '../services/meetingService';
+import { getMeetingsByLead } from '../services/meetingService';
 import { getAllCustomFields } from '../services/customFieldServices';
 import { getAllUsers } from '../services/userServices';
 import ActivitiesTab from "./leads/ActivitiesTab";
 import NotesTab from "./leads/NotesTab";
 import FilesTab from "./leads/FilesTab";
-import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsActiveOutlined';
 import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
@@ -17,7 +16,6 @@ import { useSettings } from '../context/SettingsContext';
 import { formatStatusLabel } from '../utils/statusFormatter';
 
 import {
-  IconButton,
   Menu,
   MenuItem
 } from '@mui/material'
@@ -140,58 +138,17 @@ const EditForm = ({
 
 
   const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   const [customFields, setCustomFields] = useState([]);
   const [fieldValues, setFieldValues] = useState({});
 
-  const [meetings, setMeetings] = useState([]);
-  const [showForm, setShowForm] = useState(false);
-
-  const [meetingDetails, setMeetingDetails] = useState({
-    meeting_date: "",
-    meeting_location: "",
-    meeting_notes: "",
-  });
+  const [, setMeetings] = useState([]);
 
   const priorityOptions = ["low", "medium", "high"];
   const statusOptions = ["new", "in-progress", "closed", "won", "lost"];
 
-  useEffect(() => {
-    if (!initialSnapshot && leadData?.id) {
-      setInitialSnapshot(JSON.parse(JSON.stringify(leadData)));
-    }
-  }, [leadData]);
-  // ------------------------------------------------------
-  // Fetch Users & Custom Fields
-  // ------------------------------------------------------
-  useEffect(() => {
-    fetchUsers();
-    fetchCustomFields();
-  }, []);
-
-  useEffect(() => {
-    if (sameAsBilling) {
-      handleChange({
-        target: { name: "shipping_address", value: leadData.billing_address }
-      });
-      handleChange({
-        target: { name: "shipping_landmark", value: leadData.billing_landmark }
-      });
-      handleChange({
-        target: { name: "shipping_city", value: leadData.billing_city }
-      });
-      handleChange({
-        target: { name: "shipping_state", value: leadData.billing_state }
-      });
-      handleChange({
-        target: { name: "shipping_pincode", value: leadData.billing_pincode }
-      });
-    }
-  }, [sameAsBilling, leadData.billing_address, leadData.billing_city, leadData.billing_state]);
-
-
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const userList = await getAllUsers();
       setUsers(userList);
@@ -200,17 +157,9 @@ const EditForm = ({
       console.error("Error fetching users:", err);
       setLoading(false);
     }
-  };
+  }, []);
 
-  const userOptions = users.map((u) => ({
-    value: u.id,
-    label: u.name
-  }));
-
-  // ------------------------------------------------------
-  // FETCH CUSTOM FIELDS
-  // ------------------------------------------------------
-  const fetchCustomFields = async () => {
+  const fetchCustomFields = useCallback(async () => {
     try {
       const fields = await getAllCustomFields();
       setCustomFields(fields);
@@ -234,34 +183,91 @@ const EditForm = ({
     } catch (err) {
       console.error("Error fetching custom fields:", err);
     }
-  };
+  }, [leadData.custom_fields, handleCustomFieldsUpdate]);
+
+  const fetchMeetings = useCallback(async () => {
+    try {
+      const data = await getMeetingsByLead(leadData.id);
+      setMeetings(data);
+    } catch (err) {
+      console.error("Error fetching meetings:", err);
+    }
+  }, [leadData.id]);
+
+  useEffect(() => {
+    if (!initialSnapshot && leadData?.id) {
+      setInitialSnapshot(JSON.parse(JSON.stringify(leadData)));
+    }
+  }, [initialSnapshot, leadData]);
+  // ------------------------------------------------------
+  // Fetch Users & Custom Fields
+  // ------------------------------------------------------
+  useEffect(() => {
+    fetchUsers();
+    fetchCustomFields();
+  }, [fetchUsers, fetchCustomFields]);
+
+  useEffect(() => {
+    if (sameAsBilling) {
+      handleChange({
+        target: { name: "shipping_address", value: leadData.billing_address }
+      });
+      handleChange({
+        target: { name: "shipping_landmark", value: leadData.billing_landmark }
+      });
+      handleChange({
+        target: { name: "shipping_city", value: leadData.billing_city }
+      });
+      handleChange({
+        target: { name: "shipping_state", value: leadData.billing_state }
+      });
+      handleChange({
+        target: { name: "shipping_pincode", value: leadData.billing_pincode }
+      });
+    }
+  }, [
+    sameAsBilling,
+    handleChange,
+    leadData.billing_address,
+    leadData.billing_landmark,
+    leadData.billing_city,
+    leadData.billing_state,
+    leadData.billing_pincode
+  ]);
+
+  const userOptions = users.map((u) => ({
+    value: u.id,
+    label: u.name
+  }));
 
   // Sync custom fields when lead changes
   useEffect(() => {
     if (leadData && customFields.length > 0) {
-      const updated = {};
+      setFieldValues((prev) => {
+        const updated = {};
 
-      customFields.forEach((field) => {
-        const existing = leadData.custom_fields?.find(
-          (c) => c.field_id === field.field_id
+        customFields.forEach((field) => {
+          const existing = leadData.custom_fields?.find(
+            (c) => c.field_id === field.field_id
+          );
+
+          updated[field.field_id] =
+            existing?.field_value ??
+            prev[field.field_id] ??
+            "";
+        });
+
+        handleCustomFieldsUpdate(
+          Object.entries(updated).map(([id, val]) => ({
+            field_id: Number(id),
+            field_value: val
+          }))
         );
 
-        updated[field.field_id] =
-          existing?.field_value ??
-          fieldValues[field.field_id] ??
-          "";
+        return updated;
       });
-
-      setFieldValues(updated);
-
-      handleCustomFieldsUpdate(
-        Object.entries(updated).map(([id, val]) => ({
-          field_id: Number(id),
-          field_value: val
-        }))
-      );
     }
-  }, [leadData, customFields]);
+  }, [leadData, customFields, handleCustomFieldsUpdate]);
 
   // Custom field value change
   const handleFieldChange = (fieldId, value) => {
@@ -280,64 +286,11 @@ const EditForm = ({
     );
   };
 
-  // ------------------------------------------------------
-  // Meetings Logic
-  // ------------------------------------------------------
-  const fetchMeetings = async () => {
-    try {
-      const data = await getMeetingsByLead(leadData.id);
-      setMeetings(data);
-    } catch (err) {
-      console.error("Error fetching meetings:", err);
-    }
-  };
-
   useEffect(() => {
     if (activeTab === "meetings" && leadData.id) {
       fetchMeetings();
     }
-  }, [activeTab, leadData]);
-
-  const handleMeetingChange = (e) => {
-    const { name, value } = e.target;
-    setMeetingDetails((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleAddMeeting = async (e) => {
-    e.preventDefault();
-
-    if (!meetingDetails.meeting_date || !meetingDetails.meeting_location)
-      return alert("Date & location are required.");
-
-    try {
-      const newMeeting = await createMeeting({
-        lead_id: leadData.id,
-        ...meetingDetails
-      });
-
-      setMeetings((prev) => [...prev, newMeeting]);
-
-      setMeetingDetails({
-        meeting_date: "",
-        meeting_location: "",
-        meeting_notes: "",
-      });
-
-      setShowForm(false);
-
-    } catch (err) {
-      alert("Error adding meeting.");
-    }
-  };
-
-  const handleSaveMeetings = async () => {
-    try {
-      await createMeeting(meetings);
-      alert("Meetings saved.");
-    } catch {
-      alert("Error saving meetings.");
-    }
-  };
+  }, [activeTab, leadData.id, fetchMeetings]);
 
   // ------------------------------------------------------
   // RENDER UI (WITH ADDED GST FIELD)

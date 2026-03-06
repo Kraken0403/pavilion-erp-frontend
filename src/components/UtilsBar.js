@@ -8,7 +8,6 @@ import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsAc
 
 import {
   IconButton,
-  Chip,
   Popover,
   MenuItem,
   Select,

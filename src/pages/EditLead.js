@@ -80,12 +80,10 @@ const EditLead = () => {
     leadData,
     setLeadData,
     customFields,
-    notification,
     activeTab,
     handleChange,
     handleCustomFieldsUpdate,
     handleSubmit,
-    handleCloseNotification,
     setActiveTab,
     sendEmailtoSp,
     sendWhatsApptoSp
