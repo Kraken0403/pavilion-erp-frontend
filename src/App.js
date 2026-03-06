@@ -54,6 +54,7 @@ const HomeRoute = () => {
 };
 
 const App = () => {
+    console.log("🚀 App rendered");
     return (
         <AuthProvider>
             <NotificationProvider>
