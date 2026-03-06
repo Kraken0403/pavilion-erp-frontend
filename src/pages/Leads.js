@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { fetchLeads, deleteLead, updateLead } from '../services/leadService';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import LeadsTable from '../components/LeadsTable';
@@ -14,6 +14,23 @@ const Leads = () => {
     const [loading, setLoading] = useState(true);
     const [deleteId, setDeleteId] = useState(null);
     const [open, setOpen] = useState(false);
+    const hasLoadedOnceRef = useRef(false);
+
+    const getLeadsSignature = (items) => {
+        if (!Array.isArray(items)) return '[]';
+
+        return JSON.stringify(
+            items.map((item) => ({
+                id: Number(item?.id || 0),
+                updated_at: String(item?.updated_at || ''),
+                status: String(item?.status || ''),
+                priority: String(item?.priority || ''),
+                first_name: String(item?.first_name || ''),
+                last_name: String(item?.last_name || ''),
+                company: String(item?.company || ''),
+            }))
+        );
+    };
 
     const leadStatusOptions = ['new', 'in-progress', 'closed', 'won', 'lost'];
     const priorityOptions = ['low', 'medium', 'high'];
@@ -43,19 +60,35 @@ const Leads = () => {
         }
     };
 
-    const getLeads = async () => {
-        setLoading(true);
+    const getLeads = async ({ silent = false } = {}) => {
+        if (!silent && !hasLoadedOnceRef.current) {
+            setLoading(true);
+        }
+
         try {
             const response = await fetchLeads();
-            setLeads(response.leads);
+            const nextLeads = Array.isArray(response?.leads) ? response.leads : [];
+
+            setLeads((prev) => {
+                const prevSignature = getLeadsSignature(prev);
+                const nextSignature = getLeadsSignature(nextLeads);
+                return prevSignature === nextSignature ? prev : nextLeads;
+            });
         } catch (error) {
             console.error(error);
         } finally {
-            setLoading(false);
+            if (!hasLoadedOnceRef.current) {
+                setLoading(false);
+                hasLoadedOnceRef.current = true;
+            }
         }
     };
 
-    useAutoRefresh(getLeads, { intervalMs: 20000 });
+    useEffect(() => {
+        getLeads({ silent: false });
+    }, []);
+
+    useAutoRefresh(() => getLeads({ silent: true }), { intervalMs: 20000 });
 
     const handleDeleteConfirmation = (id) => {
         setDeleteId(id);

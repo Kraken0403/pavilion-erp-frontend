@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import {
   Container,
   Paper,
@@ -37,6 +37,13 @@ const Dashboard = () => {
   const [leads, setLeads] = useState([])
   const [workOrders, setWorkOrders] = useState([])
   const [kots, setKots] = useState([])
+  const hasLoadedOnceRef = useRef(false)
+
+  const getListSignature = (items, pick) => {
+    if (!Array.isArray(items)) return '[]'
+
+    return JSON.stringify(items.map((item) => pick(item || {})))
+  }
 
   const isCateringBusiness = settings?.business_type === 'CATERING';
 
@@ -58,9 +65,11 @@ const Dashboard = () => {
      LOAD DATA
   ======================= */
 
-  const loadData = async () => {
+  const loadData = async ({ silent = false } = {}) => {
     try {
-      setLoading(true)
+      if (!silent && !hasLoadedOnceRef.current) {
+        setLoading(true)
+      }
 
       const promises = [
         getInvoices(),
@@ -86,56 +95,141 @@ const Dashboard = () => {
         kotsRes
       ] = results;
 
-      setInvoices(
-        Array.isArray(invoicesRes)
-          ? invoicesRes
-          : invoicesRes?.data || []
-      )
+      const nextInvoices = Array.isArray(invoicesRes)
+        ? invoicesRes
+        : invoicesRes?.data || []
 
-      setQuotations(
-        Array.isArray(quotationsRes)
-          ? quotationsRes
-          : quotationsRes?.data || []
-      )
+      setInvoices((prev) => {
+        const prevSignature = getListSignature(prev, (item) => ({
+          id: Number(item?.id || 0),
+          status: String(item?.status || ''),
+          issue_date: String(item?.issue_date || ''),
+          grand_total: Number(item?.grand_total || 0),
+        }))
+        const nextSignature = getListSignature(nextInvoices, (item) => ({
+          id: Number(item?.id || 0),
+          status: String(item?.status || ''),
+          issue_date: String(item?.issue_date || ''),
+          grand_total: Number(item?.grand_total || 0),
+        }))
+        return prevSignature === nextSignature ? prev : nextInvoices
+      })
 
-      setProducts(
-        Array.isArray(productsRes)
-          ? productsRes
-          : productsRes?.data || []
-      )
+      const nextQuotations = Array.isArray(quotationsRes)
+        ? quotationsRes
+        : quotationsRes?.data || []
 
-      setLeads(
-        Array.isArray(leadsRes)
-          ? leadsRes
-          : leadsRes?.leads || leadsRes?.data || []
-      )
+      setQuotations((prev) => {
+        const prevSignature = getListSignature(prev, (item) => ({
+          id: Number(item?.id || 0),
+          status: String(item?.status || ''),
+          created_at: String(item?.created_at || ''),
+          grand_total: Number(item?.grand_total || 0),
+        }))
+        const nextSignature = getListSignature(nextQuotations, (item) => ({
+          id: Number(item?.id || 0),
+          status: String(item?.status || ''),
+          created_at: String(item?.created_at || ''),
+          grand_total: Number(item?.grand_total || 0),
+        }))
+        return prevSignature === nextSignature ? prev : nextQuotations
+      })
+
+      const nextProducts = Array.isArray(productsRes)
+        ? productsRes
+        : productsRes?.data || []
+
+      setProducts((prev) => {
+        const prevSignature = getListSignature(prev, (item) => ({
+          id: Number(item?.id || 0),
+          name: String(item?.name || ''),
+          updated_at: String(item?.updated_at || ''),
+        }))
+        const nextSignature = getListSignature(nextProducts, (item) => ({
+          id: Number(item?.id || 0),
+          name: String(item?.name || ''),
+          updated_at: String(item?.updated_at || ''),
+        }))
+        return prevSignature === nextSignature ? prev : nextProducts
+      })
+
+      const nextLeads = Array.isArray(leadsRes)
+        ? leadsRes
+        : leadsRes?.leads || leadsRes?.data || []
+
+      setLeads((prev) => {
+        const prevSignature = getListSignature(prev, (item) => ({
+          id: Number(item?.id || 0),
+          updated_at: String(item?.updated_at || ''),
+          status: String(item?.status || ''),
+        }))
+        const nextSignature = getListSignature(nextLeads, (item) => ({
+          id: Number(item?.id || 0),
+          updated_at: String(item?.updated_at || ''),
+          status: String(item?.status || ''),
+        }))
+        return prevSignature === nextSignature ? prev : nextLeads
+      })
       // KOTs (only if catering business)
       if (isCateringBusiness && kotsRes) {
-        setKots(
-          Array.isArray(kotsRes)
-            ? kotsRes
-            : kotsRes?.kots || kotsRes?.data || []
-        );
+        const nextKots = Array.isArray(kotsRes)
+          ? kotsRes
+          : kotsRes?.kots || kotsRes?.data || []
+
+        setKots((prev) => {
+          const prevSignature = getListSignature(prev, (item) => ({
+            id: Number(item?.id || 0),
+            status: String(item?.status || ''),
+            updated_at: String(item?.updated_at || ''),
+          }))
+          const nextSignature = getListSignature(nextKots, (item) => ({
+            id: Number(item?.id || 0),
+            status: String(item?.status || ''),
+            updated_at: String(item?.updated_at || ''),
+          }))
+          return prevSignature === nextSignature ? prev : nextKots
+        })
       }
 
 
       // 🔥 FIXED WORK ORDER PARSING
-      setWorkOrders(
-        Array.isArray(workOrdersRes)
-          ? workOrdersRes
-          : workOrdersRes?.workOrders
-          || workOrdersRes?.data
-          || []
-      )
+      const nextWorkOrders = Array.isArray(workOrdersRes)
+        ? workOrdersRes
+        : workOrdersRes?.workOrders
+        || workOrdersRes?.data
+        || []
+
+      setWorkOrders((prev) => {
+        const prevSignature = getListSignature(prev, (item) => ({
+          id: Number(item?.id || 0),
+          status: String(item?.status || ''),
+          issue_date: String(item?.issue_date || ''),
+          total_amount: Number(item?.total_amount || 0),
+        }))
+        const nextSignature = getListSignature(nextWorkOrders, (item) => ({
+          id: Number(item?.id || 0),
+          status: String(item?.status || ''),
+          issue_date: String(item?.issue_date || ''),
+          total_amount: Number(item?.total_amount || 0),
+        }))
+        return prevSignature === nextSignature ? prev : nextWorkOrders
+      })
 
     } catch (error) {
       console.error('Dashboard load error:', error)
     } finally {
-      setLoading(false)
+      if (!hasLoadedOnceRef.current) {
+        setLoading(false)
+        hasLoadedOnceRef.current = true
+      }
     }
   }
 
-  useAutoRefresh(loadData, {
+  useEffect(() => {
+    loadData({ silent: false })
+  }, [isCateringBusiness])
+
+  useAutoRefresh(() => loadData({ silent: true }), {
     intervalMs: 30000,
     watch: [isCateringBusiness],
   })

@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const authApi = axios.create({
-  baseURL: process.env.REACT_APP_BACKEND_URL, // http://localhost:5000
+  baseURL: process.env.REACT_APP_BACKEND_URL,
   withCredentials: true, // refresh token cookie
   headers: {
     Accept: 'application/json',

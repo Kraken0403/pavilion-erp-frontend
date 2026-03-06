@@ -44,6 +44,21 @@ const normalizeWorkOrderStatus = (status) => {
 
 const ITEMS_PER_PAGE = 20
 
+const getWorkOrdersSignature = (items) => {
+  if (!Array.isArray(items)) return '[]'
+
+  return JSON.stringify(
+    items.map((item) => ({
+      id: Number(item?.id || 0),
+      work_order_number: String(item?.work_order_number || ''),
+      issue_date: String(item?.issue_date || ''),
+      customer_name: String(item?.customer_name || ''),
+      total_amount: Number(item?.total_amount || 0),
+      status: String(item?.status || ''),
+    }))
+  )
+}
+
 function WorkOrders() {
   const navigate = useNavigate()
   const { settings } = useSettings()
@@ -64,7 +79,13 @@ function WorkOrders() {
 
   const load = async () => {
     const res = await fetchWorkOrders()
-    setOrders(res?.workOrders || [])
+    const nextOrders = Array.isArray(res?.workOrders) ? res.workOrders : []
+
+    setOrders((prev) => {
+      const prevSignature = getWorkOrdersSignature(prev)
+      const nextSignature = getWorkOrdersSignature(nextOrders)
+      return prevSignature === nextSignature ? prev : nextOrders
+    })
   }
 
   useAutoRefresh(load, { intervalMs: 15000 })
@@ -192,6 +213,7 @@ function WorkOrders() {
               const notification = getUnreadNotificationFor('work_orders', o.id)
               const action = String(notification?.action || '').toLowerCase()
               const badgeLabel = notification ? (/(create|new|added)/.test(action) ? 'NEW' : 'UPDATED') : ''
+              const statusKey = normalizeWorkOrderStatus(o.status)
 
               return (
                 <tr
@@ -252,10 +274,10 @@ function WorkOrders() {
                       </select>
                     ) : (
                       <span
-                        className={`status-pill status-${o.status}`}
+                        className={`status-pill status-${statusKey}`}
                         onClick={() => setEditingStatusId(o.id)}
                       >
-                        {formatStatusLabel(normalizeWorkOrderStatus(o.status))}
+                        {formatStatusLabel(statusKey)}
                       </span>
                     )}
                   </td>

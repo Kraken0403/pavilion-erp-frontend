@@ -348,6 +348,7 @@ function ProductList() {
               <th>BRAND</th>
               <th>CATEGORY</th>
               <th>TYPE</th>
+              <th>STATUS</th>
               {/* <th>COST</th> */}
               <th>SELLING PRICE</th>
             </tr>
@@ -371,6 +372,7 @@ function ProductList() {
                 <td><span className="cell-text">{p.brand || "—"}</span></td>
                 <td><span className="cell-text">{p.category_name || "—"}</span></td>
                 <td>{p.type}</td>
+                <td>{Number(p.is_active || 0) === 1 ? 'Active' : 'Inactive'}</td>
                 <td>
                   {currency} {p.selling_price}
                   {p.selling_price_unit && <small> / {p.selling_price_unit}</small>}

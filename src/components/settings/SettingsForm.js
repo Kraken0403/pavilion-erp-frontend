@@ -10,17 +10,18 @@ import {
   FormControlLabel,
   Divider
 } from "@mui/material";
+import { BACKEND_URL } from "../../config/env";
 
 const INDIAN_STATES = [
-  "Andhra Pradesh","Arunachal Pradesh","Assam","Bihar","Chhattisgarh",
-  "Goa","Gujarat","Haryana","Himachal Pradesh","Jharkhand",
-  "Karnataka","Kerala","Madhya Pradesh","Maharashtra","Manipur",
-  "Meghalaya","Mizoram","Nagaland","Odisha","Punjab",
-  "Rajasthan","Sikkim","Tamil Nadu","Telangana","Tripura",
-  "Uttar Pradesh","Uttarakhand","West Bengal",
-  "Andaman and Nicobar Islands","Chandigarh",
-  "Dadra and Nagar Haveli and Daman and Diu","Delhi",
-  "Jammu and Kashmir","Ladakh","Lakshadweep","Puducherry"
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh",
+  "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand",
+  "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
+  "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab",
+  "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura",
+  "Uttar Pradesh", "Uttarakhand", "West Bengal",
+  "Andaman and Nicobar Islands", "Chandigarh",
+  "Dadra and Nagar Haveli and Daman and Diu", "Delhi",
+  "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
 ];
 
 const BUSINESS_TYPES = [
@@ -28,6 +29,8 @@ const BUSINESS_TYPES = [
   { value: "CATERING", label: "Catering Business (KOT + Delivery Enabled)" },
   { value: "HYBRID", label: "Hybrid (General + Catering)" }
 ];
+
+const SAFE_BACKEND_URL = (BACKEND_URL || "").replace(/\/$/, "");
 
 export default function SettingsForm({ settings, onSubmit }) {
   const [form, setForm] = useState({
@@ -85,7 +88,7 @@ export default function SettingsForm({ settings, onSubmit }) {
     });
 
     if (settings.company_logo) {
-      setLogoPreview(`http://localhost:5000${settings.company_logo}`);
+      setLogoPreview(`${SAFE_BACKEND_URL}${settings.company_logo}`);
     }
   }, [settings]);
 

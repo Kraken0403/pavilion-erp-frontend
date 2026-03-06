@@ -97,9 +97,6 @@ export default function Settings() {
       await updateSettings(formData);
       showNotif("Settings updated successfully!", "success");
       loadSettings(); // reload latest values
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
     } catch (err) {
       console.error("❌ Failed to update settings:", err);
       showNotif(

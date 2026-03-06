@@ -68,30 +68,45 @@ const Sidebar = () => {
   const withModuleBadge = (label, count) => {
     const parsed = Number(count || 0);
 
-    if (parsed <= 0) return label;
-
     return (
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-        <span>{label}</span>
+      <Box sx={{ display: 'flex', alignItems: 'center', width: '100%', minWidth: 0 }}>
         <Box
           component="span"
           sx={{
-            minWidth: 20,
-            height: 20,
-            px: 0.75,
-            borderRadius: '999px',
-            bgcolor: 'error.main',
-            color: '#fff',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '0.72rem',
-            fontWeight: 700,
-            lineHeight: 1,
+            flex: 1,
+            minWidth: 0,
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
           }}
         >
-          {parsed > 99 ? '99+' : parsed}
+          {label}
         </Box>
+
+        {parsed > 0 ? (
+          <Box
+            component="span"
+            sx={{
+              minWidth: 22,
+              height: 22,
+              px: 0.75,
+              ml: 1,
+              borderRadius: '999px',
+              bgcolor: 'error.main',
+              color: '#fff',
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              lineHeight: 1,
+              whiteSpace: 'nowrap',
+              flexShrink: 0,
+            }}
+          >
+            {parsed > 99 ? '99+' : parsed}
+          </Box>
+        ) : null}
       </Box>
     );
   };

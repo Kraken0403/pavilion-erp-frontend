@@ -11,6 +11,33 @@ import {
 
 const NotificationContext = createContext(null);
 
+const getNotificationSignature = (items) => {
+    if (!Array.isArray(items)) return '[]';
+
+    return JSON.stringify(
+        items.map((item) => ({
+            id: Number(item?.id || 0),
+            isSeen: Boolean(item?.isSeen),
+            module: String(item?.module || ''),
+            source_id: Number(item?.source_id || 0),
+            action: String(item?.action || ''),
+            created_at: String(item?.created_at || ''),
+            redirect_url: String(item?.redirect_url || ''),
+        }))
+    );
+};
+
+const getBubbleSignature = (value) => JSON.stringify({
+    count: Number(value?.count || 0),
+    seenNotifications: Number(value?.seenNotifications || 0),
+    unSeenNotifications: Number(value?.unSeenNotifications || 0),
+    leadsCount: Number(value?.leadsCount || 0),
+    workOrderCount: Number(value?.workOrderCount || 0),
+    kotCount: Number(value?.kotCount || 0),
+    deliveryCount: Number(value?.deliveryCount || 0),
+    feedbackCount: Number(value?.feedbackCount || 0),
+});
+
 export const NotificationProvider = ({ children }) => {
     const { isAuthenticated } = useAuth();
     const [notifications, setNotifications] = useState([]);
@@ -89,10 +116,17 @@ export const NotificationProvider = ({ children }) => {
         if (!isAuthenticated) return;
 
         const data = await fetchNotificationsApi();
-        setNotifications(Array.isArray(data?.result) ? data.result : []);
+        const nextNotifications = Array.isArray(data?.result) ? data.result : [];
+
+        setNotifications((prev) => {
+            const prevSignature = getNotificationSignature(prev);
+            const nextSignature = getNotificationSignature(nextNotifications);
+            return prevSignature === nextSignature ? prev : nextNotifications;
+        });
 
         if (typeof data?.unSeenNotifications === 'number') {
-            setTotalUnseen(data.unSeenNotifications);
+            const nextUnseen = Number(data.unSeenNotifications || 0);
+            setTotalUnseen((prev) => (Number(prev || 0) === nextUnseen ? prev : nextUnseen));
         }
     }, [isAuthenticated]);
 
@@ -111,8 +145,17 @@ export const NotificationProvider = ({ children }) => {
             feedbackCount: Number(data?.feedbackCount || 0),
         };
 
-        setBubbleCounts(next);
-        setTotalUnseen(next.unSeenNotifications);
+        setBubbleCounts((prev) => {
+            const prevSignature = getBubbleSignature(prev);
+            const nextSignature = getBubbleSignature(next);
+            return prevSignature === nextSignature ? prev : next;
+        });
+
+        setTotalUnseen((prev) => (
+            Number(prev || 0) === Number(next.unSeenNotifications || 0)
+                ? prev
+                : Number(next.unSeenNotifications || 0)
+        ));
     }, [isAuthenticated]);
 
     const markNotificationSeen = useCallback(async (id) => {

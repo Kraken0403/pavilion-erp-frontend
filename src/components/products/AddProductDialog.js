@@ -55,6 +55,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
 
   const [gstRate, setGstRate] = useState(0);
   const [hsnSac, setHsnSac] = useState("");
+  const [isActive, setIsActive] = useState(1);
 
   /* ---------------- VARIANTS + ATTRIBUTES ---------------- */
   const [attributes, setAttributes] = useState([]);
@@ -134,6 +135,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
 
     setGstRate(productToEdit.gst_rate ?? 0);
     setHsnSac(productToEdit.hsn_sac || "");
+    setIsActive(Number(productToEdit.is_active ?? 1) === 0 ? 0 : 1);
     setSelectedAddOnProducts(productToEdit.add_on_products || []);
 
     // If backend returns variants inside productToEdit (it should from getProductById)
@@ -251,6 +253,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
     setSellingPriceQty(1);
     setGstRate(0);
     setHsnSac("");
+    setIsActive(1);
 
 
     setSelectedAttributes([]);
@@ -323,7 +326,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
       hsn_sac: hsnSac || null,
 
 
-      is_active: 1,
+      is_active: Number(isActive) === 0 ? 0 : 1,
 
       // variants
       variants:
@@ -660,6 +663,20 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
 
 
         </Grid>
+
+        <Typography className="field-label" sx={{ mt: 2 }}>
+          Product Status
+        </Typography>
+        <TextField
+          className="form-input"
+          fullWidth
+          select
+          value={isActive}
+          onChange={e => setIsActive(Number(e.target.value || 1))}
+        >
+          <MenuItem value={1}>Active</MenuItem>
+          <MenuItem value={0}>Inactive</MenuItem>
+        </TextField>
 
 
         <Grid container spacing={2} sx={{ mt: 2 }}>

@@ -89,11 +89,19 @@ function Topbar() {
     return '/dashboard';
   };
 
-  const formatNotificationTime = (value) => {
-    if (!value) return '';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '';
-    return date.toLocaleString();
+  const formatNotificationTime = () => {
+    const now = new Date();
+
+    return now.toLocaleString('en-IN', {
+      timeZone: 'Asia/Kolkata',
+      hour12: true,
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    });
   };
 
   const formatModuleLabel = (module) => {
@@ -355,7 +363,7 @@ function Topbar() {
                                 {actionDetails.statusChange}
                               </Typography>
                             ) : null}
-                            <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                            <Typography variant="caption" sx={{ color: '#111827', fontWeight: 700 }}>
                               {formatModuleLabel(notification.module)}
                             </Typography>
                           </div>
