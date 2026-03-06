@@ -117,14 +117,18 @@ function Topbar() {
       .replace(/\b\w/g, (char) => char.toUpperCase());
   };
 
-  const formatNotificationAction = (action) => {
+  const getNotificationActionDetails = (action) => {
     const raw = String(action || '').trim();
-    if (!raw) return 'Update';
+    if (!raw) return { message: 'Update', statusChange: '' };
 
-    // Capitalize status values inside transitions like "(preparing -> completed)".
-    return raw.replace(/\(([^)]+)->([^)]+)\)/g, (_match, fromStatus, toStatus) => {
-      return `(${toTitleCase(fromStatus.trim())} -> ${toTitleCase(toStatus.trim())})`;
-    });
+    const transitionMatch = raw.match(/\(([^)]+)->([^)]+)\)/);
+    const statusChange = transitionMatch
+      ? `${toTitleCase(transitionMatch[1].trim())} -> ${toTitleCase(transitionMatch[2].trim())}`
+      : '';
+
+    const message = raw.replace(/\(([^)]+)->([^)]+)\)/g, '').replace(/\s+/g, ' ').trim() || 'Update';
+
+    return { message, statusChange };
   };
 
   const appendQueryParam = (path, key, value) => {
@@ -172,7 +176,6 @@ function Topbar() {
 
     if (notification.module === 'delivery' && notification.source_id) {
       finalRoute = appendQueryParam('/deliveries', 'focusDeliveryId', notification.source_id);
-      finalRoute = appendTextQueryParam(finalRoute, 'focusWoNo', extractWorkOrderNumber(notification));
       finalRoute = appendTextQueryParam(finalRoute, 'range', 'all');
     }
 
@@ -313,46 +316,57 @@ function Topbar() {
               ) : null}
 
               {latestUnreadNotifications.length ? (
-                latestUnreadNotifications.slice(0, 20).map((notification) => (
-                  <MenuItem
-                    key={notification.id}
-                    onClick={() => handleNotificationClick(notification)}
-                    sx={{
-                      mx: 1,
-                      my: 0.5,
-                      py: 1,
-                      borderRadius: 1.5,
-                      alignItems: 'flex-start',
-                      border: '1px solid #edf1f7',
-                      background: '#fff',
-                      whiteSpace: 'normal',
-                    }}
-                  >
-                    <div style={{ width: '100%' }}>
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          fontWeight: 700,
-                          color: '#111827',
-                          lineHeight: 1.4,
-                          whiteSpace: 'normal',
-                          wordBreak: 'break-word',
-                          overflowWrap: 'anywhere',
-                        }}
-                      >
-                        {formatNotificationAction(notification.action)}
-                      </Typography>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                        <Typography variant="caption" sx={{ color: '#6b7280' }}>
-                          {formatModuleLabel(notification.module)}
+                latestUnreadNotifications.slice(0, 20).map((notification) => {
+                  const actionDetails = getNotificationActionDetails(notification.action);
+
+                  return (
+                    <MenuItem
+                      key={notification.id}
+                      onClick={() => handleNotificationClick(notification)}
+                      sx={{
+                        mx: 1,
+                        my: 0.5,
+                        py: 1,
+                        borderRadius: 1.5,
+                        alignItems: 'flex-start',
+                        border: '1px solid #edf1f7',
+                        background: '#fff',
+                        whiteSpace: 'normal',
+                      }}
+                    >
+                      <div style={{ width: '100%' }}>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            fontWeight: 700,
+                            color: '#111827',
+                            lineHeight: 1.4,
+                            whiteSpace: 'normal',
+                            wordBreak: 'break-word',
+                            overflowWrap: 'anywhere',
+                          }}
+                        >
+                          {actionDetails.message}
                         </Typography>
-                        <Typography variant="caption" sx={{ color: '#6b7280' }}>
-                          {formatNotificationTime(notification.created_at)}
-                        </Typography>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4, gap: 8 }}>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
+                            {actionDetails.statusChange ? (
+                              <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                                {actionDetails.statusChange}
+                              </Typography>
+                            ) : null}
+                            <Typography variant="caption" sx={{ color: '#6b7280' }}>
+                              {formatModuleLabel(notification.module)}
+                            </Typography>
+                          </div>
+                          <Typography variant="caption" sx={{ color: '#6b7280', whiteSpace: 'nowrap' }}>
+                            {formatNotificationTime(notification.created_at)}
+                          </Typography>
+                        </div>
                       </div>
-                    </div>
-                  </MenuItem>
-                ))
+                    </MenuItem>
+                  );
+                })
               ) : (
                 <MenuItem disabled>
                   <Typography variant="body2">No unread notifications</Typography>

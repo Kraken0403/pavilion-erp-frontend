@@ -3,6 +3,7 @@ import { Chip } from '@mui/material';
 import Topbar from '../components/Topbar';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import ReceiptsModal from '../components/invoices/ReceiptsModal';
+import PageLoader from '../components/ui/PageLoader';
 import { useNavigate } from 'react-router-dom';
 import { formatDate } from '../utils/dateFormatter';
 import { getInvoices } from '../services/invoiceService';
@@ -153,7 +154,7 @@ function PaymentHistory() {
                         {loading ? (
                             <tr>
                                 <td colSpan={7} className="module-empty">
-                                    Loading payment history...
+                                    <PageLoader message="Loading payment history..." minHeight={140} size={26} />
                                 </td>
                             </tr>
                         ) : filteredRows.length ? (

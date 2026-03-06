@@ -3,7 +3,6 @@ import {
   Container,
   Paper,
   Typography,
-  CircularProgress,
   Chip,
   Table,
   TableHead,
@@ -15,6 +14,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 
 import Topbar from '../components/Topbar'
+import PageLoader from '../components/ui/PageLoader'
 
 import { getInvoices } from '../services/invoiceService'
 import { fetchQuotations } from '../services/quotationService'
@@ -269,9 +269,7 @@ const Dashboard = () => {
         <Container maxWidth="lg">
 
           {loading ? (
-            <Box textAlign="center" mt={4}>
-              <CircularProgress />
-            </Box>
+            <PageLoader message="Loading dashboard..." minHeight={300} />
           ) : (
             <>
               {/* ================= KPI SECTION ================= */}

@@ -1,10 +1,11 @@
 // src/components/workorders/WorkOrderDetail.js
 import React, { useCallback, useEffect, useState } from 'react'
-import { Container, CircularProgress, Typography } from '@mui/material'
+import { Container, Typography } from '@mui/material'
 import { useParams } from 'react-router-dom'
 
 import Topbar from '../components/Topbar'
 import NotificationSnackbar from '../components/ui/NotificationSnackbar'
+import PageLoader from '../components/ui/PageLoader'
 
 // 🔹 New modular components
 import WorkOrderHeader from '../components/workorders/WorkOrderHeader'
@@ -201,7 +202,7 @@ function WorkOrderDetail() {
       <>
         <Topbar />
         <Container sx={{ mt: 4 }}>
-          <CircularProgress />
+          <PageLoader message="Loading work order..." minHeight={240} />
         </Container>
       </>
     )

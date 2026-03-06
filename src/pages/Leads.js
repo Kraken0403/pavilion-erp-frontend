@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { fetchLeads, deleteLead, updateLead } from '../services/leadService';
-import { CircularProgress, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
+import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import LeadsTable from '../components/LeadsTable';
 import Topbar from '../components/Topbar';
+import PageLoader from '../components/ui/PageLoader';
 import { getFieldOrder } from '../services/leadFieldService';
 import { useSettings } from '../context/SettingsContext';
 import useAutoRefresh from '../hooks/useAutoRefresh';
@@ -87,7 +88,7 @@ const Leads = () => {
 
             <div className="leads-container leads-page">
                 {loading ? (
-                    <CircularProgress />
+                    <PageLoader message="Loading leads..." minHeight={260} />
                 ) : (
                     <LeadsTable
                         leads={leads}

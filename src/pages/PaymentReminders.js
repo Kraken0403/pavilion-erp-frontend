@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import Topbar from '../components/Topbar';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import ChannelSelectModal from '../components/ui/ChannelSelectModal';
+import PageLoader from '../components/ui/PageLoader';
 import { formatDate } from '../utils/dateFormatter';
 import {
   getPendingPaymentReminders,
@@ -163,7 +164,9 @@ const PaymentReminders = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} className="table-empty">Loading pending payments...</td>
+                <td colSpan={8} className="table-empty">
+                  <PageLoader message="Loading pending payments..." minHeight={140} size={26} />
+                </td>
               </tr>
             ) : filteredRows.length ? (
               filteredRows.map((row) => (

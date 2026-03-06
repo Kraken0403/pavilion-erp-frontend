@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Box,
   Chip,
-  CircularProgress,
   Dialog,
   DialogContent,
   DialogTitle,
@@ -14,6 +13,7 @@ import {
 } from '@mui/material';
 import Topbar from '../components/Topbar';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
+import PageLoader from '../components/ui/PageLoader';
 import { fetchOrderFeedbackById, fetchOrderFeedbacks } from '../services/orderFeedbackService';
 import { formatDate } from '../utils/dateFormatter';
 import '../assets/styles/LeadsTable.scss';
@@ -116,9 +116,7 @@ function OrderFeedbacks() {
         </form>
 
         {loading ? (
-          <Box sx={{ py: 8, textAlign: 'center' }}>
-            <CircularProgress />
-          </Box>
+          <PageLoader message="Loading feedback responses..." minHeight={260} />
         ) : (
           <div className="table-container">
             <table className="leads-table">

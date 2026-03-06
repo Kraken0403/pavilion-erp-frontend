@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Box, Chip, CircularProgress, Divider, Grid, Typography } from "@mui/material";
+import { Box, Chip, Divider, Grid, Typography } from "@mui/material";
 import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
 import Topbar from "../components/Topbar";
 import NotificationSnackbar from "../components/ui/NotificationSnackbar";
+import PageLoader from "../components/ui/PageLoader";
 
 import {
   getInvoiceById,
@@ -95,8 +96,8 @@ function InvoiceView() {
       <Topbar />
 
       {loading ? (
-        <div className="quotation-card" style={{ padding: "60px 0", textAlign: "center" }}>
-          <CircularProgress />
+        <div className="quotation-card">
+          <PageLoader message="Loading invoice details..." minHeight={220} />
         </div>
       ) : !invoice ? (
         <div className="quotation-card" style={{ padding: "60px 0", textAlign: "center" }}>

@@ -3,6 +3,7 @@ import QuotationsTable from '../components/quotation/QuotationTable';
 import { fetchQuotations } from '../services/quotationService';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import Topbar from '../components/Topbar';
+import PageLoader from '../components/ui/PageLoader';
 import useAutoRefresh from '../hooks/useAutoRefresh';
 
 function Quotations() {
@@ -47,7 +48,12 @@ function Quotations() {
 
   /* ---------------- RENDER ---------------- */
   if (loading) {
-    return <div style={{ padding: 20 }}>Loading quotations…</div>;
+    return (
+      <>
+        <Topbar />
+        <PageLoader message="Loading quotations..." minHeight={280} />
+      </>
+    );
   }
 
   return (

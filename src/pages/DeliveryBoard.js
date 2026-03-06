@@ -5,7 +5,6 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
@@ -24,6 +23,7 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 import Topbar from '../components/Topbar';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
+import PageLoader from '../components/ui/PageLoader';
 import { fetchDeliveries, updateDeliveryStatus, updateDeliveryNotes } from '../services/deliveryService';
 import { formatDateTime, parseDateInput, toInputDateValue } from '../utils/dateFormatter';
 import { formatStatusLabel } from '../utils/statusFormatter';
@@ -152,9 +152,9 @@ function DeliveryBoard() {
       setRange(rangeQuery);
     }
 
-    const focusWoNo = params.get('focusWoNo');
     const focusDeliveryId = params.get('focusDeliveryId') || params.get('notification_source_id');
-    const focusQuery = String(focusWoNo || focusDeliveryId || '').trim();
+    const focusWoNo = params.get('focusWoNo');
+    const focusQuery = String(focusDeliveryId || focusWoNo || '').trim();
 
     if (!focusQuery) return;
 
@@ -361,7 +361,7 @@ function DeliveryBoard() {
         </Box>
 
         {loading ? (
-          <CircularProgress />
+          <PageLoader message="Loading deliveries..." minHeight={300} />
         ) : sortedDeliveries.length === 0 ? (
           <Typography>No deliveries found.</Typography>
         ) : (

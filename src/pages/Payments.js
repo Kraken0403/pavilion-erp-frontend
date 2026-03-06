@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Chip } from '@mui/material';
 import Topbar from '../components/Topbar';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
+import PageLoader from '../components/ui/PageLoader';
 import StatusUpdateModal from '../components/invoices/StatusUpdateModal';
 import ReceiptsModal from '../components/invoices/ReceiptsModal';
 import { useNavigate } from 'react-router-dom';
@@ -155,7 +156,7 @@ function Payments() {
                         {loading ? (
                             <tr>
                                 <td colSpan={9} className="module-empty">
-                                    Loading pending payments...
+                                    <PageLoader message="Loading pending payments..." minHeight={140} size={26} />
                                 </td>
                             </tr>
                         ) : filteredRows.length ? (

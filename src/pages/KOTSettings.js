@@ -6,10 +6,10 @@ import {
   TextField,
   Button,
   MenuItem,
-  CircularProgress,
 } from '@mui/material';
 import Topbar from '../components/Topbar';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
+import PageLoader from '../components/ui/PageLoader';
 import { getKotSettings, saveKotSettings } from '../services/kotSettingsService';
 
 const kotPrintPageSizes = [
@@ -66,7 +66,7 @@ function KOTSettings() {
 
       <Paper sx={{ p: 3 }}>
         {loading ? (
-          <CircularProgress />
+          <PageLoader message="Loading KOT settings..." minHeight={220} />
         ) : (
           <>
             <Typography variant="h6" sx={{ mb: 2 }}>KOT Settings</Typography>

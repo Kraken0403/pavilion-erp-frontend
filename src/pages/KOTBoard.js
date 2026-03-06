@@ -5,7 +5,6 @@ import {
   Card,
   CardContent,
   Chip,
-  CircularProgress,
   FormControl,
   Grid,
   IconButton,
@@ -25,6 +24,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 
 import Topbar from '../components/Topbar';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
+import PageLoader from '../components/ui/PageLoader';
 import { fetchKots, updateKotStatus } from '../services/kotService';
 import { createDeliveryFromWorkOrder } from '../services/deliveryService';
 import { useSettings } from '../context/SettingsContext';
@@ -338,7 +338,7 @@ function KOTBoard() {
         </Paper>
 
         {loading ? (
-          <CircularProgress />
+          <PageLoader message="Loading KOT board..." minHeight={300} />
         ) : filteredAndSortedKots.length === 0 ? (
           <Typography>No KOTs found for selected filters.</Typography>
         ) : (

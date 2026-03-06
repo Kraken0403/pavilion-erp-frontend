@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Topbar from '../components/Topbar';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
+import PageLoader from '../components/ui/PageLoader';
 import {
   getPaymentReminderSettings,
   savePaymentReminderSettings,
@@ -115,7 +116,7 @@ const PaymentReminderSettings = () => {
 
         <div className="payment-reminder-settings-body">
           {loading ? (
-            <p>Loading settings...</p>
+            <PageLoader message="Loading payment reminder settings..." minHeight={180} size={28} />
           ) : (
             <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 20 }}>
               <div className="auto-toggle-card">

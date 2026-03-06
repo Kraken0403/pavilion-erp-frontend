@@ -6,8 +6,7 @@ import {
   Typography,
   TextField,
   Button,
-  MenuItem,
-  CircularProgress
+  MenuItem
 } from '@mui/material'
 
 import NotificationSnackbar from '../components/ui/NotificationSnackbar'
@@ -17,6 +16,7 @@ import {
   saveInvoiceSettings
 } from '../services/invoiceService'
 import Topbar from '../components/Topbar'
+import PageLoader from '../components/ui/PageLoader'
 
 const layoutOptions = [
   { value: 'minimal', label: 'Minimal' },
@@ -89,7 +89,7 @@ function InvoiceSettings() {
 
       <Paper sx={{ p: 3 }}>
         {loading ? (
-          <CircularProgress />
+          <PageLoader message="Loading invoice settings..." minHeight={220} />
         ) : (
           <>
             {/* Layout */}

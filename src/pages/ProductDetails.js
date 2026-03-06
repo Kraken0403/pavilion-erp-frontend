@@ -12,6 +12,7 @@ import {
   Divider
 } from '@mui/material';
 import Topbar from '../components/Topbar';
+import PageLoader from '../components/ui/PageLoader';
 import {
   fetchProductById,
   getVariantsByProduct,
@@ -87,9 +88,7 @@ const ProductDetail = () => {
     return (
       <Container>
         <Topbar />
-        <Box mt={4}>
-          <Typography variant="h6">Loading product details...</Typography>
-        </Box>
+        <PageLoader message="Loading product details..." minHeight={260} />
       </Container>
     );
   }

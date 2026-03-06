@@ -5,8 +5,7 @@ import {
   Typography,
   TextField,
   Button,
-  MenuItem,
-  CircularProgress
+  MenuItem
 } from '@mui/material';
 
 import { getQuotationSettings, saveQuotationSettings } from '../services/quotationSettingsService';
@@ -14,6 +13,7 @@ import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import WgiymEditor from '../components/ui/WgiymEditor';
 import FileUploader from '../components/ui/FileUploader';
 import Topbar from '../components/Topbar';
+import PageLoader from '../components/ui/PageLoader';
 
 const layoutOptions = [
   { value: 'minimal', label: 'Minimal' },
@@ -92,7 +92,7 @@ function QuotationSettings() {
 
       <Paper sx={{ p: 3 }}>
         {loading ? (
-          <CircularProgress />
+          <PageLoader message="Loading quotation settings..." minHeight={220} />
         ) : (
           <>
             {/* ---------------- LAYOUT ---------------- */}
