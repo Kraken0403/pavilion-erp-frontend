@@ -31,16 +31,16 @@ function Quotations() {
   };
 
   /* ---------------- FETCH ---------------- */
-  const loadQuotations = async () => {
+  const loadQuotations = async ({ isAutoRefresh = false } = {}) => {
     try {
-      setLoading(true);
+      if (!isAutoRefresh) setLoading(true);
       const data = await fetchQuotations();
       setQuotations(data);
     } catch (err) {
       console.error(err);
       showNotification('❌ Failed to load quotations', 'error');
     } finally {
-      setLoading(false);
+      if (!isAutoRefresh) setLoading(false);
     }
   };
 

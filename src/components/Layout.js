@@ -18,7 +18,7 @@ const Layout = ({ children }) => {
     );
 
     return (
-        <LayoutProvider value={contextValue}>
+        <LayoutProvider value={contextValue} key={location.pathname}>
             <Box sx={{ display: 'flex' }}>
                 <div className={`sidebar-container ${sidebarOpen ? '' : 'collapsed'}`}>
                     <Sidebar />

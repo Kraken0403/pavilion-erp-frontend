@@ -34,7 +34,7 @@ import { downloadPdfFromResponse, printPdfFromResponse } from '../utils/pdfHelpe
 import { formatDateTime, parseDateInput, toInputDateValue } from '../utils/dateFormatter';
 import { formatStatusLabel } from '../utils/statusFormatter';
 import useAutoRefresh from '../hooks/useAutoRefresh';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const STATUS_OPTIONS = ['pending', 'preparing', 'ready', 'completed'];
 const RANGE_OPTIONS = ['all', 'today', 'tomorrow', 'upcoming'];
@@ -48,6 +48,7 @@ function KOTBoard() {
   const { settings } = useSettings();
   const { getUnreadNotificationFor, markRecordNotificationsSeen } = useNotification();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const [range, setRange] = useState('all');
   const [kots, setKots] = useState([]);
@@ -67,9 +68,9 @@ function KOTBoard() {
     setNotif({ open: true, message, severity });
   };
 
-  const loadKots = async (selectedRange = range) => {
+  const loadKots = async (selectedRange = range, { isAutoRefresh = false } = {}) => {
     try {
-      setLoading(true);
+      if (!isAutoRefresh) setLoading(true);
       const res = await fetchKots(selectedRange);
       setKots(res?.kots || []);
     } catch (error) {
@@ -78,14 +79,14 @@ function KOTBoard() {
         'error'
       );
     } finally {
-      setLoading(false);
+      if (!isAutoRefresh) setLoading(false);
     }
   };
 
   useAutoRefresh(
-    () => {
+    (refreshContext) => {
       if (isCateringBusiness) {
-        return loadKots(range);
+        return loadKots(range, refreshContext);
       }
 
       setLoading(false);
@@ -126,8 +127,8 @@ function KOTBoard() {
     params.delete('notification_source_id');
     const nextQuery = params.toString();
     const nextUrl = `${location.pathname}${nextQuery ? `?${nextQuery}` : ''}`;
-    window.history.replaceState({}, '', nextUrl);
-  }, [location.search]);
+    navigate(nextUrl, { replace: true });
+  }, [location.search, location.pathname, navigate]);
 
   const filteredAndSortedKots = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();

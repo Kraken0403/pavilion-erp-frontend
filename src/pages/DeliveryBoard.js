@@ -29,7 +29,7 @@ import { formatDateTime, parseDateInput, toInputDateValue } from '../utils/dateF
 import { formatStatusLabel } from '../utils/statusFormatter';
 import useAutoRefresh from '../hooks/useAutoRefresh';
 import { useNotification } from '../context/NotificationContext';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const STATUS_OPTIONS = ['pending', 'out_for_delivery', 'delivered', 'failed'];
 const RANGE_OPTIONS = ['all', 'today'];
@@ -98,6 +98,7 @@ const buildDateTimeInput = (dateValue, timeValue) => {
 function DeliveryBoard() {
   const { getUnreadNotificationFor, markRecordNotificationsSeen } = useNotification();
   const location = useLocation();
+  const navigate = useNavigate();
   const [range, setRange] = useState('all');
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -123,20 +124,20 @@ function DeliveryBoard() {
     return null;
   };
 
-  const loadDeliveries = async () => {
+  const loadDeliveries = async ({ isAutoRefresh = false } = {}) => {
     try {
-      setLoading(true);
+      if (!isAutoRefresh) setLoading(true);
       const dateFilter = getDateFilter();
       const res = await fetchDeliveries(dateFilter);
       setDeliveries(res?.deliveries || []);
-      setSliderIndex(0);
+      if (!isAutoRefresh) setSliderIndex(0);
     } catch (error) {
       showNotification(
         error?.response?.data?.error || 'Failed to fetch deliveries',
         'error'
       );
     } finally {
-      setLoading(false);
+      if (!isAutoRefresh) setLoading(false);
     }
   };
 
@@ -169,8 +170,8 @@ function DeliveryBoard() {
     params.delete('notification_source_id');
     const nextQuery = params.toString();
     const nextUrl = `${location.pathname}${nextQuery ? `?${nextQuery}` : ''}`;
-    window.history.replaceState({}, '', nextUrl);
-  }, [location.search]);
+    navigate(nextUrl, { replace: true });
+  }, [location.search, location.pathname, navigate]);
 
   const sortedDeliveries = useMemo(() => {
     let filtered = [...deliveries];

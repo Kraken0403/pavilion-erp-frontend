@@ -44,8 +44,8 @@ function Payments() {
         severity: 'info',
     });
 
-    const loadPendingRows = async () => {
-        setLoading(true);
+    const loadPendingRows = async ({ isAutoRefresh = false } = {}) => {
+        if (!isAutoRefresh) setLoading(true);
         try {
             const response = await getPendingPaymentReminders();
             setRows(Array.isArray(response?.pending_payments) ? response.pending_payments : []);
@@ -56,11 +56,11 @@ function Payments() {
                 severity: 'error',
             });
         } finally {
-            setLoading(false);
+            if (!isAutoRefresh) setLoading(false);
         }
     };
 
-    useAutoRefresh(loadPendingRows, { intervalMs: 20000 });
+    useAutoRefresh(loadPendingRows, { intervalMs: 15000 });
 
     const filteredRows = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();

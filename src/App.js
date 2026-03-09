@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import PrivateRoute from './routes/PrivateRoute';
 import Login from './components/Login';
@@ -53,12 +53,41 @@ const HomeRoute = () => {
         : <Login />;
 };
 
+const QuotationsTypoRedirect = () => {
+    const location = useLocation();
+    const normalizedPath = location.pathname
+        .replace(/^\/qoutations(\/|$)/, '/quotations$1')
+        .replace(/^\/qoutation(\/|$)/, '/quotation$1');
+
+    return <Navigate to={`${normalizedPath}${location.search}${location.hash}`} replace />;
+};
+
+const LegacyPathNormalizer = () => {
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    React.useEffect(() => {
+        const { pathname, search, hash } = location;
+        let normalizedPath = pathname;
+
+        normalizedPath = normalizedPath.replace(/^\/qoutations(\/|$)/, '/quotations$1');
+        normalizedPath = normalizedPath.replace(/^\/qoutation(\/|$)/, '/quotation$1');
+
+        if (normalizedPath !== pathname) {
+            navigate(`${normalizedPath}${search}${hash}`, { replace: true });
+        }
+    }, [location, navigate]);
+
+    return null;
+};
+
 const App = () => {
     console.log("🚀 App rendered");
     return (
         <AuthProvider>
             <NotificationProvider>
                 <Router>
+                    <LegacyPathNormalizer />
                     <Routes>
                         <Route path="/" element={<HomeRoute />} />
                         <Route
@@ -71,6 +100,7 @@ const App = () => {
                                 </PrivateRoute>
                             }
                         />
+
                         <Route
                             path="/invoices"
                             element={
@@ -412,6 +442,9 @@ const App = () => {
                                 </PrivateRoute>
                             }
                         />
+
+                        <Route path="/qoutations/*" element={<QuotationsTypoRedirect />} />
+                        <Route path="/qoutation/*" element={<QuotationsTypoRedirect />} />
                         <Route
                             path="/quotations-settings"  // New route for creating a quotation
                             element={

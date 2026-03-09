@@ -19,13 +19,17 @@ function useAutoRefresh(refreshFn, options = {}) {
         refreshFnRef.current = refreshFn
     }, [refreshFn])
 
-    const runRefresh = useCallback(async () => {
+    const runRefresh = useCallback(async (context = {}) => {
         if (!enabled || inFlightRef.current) return
 
         inFlightRef.current = true
 
         try {
-            await refreshFnRef.current?.()
+            await refreshFnRef.current?.({
+                reason: context.reason || 'manual',
+                source: context.source || 'manual',
+                isAutoRefresh: Boolean(context.isAutoRefresh),
+            })
         } catch (error) {
             console.error('Auto refresh failed', error)
         } finally {
@@ -34,14 +38,14 @@ function useAutoRefresh(refreshFn, options = {}) {
     }, [enabled])
 
     useEffect(() => {
-        runRefresh()
+        runRefresh({ reason: 'route-change', source: 'location', isAutoRefresh: false })
     }, [runRefresh, location.pathname, location.key, watchKey])
 
     useEffect(() => {
         if (!enabled || !intervalMs || intervalMs <= 0) return undefined
 
         const timerId = setInterval(() => {
-            runRefresh()
+            runRefresh({ reason: 'interval', source: 'timer', isAutoRefresh: true })
         }, intervalMs)
 
         return () => clearInterval(timerId)
@@ -50,13 +54,13 @@ function useAutoRefresh(refreshFn, options = {}) {
     useEffect(() => {
         if (!enabled) return undefined
 
-        const handleWindowFocus = () => runRefresh()
+        const handleWindowFocus = () => runRefresh({ reason: 'focus', source: 'window', isAutoRefresh: true })
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
-                runRefresh()
+                runRefresh({ reason: 'visible', source: 'document', isAutoRefresh: true })
             }
         }
-        const handleSidebarRefresh = () => runRefresh()
+        const handleSidebarRefresh = () => runRefresh({ reason: 'sidebar', source: 'event', isAutoRefresh: true })
 
         window.addEventListener('focus', handleWindowFocus)
         document.addEventListener('visibilitychange', handleVisibilityChange)

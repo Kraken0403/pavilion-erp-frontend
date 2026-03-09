@@ -57,12 +57,21 @@ const Sidebar = () => {
   };
 
   const go = (path) => {
-    navigate(path, { state: { refreshAt: Date.now() } });
-    window.dispatchEvent(
-      new CustomEvent('crm:refresh-data', {
-        detail: { path, source: 'sidebar' },
-      })
-    );
+    const safePath = String(path || '')
+      .replace('/qoutations', '/quotations')
+      .replace('/qoutation', '/quotation');
+
+    const currentPath = window.location.pathname || '';
+    if (currentPath === safePath) return;
+
+    navigate(safePath, { replace: false });
+
+    // Universal fallback: if SPA navigation gets stuck, hard-navigate to target.
+    window.setTimeout(() => {
+      if ((window.location.pathname || '') !== safePath) {
+        window.location.assign(safePath);
+      }
+    }, 120);
   };
 
   const withModuleBadge = (label, count) => {

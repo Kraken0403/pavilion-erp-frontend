@@ -36,8 +36,8 @@ function PaymentHistory() {
         severity: 'info',
     });
 
-    const loadPaidRows = async () => {
-        setLoading(true);
+    const loadPaidRows = async ({ isAutoRefresh = false } = {}) => {
+        if (!isAutoRefresh) setLoading(true);
         try {
             const response = await getInvoices();
             const paidInvoices = (Array.isArray(response) ? response : []).filter(
@@ -51,11 +51,11 @@ function PaymentHistory() {
                 severity: 'error',
             });
         } finally {
-            setLoading(false);
+            if (!isAutoRefresh) setLoading(false);
         }
     };
 
-    useAutoRefresh(loadPaidRows, { intervalMs: 20000 });
+    useAutoRefresh(loadPaidRows, { intervalMs: 15000 });
 
     const filteredRows = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();

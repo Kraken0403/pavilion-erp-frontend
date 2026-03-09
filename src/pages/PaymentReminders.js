@@ -37,8 +37,8 @@ const PaymentReminders = () => {
   const [channelModalOpen, setChannelModalOpen] = useState(false);
   const [activeInvoiceId, setActiveInvoiceId] = useState(null);
 
-  const loadPendingRows = async () => {
-    setLoading(true);
+  const loadPendingRows = async ({ isAutoRefresh = false } = {}) => {
+    if (!isAutoRefresh) setLoading(true);
     try {
       const response = await getPendingPaymentReminders();
       setRows(Array.isArray(response?.pending_payments) ? response.pending_payments : []);
@@ -49,11 +49,11 @@ const PaymentReminders = () => {
         severity: 'error',
       });
     } finally {
-      setLoading(false);
+      if (!isAutoRefresh) setLoading(false);
     }
   };
 
-  useAutoRefresh(loadPendingRows, { intervalMs: 20000 });
+  useAutoRefresh(loadPendingRows, { intervalMs: 15000 });
 
   const filteredRows = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();

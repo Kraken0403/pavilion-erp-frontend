@@ -60,9 +60,9 @@ function OrderFeedbacks() {
     severity: 'info',
   });
 
-  const loadFeedbacks = async () => {
+  const loadFeedbacks = async ({ isAutoRefresh = false } = {}) => {
     try {
-      setLoading(true);
+      if (!isAutoRefresh) setLoading(true);
       const data = await fetchOrderFeedbacks({ search });
       setFeedbacks(Array.isArray(data?.feedbacks) ? data.feedbacks : []);
     } catch (error) {
@@ -72,7 +72,7 @@ function OrderFeedbacks() {
         severity: 'error',
       });
     } finally {
-      setLoading(false);
+      if (!isAutoRefresh) setLoading(false);
     }
   };
 
