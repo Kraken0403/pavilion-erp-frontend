@@ -38,7 +38,6 @@ function QuotationSettings() {
     sequence_start: 1,
     number_format: '{prefix}/{year}/{seq}',
     numbering_mode: 'continuous',
-    gst_pricing_mode: 'EXCLUSIVE',
     business_type: 'GENERAL' // ✅ NEW GLOBAL FIELD
   });
 
@@ -78,7 +77,8 @@ function QuotationSettings() {
 
   const handleSave = async () => {
     try {
-      await saveQuotationSettings(settings);
+      const { gst_pricing_mode, ...payload } = settings;
+      await saveQuotationSettings(payload);
       showNotification("✅ Settings saved successfully!");
     } catch (err) {
       console.error("Failed to save settings:", err);
@@ -178,21 +178,6 @@ function QuotationSettings() {
                   {op.label}
                 </MenuItem>
               ))}
-            </TextField>
-
-            {/* ---------------- GST MODE ---------------- */}
-            <TextField
-              label="GST Pricing Mode"
-              select
-              fullWidth
-              sx={{ mt: 2 }}
-              value={settings.gst_pricing_mode}
-              onChange={(e) =>
-                setSettings({ ...settings, gst_pricing_mode: e.target.value })
-              }
-            >
-              <MenuItem value="EXCLUSIVE">GST Exclusive</MenuItem>
-              <MenuItem value="INCLUSIVE">GST Inclusive</MenuItem>
             </TextField>
 
             {/* ---------------- COVER LETTER ---------------- */}
