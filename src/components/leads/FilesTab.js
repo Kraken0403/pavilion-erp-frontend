@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   getFilesByLead,
   uploadFile,
@@ -33,14 +33,14 @@ const FilesTab = ({ leadId }) => {
     severity: "info"
   });
 
-  useEffect(() => {
-    if (leadId) fetchFiles();
-  }, [leadId]);
-
-  const fetchFiles = async () => {
+  const fetchFiles = useCallback(async () => {
     const data = await getFilesByLead(leadId);
     setFiles(Array.isArray(data) ? data : []);
-  };
+  }, [leadId]);
+
+  useEffect(() => {
+    if (leadId) fetchFiles();
+  }, [leadId, fetchFiles]);
 
   /* -------------------------
      FILE SELECT

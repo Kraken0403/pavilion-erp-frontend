@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Container,
   Paper,
@@ -65,7 +65,7 @@ const Dashboard = () => {
      LOAD DATA
   ======================= */
 
-  const loadData = async ({ silent = false } = {}) => {
+  const loadData = useCallback(async ({ silent = false } = {}) => {
     try {
       if (!silent && !hasLoadedOnceRef.current) {
         setLoading(true)
@@ -223,15 +223,15 @@ const Dashboard = () => {
         hasLoadedOnceRef.current = true
       }
     }
-  }
+  }, [isCateringBusiness])
 
   useEffect(() => {
     loadData({ silent: false })
-  }, [isCateringBusiness])
+  }, [loadData])
 
   useAutoRefresh(() => loadData({ silent: true }), {
     intervalMs: 30000,
-    watch: [isCateringBusiness],
+    watch: [loadData],
   })
 
   /* =======================

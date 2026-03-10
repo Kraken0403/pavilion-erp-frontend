@@ -1,5 +1,5 @@
 // src/pages/Settings.js
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Container, Paper } from "@mui/material";
 import Topbar from "../components/Topbar";
 import NotificationSnackbar from "../components/ui/NotificationSnackbar";
@@ -16,18 +16,11 @@ export default function Settings() {
     severity: "success",
   });
 
-  const showNotif = (message, severity = "success") => {
+  const showNotif = useCallback((message, severity = "success") => {
     setNotif({ open: true, message, severity });
-  };
-
-  useEffect(() => {
-    loadSettings();
   }, []);
 
-  /* ---------------------------------------
-     LOAD SETTINGS
-  --------------------------------------- */
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       const data = await getSettings();
 
@@ -43,7 +36,11 @@ export default function Settings() {
       console.error("❌ Failed to load settings", err);
       showNotif("Failed to load settings", "error");
     }
-  };
+  }, [showNotif]);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
   /* ---------------------------------------
      SUBMIT SETTINGS

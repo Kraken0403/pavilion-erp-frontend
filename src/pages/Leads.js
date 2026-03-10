@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { fetchLeads, deleteLead, updateLead } from '../services/leadService';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import LeadsTable from '../components/LeadsTable';
@@ -16,7 +16,7 @@ const Leads = () => {
     const [open, setOpen] = useState(false);
     const hasLoadedOnceRef = useRef(false);
 
-    const getLeadsSignature = (items) => {
+    const getLeadsSignature = useCallback((items) => {
         if (!Array.isArray(items)) return '[]';
 
         return JSON.stringify(
@@ -30,7 +30,7 @@ const Leads = () => {
                 company: String(item?.company || ''),
             }))
         );
-    };
+    }, []);
 
     const leadStatusOptions = ['new', 'in-progress', 'closed', 'won', 'lost'];
     const priorityOptions = ['low', 'medium', 'high'];
@@ -47,20 +47,20 @@ const Leads = () => {
         ? visibleFields.filter((field) => !eventFields.includes(String(field || '').toLowerCase()))
         : visibleFields;
 
-    useEffect(() => {
-        fetchFieldOrder();
-    }, []);
-
-    const fetchFieldOrder = async () => {
+    const fetchFieldOrder = useCallback(async () => {
         try {
             const response = await getFieldOrder();
             setVisibleFields(response.fieldOrder || []);
         } catch (error) {
             console.error(error);
         }
-    };
+    }, []);
 
-    const getLeads = async ({ silent = false } = {}) => {
+    useEffect(() => {
+        fetchFieldOrder();
+    }, [fetchFieldOrder]);
+
+    const getLeads = useCallback(async ({ silent = false } = {}) => {
         if (!silent && !hasLoadedOnceRef.current) {
             setLoading(true);
         }
@@ -82,11 +82,11 @@ const Leads = () => {
                 hasLoadedOnceRef.current = true;
             }
         }
-    };
+    }, [getLeadsSignature]);
 
     useEffect(() => {
         getLeads({ silent: false });
-    }, []);
+    }, [getLeads]);
 
     useAutoRefresh(() => getLeads({ silent: true }), { intervalMs: 20000 });
 

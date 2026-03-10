@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Box, Chip, Divider, Grid, Typography } from "@mui/material";
 import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
@@ -38,7 +38,7 @@ function InvoiceView() {
 
   /* ================= FETCH ================= */
 
-  const loadInvoice = async () => {
+  const loadInvoice = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getInvoiceById(id);
@@ -52,7 +52,7 @@ function InvoiceView() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   const formatMoney = (value) => `₹ ${Number(value || 0).toFixed(2)}`;
 
@@ -73,7 +73,7 @@ function InvoiceView() {
 
   useEffect(() => {
     loadInvoice();
-  }, [id]);
+  }, [loadInvoice]);
 
   /* ================= PDF ================= */
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   getNotesByLead,
   createNote,
@@ -30,14 +30,14 @@ const NotesTab = ({ leadId }) => {
     severity: "info"
   });
 
-  useEffect(() => {
-    if (leadId) fetchNotes();
-  }, [leadId]);
-
-  const fetchNotes = async () => {
+  const fetchNotes = useCallback(async () => {
     const data = await getNotesByLead(leadId);
     setNotes(Array.isArray(data) ? data : []);
-  };
+  }, [leadId]);
+
+  useEffect(() => {
+    if (leadId) fetchNotes();
+  }, [leadId, fetchNotes]);
 
   /* -------------------------
      ADD NOTE
@@ -185,13 +185,13 @@ const NotesTab = ({ leadId }) => {
                     }}
                   />
 
-                <button
-                  className="primary-btn save-btn"
-                  onClick={() => handleEdit(n.id, n.note_text)}
-                >
-                  <SaveOutlinedIcon />
-                  Save
-                </button>
+                  <button
+                    className="primary-btn save-btn"
+                    onClick={() => handleEdit(n.id, n.note_text)}
+                  >
+                    <SaveOutlinedIcon />
+                    Save
+                  </button>
 
                 </>
               ) : (

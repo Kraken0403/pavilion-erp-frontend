@@ -1,5 +1,5 @@
 // src/pages/InvoiceSettings.js
-import React, { useState, useEffect } from 'react'
+import React, { useCallback, useState, useEffect } from 'react'
 import {
   Container,
   Paper,
@@ -53,15 +53,11 @@ function InvoiceSettings() {
     severity: 'success'
   })
 
-  const showNotification = (message, severity = 'success') => {
+  const showNotification = useCallback((message, severity = 'success') => {
     setNotif({ open: true, message, severity })
-  }
-
-  useEffect(() => {
-    fetchSettings()
   }, [])
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     setLoading(true)
     try {
       const data = await getInvoiceSettings()
@@ -71,7 +67,11 @@ function InvoiceSettings() {
       showNotification('Failed to load invoice settings', 'error')
     }
     setLoading(false)
-  }
+  }, [showNotification])
+
+  useEffect(() => {
+    fetchSettings()
+  }, [fetchSettings])
 
   const handleSave = async () => {
     try {

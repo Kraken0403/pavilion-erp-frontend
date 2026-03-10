@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   getActivitiesByLead,
   createActivity,
@@ -62,19 +62,15 @@ const ActivitiesTab = ({ leadId }) => {
 
   /* ================= FETCH ================= */
 
-  useEffect(() => {
-    if (leadId) fetchActivities();
-  }, [leadId]);
-
-  const fetchActivities = async () => {
+  const fetchActivities = useCallback(async () => {
     try {
       const res = await getActivitiesByLead(leadId);
 
       const list = Array.isArray(res)
         ? res
         : Array.isArray(res?.activities)
-        ? res.activities
-        : [];
+          ? res.activities
+          : [];
 
       setActivities(
         list
@@ -92,7 +88,11 @@ const ActivitiesTab = ({ leadId }) => {
       console.error("Failed to load activities", e);
       setActivities([]);
     }
-  };
+  }, [leadId]);
+
+  useEffect(() => {
+    if (leadId) fetchActivities();
+  }, [leadId, fetchActivities]);
 
   /* ================= FORM ================= */
 
@@ -342,12 +342,12 @@ const ActivitiesTab = ({ leadId }) => {
                         prev.map((item) =>
                           item.id === a.id
                             ? {
-                                ...item,
-                                status:
-                                  item.status === "completed"
-                                    ? "open"
-                                    : "completed"
-                              }
+                              ...item,
+                              status:
+                                item.status === "completed"
+                                  ? "open"
+                                  : "completed"
+                            }
                             : item
                         )
                       );

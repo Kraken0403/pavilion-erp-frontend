@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
     Dialog,
     DialogTitle,
@@ -67,13 +67,7 @@ function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
 
     /* ================= FETCH INVOICE DATA ================= */
 
-    useEffect(() => {
-        if (open && invoiceId) {
-            fetchInvoiceDetails();
-        }
-    }, [open, invoiceId]);
-
-    const fetchInvoiceDetails = async () => {
+    const fetchInvoiceDetails = useCallback(async () => {
         try {
             setFetching(true);
             const data = await getInvoiceById(invoiceId);
@@ -104,7 +98,13 @@ function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
         } finally {
             setFetching(false);
         }
-    };
+    }, [invoiceId, onError]);
+
+    useEffect(() => {
+        if (open && invoiceId) {
+            fetchInvoiceDetails();
+        }
+    }, [open, invoiceId, fetchInvoiceDetails]);
 
     /* ================= COMPUTED VALUES ================= */
 
@@ -273,7 +273,7 @@ function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
                 amount: remainingAmount > 0 ? remainingAmount : "",
             }));
         }
-    }, [selectedStatus, totalAmount, remainingAmount]);
+    }, [selectedStatus, totalAmount, remainingAmount, payments.length]);
 
     /* ================= RENDER ================= */
 

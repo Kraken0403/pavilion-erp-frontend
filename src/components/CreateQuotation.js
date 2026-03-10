@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { Container } from '@mui/material'
 import { useParams } from 'react-router-dom'
 
@@ -57,31 +57,6 @@ function CreateQuotation() {
     return `${hh}:${mm}`
   }
 
-  const calculatePrefilledLine = ({ quantity, selling_price, discount, gst_rate }) => {
-    const qty = Math.max(Number(quantity || 1), 1)
-    const price = Math.max(Number(selling_price || 0), 0)
-    const rawDiscount = Math.max(Number(discount || 0), 0)
-    const gross = qty * price
-    const appliedDiscount = Math.min(rawDiscount, Math.max(gross, 0))
-    const discounted = Math.max(gross - appliedDiscount, 0)
-    const gst = Math.max(Number(gst_rate || 0), 0)
-
-    let tax = 0
-    let line_total = discounted
-
-    if (gst > 0) {
-      if (gstPricingMode === 'INCLUSIVE') {
-        tax = discounted * gst / (100 + gst)
-        line_total = discounted
-      } else {
-        tax = discounted * gst / 100
-        line_total = discounted + tax
-      }
-    }
-
-    return { tax, line_total }
-  }
-
   /* ---------------------------------------
      GLOBAL SETTINGS
   --------------------------------------- */
@@ -119,6 +94,35 @@ function CreateQuotation() {
 
 
   const [notif, setNotif] = useState({ open: false, message: '', severity: 'success' })
+
+  const showNotification = useCallback((message, severity = 'success') => {
+    setNotif({ open: true, message, severity })
+  }, [])
+
+  const calculatePrefilledLine = useCallback(({ quantity, selling_price, discount, gst_rate }) => {
+    const qty = Math.max(Number(quantity || 1), 1)
+    const price = Math.max(Number(selling_price || 0), 0)
+    const rawDiscount = Math.max(Number(discount || 0), 0)
+    const gross = qty * price
+    const appliedDiscount = Math.min(rawDiscount, Math.max(gross, 0))
+    const discounted = Math.max(gross - appliedDiscount, 0)
+    const gst = Math.max(Number(gst_rate || 0), 0)
+
+    let tax = 0
+    let line_total = discounted
+
+    if (gst > 0) {
+      if (gstPricingMode === 'INCLUSIVE') {
+        tax = discounted * gst / (100 + gst)
+        line_total = discounted
+      } else {
+        tax = discounted * gst / 100
+        line_total = discounted + tax
+      }
+    }
+
+    return { tax, line_total }
+  }, [gstPricingMode])
 
   /* ---------------------------------------
    GLOBAL SYSTEM MODE (CATERING / GENERAL)
@@ -371,6 +375,8 @@ function CreateQuotation() {
     quotationMode,
     items.length,
     productPrefilledLeadId,
+    calculatePrefilledLine,
+    showNotification,
   ])
 
   /* ---------------------------------------
@@ -388,12 +394,6 @@ function CreateQuotation() {
     quotationMode,
     gstPricingMode
   })
-
-
-
-
-  const showNotification = (message, severity = 'success') =>
-    setNotif({ open: true, message, severity })
 
   /* ---------------------------------------
      SUBMIT

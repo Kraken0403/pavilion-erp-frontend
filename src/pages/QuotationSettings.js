@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import {
   Container,
   Paper,
@@ -48,15 +48,11 @@ function QuotationSettings() {
     severity: 'success'
   });
 
-  const showNotification = (message, severity = 'success') => {
+  const showNotification = useCallback((message, severity = 'success') => {
     setNotif({ open: true, message, severity });
-  };
-
-  useEffect(() => {
-    fetchSettings();
   }, []);
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getQuotationSettings();
@@ -73,7 +69,11 @@ function QuotationSettings() {
       showNotification("Failed to load settings", "error");
     }
     setLoading(false);
-  };
+  }, [showNotification]);
+
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
 
   const handleSave = async () => {
     try {

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Checkbox, IconButton } from '@mui/material'
 import { Edit, Delete } from '@mui/icons-material'
 import * as XLSX from 'xlsx'
@@ -43,9 +43,9 @@ function CategoryList() {
 
   /* ---------------- HELPERS ---------------- */
 
-  const showSnackbar = (message, severity = 'info') => {
+  const showSnackbar = useCallback((message, severity = 'info') => {
     setSnackbar({ open: true, message, severity })
-  }
+  }, [])
 
   const closeSnackbar = () => {
     setSnackbar(prev => ({ ...prev, open: false }))
@@ -53,7 +53,7 @@ function CategoryList() {
 
   /* ---------------- FETCH ---------------- */
 
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     try {
       const data = await getCategories()
       const flat = []
@@ -82,11 +82,11 @@ function CategoryList() {
     } catch (err) {
       showSnackbar('Failed to load categories', 'error')
     }
-  }
+  }, [showSnackbar])
 
   useEffect(() => {
     fetchCategories()
-  }, [])
+  }, [fetchCategories])
 
   /* ---------------- FILTER + SORT ---------------- */
 

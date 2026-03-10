@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AccountCircle, Logout, Menu, NotificationsNone, Person } from '@mui/icons-material';
+import { AccountCircle, ArrowBack, Logout, Menu, NotificationsNone, Person } from '@mui/icons-material';
 import {
   Badge,
   Button,
@@ -16,6 +16,7 @@ import {
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useLayout } from '../context/LayoutContext';
 import { useAuth } from '../context/AuthContext';
+import { useRouteHistory } from '../context/RouteHistoryContext';
 import { logout as logoutService } from '../services/authService';
 import { getMyProfile, updateMyProfile } from '../services/userServices';
 import { useNotification } from '../context/NotificationContext';
@@ -26,6 +27,7 @@ function Topbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { toggleSidebar } = useLayout();
+  const { canGoBack, goBack } = useRouteHistory();
   const { currentUser, logout, updateCurrentUser } = useAuth();
   const {
     unreadNotifications,
@@ -268,6 +270,13 @@ function Topbar() {
     <div className="topbar">
       <div className="topbar-wrapper">
         <div className="topbar-ops">
+          {canGoBack ? (
+            <div className="back-button">
+              <IconButton onClick={goBack}>
+                <ArrowBack />
+              </IconButton>
+            </div>
+          ) : null}
           <div className="hamburger">
             <IconButton onClick={toggleSidebar}>
               <Menu />

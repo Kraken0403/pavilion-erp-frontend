@@ -118,7 +118,7 @@ const EditLead = () => {
     };
 
     loadLeadData();
-  }, [id]);
+  }, [id, handleCustomFieldsUpdate, setLeadData]);
 
   const tabs = [
     { key: "leadDetails", label: "Details" },
