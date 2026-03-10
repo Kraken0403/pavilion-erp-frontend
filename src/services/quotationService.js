@@ -120,7 +120,7 @@ export const generateQuotationPdf = async (quotationId) => {
 
   try {
     const res = await api.get(
-      `/quotations/${quotationId}/pdf`,
+      `/quotations/${quotationId}/pdf-browserless`,
       { responseType: 'blob' } // 👈 IMPORTANT
     );
 

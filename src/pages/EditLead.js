@@ -1,55 +1,12 @@
 // src/pages/EditLead.js
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useParams } from 'react-router-dom';
-import { getLeadById } from '../services/leadService';
 
 import Topbar from '../components/Topbar';
 import EditForm from '../components/EditForm';
 import EditTabs from '../components/EditTabs';
 import { useNavigate } from 'react-router-dom';
 import useLeadForm from '../hooks/useLeadForm';
-import { toInputDateValue } from '../utils/dateFormatter';
-
-const toDateOnly = (value) => {
-  if (!value) return '';
-  return toInputDateValue(value);
-};
-
-const toTimeOnly = (value) => {
-  if (!value) return '';
-  const raw = String(value).trim();
-  const fromString = raw.match(/^(\d{2}:\d{2})(?::\d{2})?$/);
-  if (fromString) return fromString[1];
-
-  const parsed = new Date(raw);
-  if (Number.isNaN(parsed.getTime())) return '';
-
-  const hh = String(parsed.getHours()).padStart(2, '0');
-  const mm = String(parsed.getMinutes()).padStart(2, '0');
-  return `${hh}:${mm}`;
-};
-
-const sanitizeLeadDates = (lead) => {
-  const source = String(lead?.source || '').toLowerCase();
-  const isWebsiteLead = source.includes('website');
-  const hasEventDate = Boolean(lead?.event_date);
-  const hasFollowUpDate = Boolean(lead?.follow_up_date);
-
-  if (!isWebsiteLead || !hasEventDate || !hasFollowUpDate) {
-    return lead;
-  }
-
-  const sameDate = toDateOnly(lead.follow_up_date) === toDateOnly(lead.event_date);
-
-  if (!sameDate) {
-    return lead;
-  }
-
-  return {
-    ...lead,
-    follow_up_date: ''
-  };
-};
 
 const EditLead = () => {
   const { id } = useParams();
@@ -78,7 +35,6 @@ const EditLead = () => {
 
   const {
     leadData,
-    setLeadData,
     customFields,
     activeTab,
     handleChange,
@@ -88,37 +44,6 @@ const EditLead = () => {
     sendEmailtoSp,
     sendWhatsApptoSp
   } = useLeadForm(initialLeadData, true, id);
-
-  // Load Lead + Custom Fields
-  useEffect(() => {
-    const loadLeadData = async () => {
-      try {
-        const lead = sanitizeLeadDates(await getLeadById(id));
-
-        setLeadData((prev) => ({
-          ...prev,
-          ...lead,
-          event_date: toDateOnly(lead.event_date),
-          event_time: toTimeOnly(lead.event_time),
-          custom_fields: lead.custom_fields || []
-        }));
-
-        if (lead.custom_fields) {
-          handleCustomFieldsUpdate(
-            lead.custom_fields.map((cf) => ({
-              field_id: cf.field_id,
-              field_value: cf.field_value
-            }))
-          );
-        }
-
-      } catch (err) {
-        console.error("Failed to load lead data:", err);
-      }
-    };
-
-    loadLeadData();
-  }, [id, handleCustomFieldsUpdate, setLeadData]);
 
   const tabs = [
     { key: "leadDetails", label: "Details" },

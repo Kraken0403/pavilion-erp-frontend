@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from './AuthContext';
 import {
     fetchNotificationsApi,
@@ -52,6 +52,8 @@ export const NotificationProvider = ({ children }) => {
         feedbackCount: 0,
     });
     const [totalUnseen, setTotalUnseen] = useState(0);
+    const isFetchingNotificationsRef = useRef(false);
+    const isFetchingBubblesRef = useRef(false);
 
     const unreadNotifications = useMemo(
         () => notifications.filter((item) => !item?.isSeen),
@@ -114,48 +116,62 @@ export const NotificationProvider = ({ children }) => {
 
     const fetchNotifications = useCallback(async () => {
         if (!isAuthenticated) return;
+        if (isFetchingNotificationsRef.current) return;
 
-        const data = await fetchNotificationsApi();
-        const nextNotifications = Array.isArray(data?.result) ? data.result : [];
+        isFetchingNotificationsRef.current = true;
 
-        setNotifications((prev) => {
-            const prevSignature = getNotificationSignature(prev);
-            const nextSignature = getNotificationSignature(nextNotifications);
-            return prevSignature === nextSignature ? prev : nextNotifications;
-        });
+        try {
+            const data = await fetchNotificationsApi();
+            const nextNotifications = Array.isArray(data?.result) ? data.result : [];
 
-        if (typeof data?.unSeenNotifications === 'number') {
-            const nextUnseen = Number(data.unSeenNotifications || 0);
-            setTotalUnseen((prev) => (Number(prev || 0) === nextUnseen ? prev : nextUnseen));
+            setNotifications((prev) => {
+                const prevSignature = getNotificationSignature(prev);
+                const nextSignature = getNotificationSignature(nextNotifications);
+                return prevSignature === nextSignature ? prev : nextNotifications;
+            });
+
+            if (typeof data?.unSeenNotifications === 'number') {
+                const nextUnseen = Number(data.unSeenNotifications || 0);
+                setTotalUnseen((prev) => (Number(prev || 0) === nextUnseen ? prev : nextUnseen));
+            }
+        } finally {
+            isFetchingNotificationsRef.current = false;
         }
     }, [isAuthenticated]);
 
     const fetchBubbleCounts = useCallback(async () => {
         if (!isAuthenticated) return;
+        if (isFetchingBubblesRef.current) return;
 
-        const data = await fetchNotificationBubbleApi();
-        const next = {
-            count: Number(data?.count || 0),
-            seenNotifications: Number(data?.seenNotifications || 0),
-            unSeenNotifications: Number(data?.unSeenNotifications || 0),
-            leadsCount: Number(data?.leadsCount || 0),
-            workOrderCount: Number(data?.workOrderCount || 0),
-            kotCount: Number(data?.kotCount || 0),
-            deliveryCount: Number(data?.deliveryCount || 0),
-            feedbackCount: Number(data?.feedbackCount || 0),
-        };
+        isFetchingBubblesRef.current = true;
 
-        setBubbleCounts((prev) => {
-            const prevSignature = getBubbleSignature(prev);
-            const nextSignature = getBubbleSignature(next);
-            return prevSignature === nextSignature ? prev : next;
-        });
+        try {
+            const data = await fetchNotificationBubbleApi();
+            const next = {
+                count: Number(data?.count || 0),
+                seenNotifications: Number(data?.seenNotifications || 0),
+                unSeenNotifications: Number(data?.unSeenNotifications || 0),
+                leadsCount: Number(data?.leadsCount || 0),
+                workOrderCount: Number(data?.workOrderCount || 0),
+                kotCount: Number(data?.kotCount || 0),
+                deliveryCount: Number(data?.deliveryCount || 0),
+                feedbackCount: Number(data?.feedbackCount || 0),
+            };
 
-        setTotalUnseen((prev) => (
-            Number(prev || 0) === Number(next.unSeenNotifications || 0)
-                ? prev
-                : Number(next.unSeenNotifications || 0)
-        ));
+            setBubbleCounts((prev) => {
+                const prevSignature = getBubbleSignature(prev);
+                const nextSignature = getBubbleSignature(next);
+                return prevSignature === nextSignature ? prev : next;
+            });
+
+            setTotalUnseen((prev) => (
+                Number(prev || 0) === Number(next.unSeenNotifications || 0)
+                    ? prev
+                    : Number(next.unSeenNotifications || 0)
+            ));
+        } finally {
+            isFetchingBubblesRef.current = false;
+        }
     }, [isAuthenticated]);
 
     const markNotificationSeen = useCallback(async (id) => {
@@ -229,8 +245,7 @@ export const NotificationProvider = ({ children }) => {
             return { ...item, isSeen: true };
         }));
 
-        await fetchBubbleCounts();
-        await fetchNotifications();
+        await Promise.all([fetchBubbleCounts(), fetchNotifications()]);
     }, [fetchBubbleCounts, fetchNotifications]);
 
     const markRecordNotificationsSeen = useCallback(async (moduleName, sourceId) => {
@@ -247,8 +262,7 @@ export const NotificationProvider = ({ children }) => {
             return { ...item, isSeen: true };
         }));
 
-        await fetchBubbleCounts();
-        await fetchNotifications();
+        await Promise.all([fetchBubbleCounts(), fetchNotifications()]);
     }, [fetchBubbleCounts, fetchNotifications]);
 
     useEffect(() => {
@@ -272,9 +286,10 @@ export const NotificationProvider = ({ children }) => {
         fetchNotifications();
 
         const intervalId = window.setInterval(() => {
+            if (document.visibilityState !== 'visible') return;
             fetchBubbleCounts();
             fetchNotifications();
-        }, 5000);
+        }, 10000);
 
         return () => {
             window.clearInterval(intervalId);
