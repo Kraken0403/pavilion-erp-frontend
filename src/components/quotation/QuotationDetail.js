@@ -325,6 +325,8 @@ function QuotationDetail() {
         setSelectedLead(
           leads.find((l) => String(l.id) === String(data.lead_id)) || null
         )
+      } else {
+        setSelectedLead(null)
       }
     } catch (err) {
       console.error(err)
@@ -692,6 +694,7 @@ function QuotationDetail() {
             </button>
           )}
         </div>
+
         {!isGeneralBusiness && quotation.quotation_mode === 'CATERING' && (
           <div className="quotation-card">
             <div className="quotation-contact-section">

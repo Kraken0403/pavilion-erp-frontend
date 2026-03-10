@@ -2,11 +2,10 @@ import React, { useMemo, useState } from 'react';
 import Sidebar from './Sidebar';
 import { Box } from '@mui/material';
 import { LayoutProvider } from '../context/LayoutContext';
-import { useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 
-const Layout = ({ children }) => {
+const Layout = () => {
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const location = useLocation();
 
     const toggleSidebar = () => {
         setSidebarOpen((prev) => !prev);
@@ -25,10 +24,9 @@ const Layout = ({ children }) => {
                 </div>
 
                 <div
-                    key={location.pathname}
                     className={`main-container ${sidebarOpen ? '' : 'expanded'}`}
                 >
-                    {children}
+                    <Outlet />
                 </div>
             </Box>
         </LayoutProvider>

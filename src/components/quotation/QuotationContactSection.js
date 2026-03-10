@@ -42,18 +42,23 @@ function QuotationContactSection({
   const [leadInput, setLeadInput] = useState('')
 
   useEffect(() => {
+    const nextLeadId = selectedLead?.id ?? ''
+
+    // Avoid re-setting parent header state on every render.
+    if (String(leadId ?? '') !== String(nextLeadId ?? '')) {
+      setLeadId(nextLeadId)
+    }
+
     if (selectedLead) {
-      setLeadId(selectedLead.id)
       setEmail(selectedLead.email || '')
       setPhone(selectedLead.phone_number || '')
       setCompany(selectedLead.company_name || '')
     } else {
-      setLeadId('')
       setEmail('')
       setPhone('')
       setCompany('')
     }
-  }, [selectedLead, setLeadId])
+  }, [selectedLead, leadId, setLeadId])
 
   const fullName = (o) =>
     `${o?.first_name || ''} ${o?.last_name || ''}`.trim()
