@@ -338,49 +338,56 @@ function ProductList() {
       />
 
       <div className="table-container">
-        <table className="leads-table">
-          <thead>
-            <tr>
-              <th>
-                <Checkbox checked={selectAll} onChange={toggleSelectAll} />
-              </th>
-              <th>NAME</th>
-              <th>BRAND</th>
-              <th>CATEGORY</th>
-              <th>TYPE</th>
-              <th>STATUS</th>
-              {/* <th>COST</th> */}
-              <th>SELLING PRICE</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {currentProducts.map((p) => (
-              <tr
-                key={p.id}
-                className="clickable-row"
-                onClick={() => handleRowClick(p)}
-              >
-                <td onClick={(e) => e.stopPropagation()}>
-                  <Checkbox
-                    checked={selectedProducts.includes(p.id)}
-                    onChange={() => toggleSelectProduct(p.id)}
-                  />
-                </td>
-
-                <td><span className="cell-text">{p.name}</span></td>
-                <td><span className="cell-text">{p.brand || "—"}</span></td>
-                <td><span className="cell-text">{p.category_name || "—"}</span></td>
-                <td>{p.type}</td>
-                <td>{Number(p.is_active || 0) === 1 ? 'Active' : 'Inactive'}</td>
-                <td>
-                  {currency} {p.selling_price}
-                  {p.selling_price_unit && <small> / {p.selling_price_unit}</small>}
-                </td>
+        {currentProducts.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#999' }}>
+            <p style={{ fontSize: '16px', fontWeight: '500' }}>No products found</p>
+            <p style={{ fontSize: '14px', marginTop: '8px' }}>Add a new product to get started</p>
+          </div>
+        ) : (
+          <table className="leads-table">
+            <thead>
+              <tr>
+                <th>
+                  <Checkbox checked={selectAll} onChange={toggleSelectAll} />
+                </th>
+                <th>NAME</th>
+                <th>BRAND</th>
+                <th>CATEGORY</th>
+                <th>TYPE</th>
+                <th>STATUS</th>
+                {/* <th>COST</th> */}
+                <th>SELLING PRICE</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+
+            <tbody>
+              {currentProducts.map((p) => (
+                <tr
+                  key={p.id}
+                  className="clickable-row"
+                  onClick={() => handleRowClick(p)}
+                >
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <Checkbox
+                      checked={selectedProducts.includes(p.id)}
+                      onChange={() => toggleSelectProduct(p.id)}
+                    />
+                  </td>
+
+                  <td><span className="cell-text">{p.name}</span></td>
+                  <td><span className="cell-text">{p.brand || "—"}</span></td>
+                  <td><span className="cell-text">{p.category_name || "—"}</span></td>
+                  <td>{p.type}</td>
+                  <td>{Number(p.is_active || 0) === 1 ? 'Active' : 'Inactive'}</td>
+                  <td>
+                    {currency} {p.selling_price}
+                    {p.selling_price_unit && <small> / {p.selling_price_unit}</small>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
 
       <PaginationBar

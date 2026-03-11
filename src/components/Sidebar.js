@@ -17,6 +17,8 @@ import CampaignIcon from '@mui/icons-material/Campaign';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import HistoryIcon from '@mui/icons-material/History';
+import CategoryIcon from '@mui/icons-material/Category';
+import StyleIcon from '@mui/icons-material/Style';
 
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import { useAuth } from '../context/AuthContext';
@@ -174,6 +176,33 @@ const Sidebar = () => {
                   <ListItemButton sx={{ pl: 4 }} onClick={() => go('/leads/settings')}>
                     <ListItemIcon><SettingsIcon /></ListItemIcon>
                     <ListItemText primary="Lead Settings" />
+                  </ListItemButton>
+                </List>
+              </Collapse>
+            </>
+          )}
+
+          {/* PRODUCTS DROPDOWN */}
+          {canAccessModule('products') && (
+            <>
+              <ListItemButton onClick={() => toggleModule('products')}>
+                <ListItemIcon><ProductionQuantityLimitsIcon /></ListItemIcon>
+                <ListItemText primary="Products" />
+                {isExpanded('products') ? <ExpandLess /> : <ExpandMore />}
+              </ListItemButton>
+              <Collapse in={isExpanded('products')} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/products/list')}>
+                    <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
+                    <ListItemText primary="Products List" />
+                  </ListItemButton>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/categories')}>
+                    <ListItemIcon><CategoryIcon /></ListItemIcon>
+                    <ListItemText primary="Categories" />
+                  </ListItemButton>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/attributes')}>
+                    <ListItemIcon><StyleIcon /></ListItemIcon>
+                    <ListItemText primary="Attributes" />
                   </ListItemButton>
                 </List>
               </Collapse>

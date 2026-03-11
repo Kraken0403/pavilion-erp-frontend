@@ -18,6 +18,9 @@ import Quotations from './pages/Quotations';
 // import WorkOrderDetail from './pages/workOrderDetails';
 import QuotationSettings from './pages/QuotationSettings';
 // import ProductList from './pages/ProductList';
+import ProductPage from './pages/ProductPage';
+import CategoriesPage from './pages/CategoriesPage';
+import AttributesPage from './pages/AttributesPage';
 import NewQuotation from './pages/NewQuotation';
 import QuotationView from './pages/QuotationView';
 import WorkOrderDetail from './pages/WorkOrderDetail';
@@ -337,6 +340,33 @@ const App = () => {
                                     element={
                                         <PrivateRoute requiredModule="quotations">
                                             <QuotationSettings />
+                                        </PrivateRoute>
+                                    }
+                                />
+
+                                <Route
+                                    path="/products/list"
+                                    element={
+                                        <PrivateRoute requiredModule="products">
+                                            <ProductPage />
+                                        </PrivateRoute>
+                                    }
+                                />
+
+                                <Route
+                                    path="/categories"
+                                    element={
+                                        <PrivateRoute requiredModule="products">
+                                            <CategoriesPage />
+                                        </PrivateRoute>
+                                    }
+                                />
+
+                                <Route
+                                    path="/attributes"
+                                    element={
+                                        <PrivateRoute requiredModule="products">
+                                            <AttributesPage />
                                         </PrivateRoute>
                                     }
                                 />

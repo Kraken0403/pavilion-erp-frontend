@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -114,22 +114,22 @@ const useLeadForm = (initialLeadData, isEdit = false, leadId = null) => {
     // ─────────────────────────────────────────────
     // GENERAL FIELD CHANGE HANDLER
     // ─────────────────────────────────────────────
-    const handleChange = (e) => {
+    const handleChange = useCallback((e) => {
         const { name, value } = e.target;
 
         setLeadData(prev => ({
             ...prev,
             [name]: value,
         }));
-    };
+    }, []);
 
 
     // ─────────────────────────────────────────────
     // CUSTOM FIELD HANDLER (ALREADY IN CORRECT FORMAT)
     // ─────────────────────────────────────────────
-    const handleCustomFieldsUpdate = (fields) => {
+    const handleCustomFieldsUpdate = useCallback((fields) => {
         setCustomFields(fields);
-    };
+    }, []);
 
 
     // ─────────────────────────────────────────────

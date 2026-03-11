@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -18,37 +18,46 @@ import { formatStatusLabel } from "../../utils/statusFormatter";
 
 import "../../assets/styles/AddProductDialog.scss"; // reuse same styling
 
+const INITIAL_FORM = {
+  first_name: "",
+  last_name: "",
+  email: "",
+  phone_number: "",
+  company_name: "",
+  gst_number: "",
+  contact_name: "",
+  lead_status: "new",
+  priority: "low",
+  follow_up_date: "",
+  assigned_salesperson: "",
+  hotness: "",
+  amount: "",
+  billing_address: "",
+  billing_city: "",
+  billing_state: "",
+  billing_pincode: "",
+  shipping_address: "",
+  shipping_city: "",
+  shipping_state: "",
+  shipping_pincode: "",
+  notes: ""
+};
+
 function AddLeadDialog({ open, onClose, onLeadCreated, showNotification, prefillName = "" }) {
 
-  const [form, setForm] = useState({
-    first_name: "",
-    last_name: "",
-    email: "",
-    phone_number: "",
-    company_name: "",
-    gst_number: "",
-    contact_name: "",
-    lead_status: "new",
-    priority: "low",
-    follow_up_date: "",
-    assigned_salesperson: "",
-    hotness: "",
-    amount: "",
-    billing_address: "",
-    billing_city: "",
-    billing_state: "",
-    billing_pincode: "",
-    shipping_address: "",
-    shipping_city: "",
-    shipping_state: "",
-    shipping_pincode: "",
-    notes: ""
-  });
+  const [form, setForm] = useState(INITIAL_FORM);
 
   const [users, setUsers] = useState([]);
   const [customFields, setCustomFields] = useState([]);
   const [customValues, setCustomValues] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const hasLoadedMasterDataRef = useRef(false);
+  const isLoadingMasterDataRef = useRef(false);
+  const showNotificationRef = useRef(showNotification);
+
+  useEffect(() => {
+    showNotificationRef.current = showNotification;
+  }, [showNotification]);
 
   /* ---------------------------------------
      PREFILL NAME
@@ -70,15 +79,45 @@ function AddLeadDialog({ open, onClose, onLeadCreated, showNotification, prefill
      LOAD USERS + CUSTOM FIELDS
   --------------------------------------- */
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      hasLoadedMasterDataRef.current = false;
+      isLoadingMasterDataRef.current = false;
+      return;
+    }
+
+    if (hasLoadedMasterDataRef.current || isLoadingMasterDataRef.current) {
+      return;
+    }
+
+    let isCancelled = false;
+    isLoadingMasterDataRef.current = true;
 
     (async () => {
-      const userList = await getAllUsers();
-      setUsers(userList || []);
+      try {
+        const [userList, fields] = await Promise.all([
+          getAllUsers(),
+          getAllCustomFields(),
+        ]);
 
-      const fields = await getAllCustomFields();
-      setCustomFields(fields || []);
+        if (isCancelled) return;
+
+        setUsers(Array.isArray(userList) ? userList : []);
+        setCustomFields(Array.isArray(fields) ? fields : []);
+        hasLoadedMasterDataRef.current = true;
+      } catch (error) {
+        if (isCancelled) return;
+        console.error('Failed to load AddLeadDialog master data:', error);
+        setUsers([]);
+        setCustomFields([]);
+        showNotificationRef.current?.('Failed to load users/custom fields', 'error');
+      } finally {
+        isLoadingMasterDataRef.current = false;
+      }
     })();
+
+    return () => {
+      isCancelled = true;
+    };
   }, [open]);
 
   const handleChange = (e) => {
@@ -192,7 +231,7 @@ function AddLeadDialog({ open, onClose, onLeadCreated, showNotification, prefill
   };
 
   const handleClose = () => {
-    setForm({});
+    setForm(INITIAL_FORM);
     setCustomValues({});
     onClose();
   };

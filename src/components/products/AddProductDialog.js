@@ -281,6 +281,13 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
       alert("Name is required");
       return;
     }
+
+    if (!category) {
+      setSubmitting(false);
+      alert("Category is required");
+      return;
+    }
+
     if (sellingPrice === "" || Number(sellingPrice) <= 0) {
       setSubmitting(false);
       alert("Selling price is required and must be > 0");
@@ -298,7 +305,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
       brand: brand || "",
       description: description || "",
       image_url: imageUrl || null,
-      category_id: category?.id || 1,
+      category_id: category.id,
       type,
 
       // product sku/stock only for simple
@@ -513,7 +520,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
 
         {/* CATEGORY */}
         <Typography className="field-label" sx={{ mt: 2 }}>
-          Category
+          Category <span style={{ color: 'red' }}>*</span>
         </Typography>
         <Autocomplete
           options={categories}
@@ -521,7 +528,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
           getOptionLabel={o => o?.label || ""}
           onChange={(e, val) => setCategory(val)}
           renderInput={(params) => (
-            <TextField className="form-input" {...params} fullWidth />
+            <TextField className="form-input" {...params} fullWidth required />
           )}
         />
 

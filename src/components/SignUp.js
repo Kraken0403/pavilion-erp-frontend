@@ -61,9 +61,11 @@ import {
   normalizeModulePermissions,
 } from '../config/modulePermissions';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 
 function SignUp() {
   const { currentUser, loadUserPermissions } = useAuth();
+  const { settings } = useSettings();
 
   const toTitleCase = (value) => {
     return String(value || '')
@@ -696,24 +698,33 @@ function SignUp() {
             ) : (
               <>
                 <Stack spacing={1.25} sx={{ marginBottom: '16px' }}>
-                  {MODULE_PERMISSION_KEYS.map((key) => (
-                    <Paper
-                      key={key}
-                      sx={{
-                        padding: '10px 14px',
-                        borderRadius: 2,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                      }}
-                    >
-                      <Typography sx={{ fontWeight: 500 }}>{MODULE_PERMISSION_LABELS[key]}</Typography>
-                      <Switch
-                        checked={Boolean(userPermissions[key])}
-                        onChange={() => setUserPermissions((p) => ({ ...p, [key]: !p[key] }))}
-                      />
-                    </Paper>
-                  ))}
+                  {MODULE_PERMISSION_KEYS.map((key) => {
+                    // Hide catering-specific modules if business type is not CATERING
+                    const isCateringModule = ['kots', 'deliveries'].includes(key);
+                    const isCateringBusiness = settings?.business_type === 'CATERING';
+                    if (isCateringModule && !isCateringBusiness) {
+                      return null;
+                    }
+
+                    return (
+                      <Paper
+                        key={key}
+                        sx={{
+                          padding: '10px 14px',
+                          borderRadius: 2,
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                        }}
+                      >
+                        <Typography sx={{ fontWeight: 500 }}>{MODULE_PERMISSION_LABELS[key]}</Typography>
+                        <Switch
+                          checked={Boolean(userPermissions[key])}
+                          onChange={() => setUserPermissions((p) => ({ ...p, [key]: !p[key] }))}
+                        />
+                      </Paper>
+                    );
+                  })}
                 </Stack>
 
                 <Button variant="contained" onClick={handleSavePermissions} disabled={savingPermissions}>

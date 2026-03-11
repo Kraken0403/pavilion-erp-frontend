@@ -163,27 +163,10 @@ const EditForm = ({
     try {
       const fields = await getAllCustomFields();
       setCustomFields(fields);
-
-      const updated = {};
-      fields.forEach((f) => {
-        const found = leadData.custom_fields?.find(
-          (c) => c.field_id === f.field_id
-        );
-        updated[f.field_id] = found?.field_value ?? "";
-      });
-
-      setFieldValues(updated);
-
-      handleCustomFieldsUpdate(
-        Object.entries(updated).map(([id, val]) => ({
-          field_id: Number(id),
-          field_value: val
-        }))
-      );
     } catch (err) {
       console.error("Error fetching custom fields:", err);
     }
-  }, [leadData.custom_fields, handleCustomFieldsUpdate]);
+  }, []);
 
   const fetchMeetings = useCallback(async () => {
     try {
@@ -205,7 +188,7 @@ const EditForm = ({
   useEffect(() => {
     fetchUsers();
     fetchCustomFields();
-  }, [fetchUsers, fetchCustomFields]);
+  }, []);
 
   useEffect(() => {
     if (sameAsBilling) {
@@ -257,17 +240,10 @@ const EditForm = ({
             "";
         });
 
-        handleCustomFieldsUpdate(
-          Object.entries(updated).map(([id, val]) => ({
-            field_id: Number(id),
-            field_value: val
-          }))
-        );
-
         return updated;
       });
     }
-  }, [leadData, customFields, handleCustomFieldsUpdate]);
+  }, [leadData?.custom_fields, customFields]);
 
   // Custom field value change
   const handleFieldChange = (fieldId, value) => {
