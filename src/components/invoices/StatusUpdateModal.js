@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
     Dialog,
     DialogTitle,
@@ -65,6 +65,13 @@ function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
     // Cancellation remark
     const [cancellationRemark, setCancellationRemark] = useState("");
 
+    // Keep latest handlers without re-triggering data fetch effect on parent rerenders.
+    const onErrorRef = useRef(onError);
+
+    useEffect(() => {
+        onErrorRef.current = onError;
+    }, [onError]);
+
     /* ================= FETCH INVOICE DATA ================= */
 
     const fetchInvoiceDetails = useCallback(async () => {
@@ -94,11 +101,11 @@ function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
             setCurrentStatus(calcStatus);
             setSelectedStatus(calcStatus);
         } catch (err) {
-            onError?.("Failed to load invoice details.");
+            onErrorRef.current?.("Failed to load invoice details.");
         } finally {
             setFetching(false);
         }
-    }, [invoiceId, onError]);
+    }, [invoiceId]);
 
     useEffect(() => {
         if (open && invoiceId) {

@@ -128,12 +128,14 @@ function PaymentHistory() {
                         >
                             Pending Payments
                         </button>
-                        <input
-                            className="input"
-                            placeholder="Search by invoice/customer"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+                        <div className="search-input">
+                            <input
+                                type="text"
+                                placeholder="Search by invoice/customer"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -153,7 +155,7 @@ function PaymentHistory() {
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan={7} className="module-empty">
+                                <td colSpan={7} className="table-empty-message">
                                     <PageLoader message="Loading payment history..." minHeight={140} size={26} />
                                 </td>
                             </tr>
@@ -187,7 +189,7 @@ function PaymentHistory() {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={7} className="module-empty">
+                                <td colSpan={7} className="table-empty-message">
                                     No paid invoices found
                                 </td>
                             </tr>

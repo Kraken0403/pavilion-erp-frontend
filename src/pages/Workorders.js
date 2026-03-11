@@ -284,6 +284,14 @@ function WorkOrders() {
                 </tr>
               )
             })}
+
+            {!currentRows.length && (
+              <tr>
+                <td colSpan={6} className="table-empty-message">
+                  No work orders found
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

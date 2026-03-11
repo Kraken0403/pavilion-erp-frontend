@@ -3,6 +3,7 @@ import { AccountCircle, ArrowBack, Logout, Menu, NotificationsNone, Person } fro
 import {
   Badge,
   Button,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -141,6 +142,12 @@ function Topbar() {
     return { message, statusChange };
   };
 
+  const getChangeBadgeLabel = (notification) => {
+    const action = String(notification?.action || '').toLowerCase();
+    if (!action) return 'UPDATED';
+    return /(create|new|added)/.test(action) ? 'NEW' : 'UPDATED';
+  };
+
   const appendQueryParam = (path, key, value) => {
     if (!path) return path;
     const safeValue = Number(value || 0);
@@ -187,6 +194,10 @@ function Topbar() {
     if (notification.module === 'delivery' && notification.source_id) {
       finalRoute = appendQueryParam('/deliveries', 'focusDeliveryId', notification.source_id);
       finalRoute = appendTextQueryParam(finalRoute, 'range', 'all');
+    }
+
+    if (notification.module === 'feedback' && notification.source_id) {
+      finalRoute = appendQueryParam('/feedbacks', 'focusFeedbackId', notification.source_id);
     }
 
     navigate(finalRoute);
@@ -335,6 +346,8 @@ function Topbar() {
               {latestUnreadNotifications.length ? (
                 latestUnreadNotifications.slice(0, 20).map((notification) => {
                   const actionDetails = getNotificationActionDetails(notification.action);
+                  const showFeedbackBadge = String(notification?.module || '').toLowerCase() === 'feedback';
+                  const feedbackBadgeLabel = showFeedbackBadge ? getChangeBadgeLabel(notification) : '';
 
                   return (
                     <MenuItem
@@ -372,9 +385,19 @@ function Topbar() {
                                 {actionDetails.statusChange}
                               </Typography>
                             ) : null}
-                            <Typography variant="caption" sx={{ color: '#111827', fontWeight: 700 }}>
-                              {formatModuleLabel(notification.module)}
-                            </Typography>
+                            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                              <Typography variant="caption" sx={{ color: '#111827', fontWeight: 700 }}>
+                                {formatModuleLabel(notification.module)}
+                              </Typography>
+                              {feedbackBadgeLabel ? (
+                                <Chip
+                                  label={feedbackBadgeLabel}
+                                  size="small"
+                                  color={feedbackBadgeLabel === 'NEW' ? 'error' : 'warning'}
+                                  sx={{ height: 18, fontSize: 10, fontWeight: 700 }}
+                                />
+                              ) : null}
+                            </div>
                           </div>
                           <Typography variant="caption" sx={{ color: '#6b7280', whiteSpace: 'nowrap' }}>
                             {formatNotificationTime(notification.created_at)}

@@ -229,9 +229,13 @@ const Dashboard = () => {
     loadData({ silent: false })
   }, [loadData])
 
-  useAutoRefresh(() => loadData({ silent: true }), {
+  const handleDashboardAutoRefresh = useCallback(() => {
+    return loadData({ silent: true })
+  }, [loadData])
+
+  useAutoRefresh(handleDashboardAutoRefresh, {
     intervalMs: 30000,
-    watch: [loadData],
+    watch: [isCateringBusiness],
   })
 
   /* =======================
@@ -463,7 +467,7 @@ const Dashboard = () => {
                       <TableRow>
                         <TableCell
                           colSpan={4}
-                          align="center"
+                          className="table-empty-message"
                         >
                           No pending invoices
                         </TableCell>

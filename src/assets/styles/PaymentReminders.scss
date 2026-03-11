@@ -1,4 +1,4 @@
-@import './variables';
+@use './variables' as *;
 
 .payment-reminder-page {
   .payment-reminder-card {
@@ -51,20 +51,39 @@
     }
   }
 
-  .payment-reminder-search {
+  .module-toolbar {
     padding: 16px 20px;
     border-bottom: 1px solid $edit-tab-border;
+    display: flex;
+    justify-content: flex-end;
 
-    .input {
-      max-width: 420px;
+    .toolbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      justify-content: flex-end;
+
+      .search-input {
+        min-width: 220px;
+        max-width: 360px;
+        width: 100%;
+      }
+
+      .search-input input {
+        width: 100%;
+        height: 38px;
+        padding: 0 12px;
+        border-radius: 10px;
+        border: 1px solid $edit-tab-border;
+        color: $text-color;
+        outline: none;
+
+        &:focus {
+          border-color: $blue;
+        }
+      }
     }
-  }
-
-  .table-empty {
-    text-align: center;
-    padding: 34px;
-    color: $btn-text;
-    font-weight: 500;
   }
 
   .payment-reminder-settings-body {
@@ -186,5 +205,23 @@
 
   .settings-actions {
     margin-top: 2px;
+  }
+
+  @media (max-width: 900px) {
+    .payment-reminder-summary {
+      grid-template-columns: 1fr;
+    }
+
+    .module-toolbar {
+      .toolbar-actions {
+        flex-wrap: wrap;
+        justify-content: flex-start;
+
+        .search-input {
+          max-width: 100%;
+          width: 100%;
+        }
+      }
+    }
   }
 }

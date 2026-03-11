@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Chip } from '@mui/material';
 import Topbar from '../components/Topbar';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
@@ -44,7 +44,7 @@ function Payments() {
         severity: 'info',
     });
 
-    const loadPendingRows = async ({ isAutoRefresh = false } = {}) => {
+    const loadPendingRows = useCallback(async ({ isAutoRefresh = false } = {}) => {
         if (!isAutoRefresh) setLoading(true);
         try {
             const response = await getPendingPaymentReminders();
@@ -58,9 +58,23 @@ function Payments() {
         } finally {
             if (!isAutoRefresh) setLoading(false);
         }
-    };
+    }, []);
 
     useAutoRefresh(loadPendingRows, { intervalMs: 15000 });
+
+    const handleClosePaymentModal = useCallback(() => {
+        setPaymentModalOpen(false);
+        setPaymentInvoiceId(null);
+    }, []);
+
+    const handlePaymentSuccess = useCallback((message) => {
+        setNotification({ open: true, message, severity: 'success' });
+        loadPendingRows();
+    }, [loadPendingRows]);
+
+    const handlePaymentError = useCallback((message) => {
+        setNotification({ open: true, message, severity: 'error' });
+    }, []);
 
     const filteredRows = useMemo(() => {
         const q = searchQuery.trim().toLowerCase();
@@ -128,12 +142,14 @@ function Payments() {
                         >
                             Payment History
                         </button>
-                        <input
-                            className="input"
-                            placeholder="Search by invoice/customer/email/status"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
+                        <div className="search-input">
+                            <input
+                                type="text"
+                                placeholder="Search by invoice/customer/email/status"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                        </div>
                     </div>
                 </div>
 
@@ -155,7 +171,7 @@ function Payments() {
                     <tbody>
                         {loading ? (
                             <tr>
-                                <td colSpan={9} className="module-empty">
+                                <td colSpan={9} className="table-empty-message">
                                     <PageLoader message="Loading pending payments..." minHeight={140} size={26} />
                                 </td>
                             </tr>
@@ -198,7 +214,7 @@ function Payments() {
                             ))
                         ) : (
                             <tr>
-                                <td colSpan={9} className="module-empty">
+                                <td colSpan={9} className="table-empty-message">
                                     No pending payments found
                                 </td>
                             </tr>
@@ -210,17 +226,9 @@ function Payments() {
             <StatusUpdateModal
                 open={paymentModalOpen}
                 invoiceId={paymentInvoiceId}
-                onClose={() => {
-                    setPaymentModalOpen(false);
-                    setPaymentInvoiceId(null);
-                }}
-                onSuccess={(message) => {
-                    setNotification({ open: true, message, severity: 'success' });
-                    loadPendingRows();
-                }}
-                onError={(message) => {
-                    setNotification({ open: true, message, severity: 'error' });
-                }}
+                onClose={handleClosePaymentModal}
+                onSuccess={handlePaymentSuccess}
+                onError={handlePaymentError}
             />
 
             <ReceiptsModal

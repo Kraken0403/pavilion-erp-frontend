@@ -139,13 +139,17 @@ const PaymentReminders = () => {
       </div>
 
       <div className="table-container">
-        <div className="payment-reminder-search">
-          <input
-            className="input"
-            placeholder="Search by invoice/customer/email/status"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
+        <div className="module-toolbar">
+          <div className="toolbar-actions">
+            <div className="search-input">
+              <input
+                type="text"
+                placeholder="Search by invoice/customer/email/status"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
         </div>
 
         <table className="leads-table">
@@ -164,7 +168,7 @@ const PaymentReminders = () => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} className="table-empty">
+                <td colSpan={8} className="table-empty-message">
                   <PageLoader message="Loading pending payments..." minHeight={140} size={26} />
                 </td>
               </tr>
@@ -194,7 +198,7 @@ const PaymentReminders = () => {
               ))
             ) : (
               <tr>
-                <td colSpan={8} className="table-empty">No pending payments found</td>
+                <td colSpan={8} className="table-empty-message">No pending payments found</td>
               </tr>
             )}
           </tbody>

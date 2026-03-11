@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { Box, Drawer, List, ListItemIcon, ListItemText, Toolbar, Collapse } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import CategoryIcon from '@mui/icons-material/Category';
 import ListItemButton from '@mui/material/ListItemButton';
 import ProductionQuantityLimitsIcon from '@mui/icons-material/ProductionQuantityLimits';
 // import SettingsIcon from '@mui/icons-material/Settings';
 import PeopleIcon from '@mui/icons-material/People';
 import ArticleIcon from '@mui/icons-material/Article';
-import Inventory2Icon from '@mui/icons-material/Inventory2';
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
 import ExpandLess from '@mui/icons-material/ExpandLess';
 import SettingsIcon from '@mui/icons-material/Settings';
@@ -181,35 +179,6 @@ const Sidebar = () => {
               </Collapse>
             </>
           )}
-
-
-          {/* PRODUCTS */}
-          {canAccessModule('products') && (
-            <>
-              <ListItemButton onClick={() => toggleModule('products')}>
-                <ListItemIcon><Inventory2Icon /></ListItemIcon>
-                <ListItemText primary="Products" />
-                {isExpanded('products') ? <ExpandLess /> : <ExpandMore />}
-              </ListItemButton>
-              <Collapse in={isExpanded('products')} timeout="auto" unmountOnExit>
-                <List component="div" disablePadding>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/products/list')}>
-                    <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
-                    <ListItemText primary="Product List" />
-                  </ListItemButton>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/products/categories')}>
-                    <ListItemIcon><CategoryIcon /></ListItemIcon>
-                    <ListItemText primary="Categories" />
-                  </ListItemButton>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/products/attributes')}>
-                    <ListItemIcon><SettingsIcon /></ListItemIcon>
-                    <ListItemText primary="Attributes" />
-                  </ListItemButton>
-                </List>
-              </Collapse>
-            </>
-          )}
-
 
           {/* QUOTATIONS DROPDOWN */}
           {canAccessModule('quotations') && (

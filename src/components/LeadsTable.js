@@ -336,6 +336,14 @@ const LeadsTable = ({
                 </tr>
               );
             })}
+
+            {!currentLeads.length && (
+              <tr>
+                <td colSpan={visibleFields.length + 2} className="table-empty-message">
+                  No leads found
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

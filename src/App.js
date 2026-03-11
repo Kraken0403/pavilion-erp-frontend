@@ -15,13 +15,9 @@ import Users from './pages/Users';
 import Workorders from './pages/Workorders';
 import Quotations from './pages/Quotations';
 // import AddOrderForm from './components/AddOrderForm';
-import ProductDetail from './pages/ProductDetails';
 // import WorkOrderDetail from './pages/workOrderDetails';
 import QuotationSettings from './pages/QuotationSettings';
 // import ProductList from './pages/ProductList';
-import CategoriesPage from './pages/CategoriesPage';
-import AttributesPage from './pages/AttributesPage';
-import ProductPage from './pages/ProductPage';
 import NewQuotation from './pages/NewQuotation';
 import QuotationView from './pages/QuotationView';
 import WorkOrderDetail from './pages/WorkOrderDetail';
@@ -283,15 +279,6 @@ const App = () => {
                                 />
 
                                 <Route
-                                    path="/products"  // New route for creating a quotation
-                                    element={
-                                        <PrivateRoute requiredModule="products">
-                                            <ProductPage />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
                                     path="/settings"  // New route for creating a quotation
                                     element={
                                         <PrivateRoute requiredModule="settings">
@@ -323,41 +310,6 @@ const App = () => {
                                     element={
                                         <PrivateRoute requiredModule="reports">
                                             <OrderFeedbackSettings />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/products/list"  // New route for creating a quotation
-                                    element={
-                                        <PrivateRoute requiredModule="products">
-                                            <ProductPage />
-                                        </PrivateRoute>
-                                    }
-                                />
-                                <Route
-                                    path="/products/categories"  // New route for creating a quotation
-                                    element={
-                                        <PrivateRoute requiredModule="products">
-                                            <CategoriesPage />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/products/attributes"  // New route for creating a quotation
-                                    element={
-                                        <PrivateRoute requiredModule="products">
-                                            <AttributesPage />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/products/:id"  // New route for creating a quotation
-                                    element={
-                                        <PrivateRoute requiredModule="products">
-                                            <ProductDetail />
                                         </PrivateRoute>
                                     }
                                 />

@@ -88,7 +88,11 @@ const Leads = () => {
         getLeads({ silent: false });
     }, [getLeads]);
 
-    useAutoRefresh(() => getLeads({ silent: true }), { intervalMs: 20000 });
+    const handleLeadsAutoRefresh = useCallback(() => {
+        return getLeads({ silent: true });
+    }, [getLeads]);
+
+    useAutoRefresh(handleLeadsAutoRefresh, { intervalMs: 20000 });
 
     const handleDeleteConfirmation = (id) => {
         setDeleteId(id);

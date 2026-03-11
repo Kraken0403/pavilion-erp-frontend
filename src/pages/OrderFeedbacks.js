@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Box,
   Chip,
@@ -18,6 +18,8 @@ import { fetchOrderFeedbackById, fetchOrderFeedbacks } from '../services/orderFe
 import { formatDate } from '../utils/dateFormatter';
 import '../assets/styles/LeadsTable.scss';
 import useAutoRefresh from '../hooks/useAutoRefresh';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useNotification } from '../context/NotificationContext';
 
 const ratingChipColor = (rating) => {
   const num = Number(rating || 0);
@@ -48,11 +50,15 @@ const renderStars = (label, value) => {
 };
 
 function OrderFeedbacks() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { getUnreadNotificationFor, markRecordNotificationsSeen } = useNotification();
   const [feedbacks, setFeedbacks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const handledFocusRef = useRef('');
 
   const [notification, setNotification] = useState({
     open: false,
@@ -83,11 +89,20 @@ function OrderFeedbacks() {
     await loadFeedbacks();
   };
 
-  const openDetail = async (id) => {
+  const openDetail = useCallback(async (id) => {
+    const safeId = Number(id || 0);
+    if (!safeId) return;
+
     try {
-      const detail = await fetchOrderFeedbackById(id);
+      const detail = await fetchOrderFeedbackById(safeId);
       setSelectedFeedback(detail);
       setDetailOpen(true);
+
+      try {
+        await markRecordNotificationsSeen('feedback', safeId);
+      } catch {
+        // Keep modal opening responsive even if notification status update fails.
+      }
     } catch (error) {
       setNotification({
         open: true,
@@ -95,7 +110,26 @@ function OrderFeedbacks() {
         severity: 'error',
       });
     }
-  };
+  }, [markRecordNotificationsSeen]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || '');
+    const focusFeedbackId = Number(params.get('focusFeedbackId') || params.get('notification_source_id') || 0);
+
+    if (!focusFeedbackId) return;
+
+    const focusKey = `${location.pathname}:${focusFeedbackId}`;
+    if (handledFocusRef.current === focusKey) return;
+    handledFocusRef.current = focusKey;
+
+    openDetail(focusFeedbackId);
+
+    params.delete('focusFeedbackId');
+    params.delete('notification_source_id');
+    const nextQuery = params.toString();
+    const nextUrl = `${location.pathname}${nextQuery ? `?${nextQuery}` : ''}`;
+    navigate(nextUrl, { replace: true });
+  }, [location.search, location.pathname, navigate, openDetail]);
 
   const feedback = selectedFeedback?.feedback || {};
 
@@ -135,7 +169,29 @@ function OrderFeedbacks() {
               <tbody>
                 {feedbacks.length ? feedbacks.map((row) => (
                   <tr key={row.id}>
-                    <td>{row.work_order_number || '-'}</td>
+                    <td>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
+                        <span>{row.work_order_number || '-'}</span>
+                        {(() => {
+                          const notification = getUnreadNotificationFor('feedback', row.id);
+                          const action = String(notification?.action || '').toLowerCase();
+                          const badgeLabel = notification
+                            ? (/(create|new|added)/.test(action) ? 'NEW' : 'UPDATED')
+                            : '';
+
+                          if (!badgeLabel) return null;
+
+                          return (
+                            <Chip
+                              label={badgeLabel}
+                              size="small"
+                              color={badgeLabel === 'NEW' ? 'error' : 'warning'}
+                              sx={{ fontWeight: 700 }}
+                            />
+                          );
+                        })()}
+                      </span>
+                    </td>
                     <td>{row.customer_name || '-'}</td>
                     <td>{row.customer_email || '-'}</td>
                     <td>{row.customer_phone || '-'}</td>

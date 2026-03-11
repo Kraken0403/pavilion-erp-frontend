@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Chip, Checkbox } from "@mui/material";
 import StatusUpdateModal from "../components/invoices/StatusUpdateModal";
@@ -68,7 +68,7 @@ function Invoices() {
 
   /* ================= FETCH ================= */
 
-  const loadInvoices = async () => {
+  const loadInvoices = useCallback(async () => {
     try {
       const data = await getInvoices();
       setInvoices(Array.isArray(data) ? data : []);
@@ -79,9 +79,23 @@ function Invoices() {
         severity: "error",
       });
     }
-  };
+  }, []);
 
   useAutoRefresh(loadInvoices, { intervalMs: 20000 });
+
+  const handleCloseStatusModal = useCallback(() => {
+    setStatusModalOpen(false);
+    setStatusModalInvoiceId(null);
+  }, []);
+
+  const handleStatusSuccess = useCallback((msg) => {
+    setNotification({ open: true, message: msg, severity: "success" });
+    loadInvoices();
+  }, [loadInvoices]);
+
+  const handleStatusError = useCallback((msg) => {
+    setNotification({ open: true, message: msg, severity: "error" });
+  }, []);
 
   /* ================= SELECTION ================= */
 
@@ -364,7 +378,7 @@ function Invoices() {
 
             {!currentInvoices.length && (
               <tr>
-                <td colSpan={8} align="center" style={{ padding: "40px 0" }}>
+                <td colSpan={8} className="table-empty-message">
                   No invoices found
                 </td>
               </tr>
@@ -406,17 +420,9 @@ function Invoices() {
       <StatusUpdateModal
         open={statusModalOpen}
         invoiceId={statusModalInvoiceId}
-        onClose={() => {
-          setStatusModalOpen(false);
-          setStatusModalInvoiceId(null);
-        }}
-        onSuccess={(msg) => {
-          setNotification({ open: true, message: msg, severity: "success" });
-          loadInvoices();
-        }}
-        onError={(msg) => {
-          setNotification({ open: true, message: msg, severity: "error" });
-        }}
+        onClose={handleCloseStatusModal}
+        onSuccess={handleStatusSuccess}
+        onError={handleStatusError}
       />
 
       <ReceiptsModal

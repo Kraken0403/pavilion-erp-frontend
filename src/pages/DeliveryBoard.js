@@ -176,32 +176,20 @@ function DeliveryBoard() {
   const sortedDeliveries = useMemo(() => {
     let filtered = [...deliveries];
 
-    // Search filter
+    // Search filter (delivery number only)
     if (searchQuery) {
       const query = String(searchQuery || '').trim().toLowerCase();
       const queryDigits = query.replace(/\D/g, '');
 
       filtered = filtered.filter((delivery) => {
-        const deliveryId = String(delivery.id || '');
-        const workOrderNo = String(delivery.work_order_number || '');
-        const workOrderNoLower = workOrderNo.toLowerCase();
-        const workOrderDigits = workOrderNo.replace(/\D/g, '');
-        const customerName = String(delivery.customer_name || '').toLowerCase();
-        const customerPhone = String(delivery.customer_phone || '').toLowerCase();
-        const deliveryLocation = String(delivery.delivery_location || '').toLowerCase();
+        const deliveryNumber = String(delivery.delivery_number || delivery.delivery_no || delivery.id || '').trim();
+        const normalizedDeliveryNumber = deliveryNumber.toLowerCase();
+        const deliveryDigits = deliveryNumber.replace(/\D/g, '');
 
-        const textMatch =
-          deliveryId.includes(query) ||
-          workOrderNoLower.includes(query) ||
-          customerName.includes(query) ||
-          customerPhone.includes(query) ||
-          deliveryLocation.includes(query);
+        const textMatch = normalizedDeliveryNumber.includes(query);
 
         const numberMatch = queryDigits
-          ? (
-            deliveryId.includes(queryDigits) ||
-            workOrderDigits.includes(queryDigits)
-          )
+          ? deliveryDigits.includes(queryDigits)
           : false;
 
         return textMatch || numberMatch;
@@ -329,7 +317,7 @@ function DeliveryBoard() {
             <TextField
               fullWidth
               size="small"
-              placeholder="Search delivery, customer, location..."
+              placeholder="Search by delivery number"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />

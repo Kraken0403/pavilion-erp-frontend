@@ -320,6 +320,14 @@ const QuotationsTable = ({
                 </tr>
               );
             })}
+
+            {!currentRows.length && (
+              <tr>
+                <td colSpan={7} className="table-empty-message">
+                  No quotations found
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
