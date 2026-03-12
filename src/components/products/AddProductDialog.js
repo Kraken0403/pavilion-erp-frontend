@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -70,8 +70,16 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
   const [allProducts, setAllProducts] = useState([]);
   const [selectedAddOnProducts, setSelectedAddOnProducts] = useState([]);
   const [previewUrl, setPreviewUrl] = useState("")
+  const previewObjectUrlRef = useRef("")
 
   const [uploadingImage, setUploadingImage] = useState(false)
+  const clearLocalPreviewObjectUrl = () => {
+    if (previewObjectUrlRef.current) {
+      URL.revokeObjectURL(previewObjectUrlRef.current)
+      previewObjectUrlRef.current = ""
+    }
+  }
+
 
 
   /* ---------------- SUBMIT ---------------- */
@@ -113,6 +121,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
     setName(productToEdit.name || "");
     setDescription(productToEdit.description || "");
     setImageUrl(productToEdit.image_url || "");
+    clearLocalPreviewObjectUrl()
     setPreviewUrl("") // ensure clean state
     setBrand(productToEdit.brand || "");
 
@@ -186,6 +195,12 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, productToEdit]);
 
+  useEffect(() => {
+    return () => {
+      clearLocalPreviewObjectUrl()
+    }
+  }, [])
+
   /* ---------------- HELPERS ---------------- */
   const fetchAttributeOptionsData = async (attrId) => {
     if (attributeOptions[attrId]) return;
@@ -201,6 +216,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
     try {
       const res = await uploadProductImage(file)
       setImageUrl(res.url)
+      clearLocalPreviewObjectUrl()
       setPreviewUrl("")
     } catch (err) {
       console.error(err)
@@ -261,6 +277,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
     setSelectedOptions({});
     setVariants([]);
     setSelectedAddOnProducts([]);
+    clearLocalPreviewObjectUrl()
     setPreviewUrl("")
 
   };
@@ -452,7 +469,9 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
                 if (!file) return
 
                 // 🔥 INSTANT local preview
+                clearLocalPreviewObjectUrl()
                 const localPreview = URL.createObjectURL(file)
+                previewObjectUrlRef.current = localPreview
                 setPreviewUrl(localPreview)
 
                 handleImageUpload(file)

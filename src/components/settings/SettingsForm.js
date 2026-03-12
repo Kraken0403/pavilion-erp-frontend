@@ -57,6 +57,7 @@ export default function SettingsForm({ settings, onSubmit }) {
   });
 
   const [logoPreview, setLogoPreview] = useState(null);
+  const [localLogoObjectUrl, setLocalLogoObjectUrl] = useState(null);
 
   /* ---------------------------------------
      LOAD SETTINGS INTO FORM
@@ -87,10 +88,22 @@ export default function SettingsForm({ settings, onSubmit }) {
       company_logo: null,
     });
 
+    setLocalLogoObjectUrl(null);
     if (settings.company_logo) {
-      setLogoPreview(`${SAFE_BACKEND_URL}${settings.company_logo}`);
+      const isAbsoluteUrl = /^https?:\/\//i.test(settings.company_logo);
+      setLogoPreview(isAbsoluteUrl ? settings.company_logo : `${SAFE_BACKEND_URL}${settings.company_logo}`);
+    } else {
+      setLogoPreview(null);
     }
   }, [settings]);
+
+  useEffect(() => {
+    return () => {
+      if (localLogoObjectUrl) {
+        URL.revokeObjectURL(localLogoObjectUrl);
+      }
+    };
+  }, [localLogoObjectUrl]);
 
   /* ---------------------------------------
      HANDLERS
@@ -108,8 +121,14 @@ export default function SettingsForm({ settings, onSubmit }) {
     const file = e.target.files[0];
     if (!file) return;
 
+    if (localLogoObjectUrl) {
+      URL.revokeObjectURL(localLogoObjectUrl);
+    }
+
+    const nextObjectUrl = URL.createObjectURL(file);
     setForm((prev) => ({ ...prev, company_logo: file }));
-    setLogoPreview(URL.createObjectURL(file));
+    setLogoPreview(nextObjectUrl);
+    setLocalLogoObjectUrl(nextObjectUrl);
   };
 
   const handleSubmit = (e) => {
