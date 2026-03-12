@@ -119,7 +119,7 @@ function QuotationSettings() {
               label="Company Logo"
               fileUrl={settings.logo_url}
               onFileUploaded={(url) =>
-                setSettings({ ...settings, logo_url: url })
+                setSettings((prev) => ({ ...prev, logo_url: url }))
               }
             />
 
