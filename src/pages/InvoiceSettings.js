@@ -18,12 +18,6 @@ import {
 import Topbar from '../components/Topbar'
 import PageLoader from '../components/ui/PageLoader'
 
-const layoutOptions = [
-  { value: 'minimal', label: 'Minimal' },
-  { value: 'classic', label: 'Classic' },
-  { value: 'modern', label: 'Modern' },
-]
-
 const numberingModes = [
   { value: 'continuous', label: 'Continuous (Never resets)' },
   { value: 'yearly', label: 'Reset Every Year' },
@@ -41,6 +35,7 @@ function InvoiceSettings() {
     receipt_sequence_start: 1,
     receipt_number_format: '{prefix}/{year}/{seq}',
     receipt_numbering_mode: 'continuous',
+    cover_letter_html: '',
     terms_conditions_html: '',
     footer_notes_html: ''
   })
@@ -92,24 +87,6 @@ function InvoiceSettings() {
           <PageLoader message="Loading invoice settings..." minHeight={220} />
         ) : (
           <>
-            {/* Layout */}
-            <TextField
-              label="Invoice Layout"
-              select
-              fullWidth
-              sx={{ mb: 3 }}
-              value={settings.layout_option}
-              onChange={(e) =>
-                setSettings({ ...settings, layout_option: e.target.value })
-              }
-            >
-              {layoutOptions.map(op => (
-                <MenuItem key={op.value} value={op.value}>
-                  {op.label}
-                </MenuItem>
-              ))}
-            </TextField>
-
             {/* Numbering Section */}
             <Typography variant="h6" mt={2}>
               Invoice Numbering
@@ -223,6 +200,18 @@ function InvoiceSettings() {
                 </MenuItem>
               ))}
             </TextField>
+
+            {/* Cover Letter */}
+            <Typography variant="h6" mt={4}>
+              Cover Letter / Introduction
+            </Typography>
+
+            <WgiymEditor
+              value={settings.cover_letter_html || ''}
+              onChange={(val) =>
+                setSettings({ ...settings, cover_letter_html: val })
+              }
+            />
 
             {/* Terms */}
             <Typography variant="h6" mt={4}>
