@@ -288,8 +288,7 @@ export const NotificationProvider = ({ children }) => {
         const intervalId = window.setInterval(() => {
             if (document.visibilityState !== 'visible') return;
             fetchBubbleCounts();
-            fetchNotifications();
-        }, 10000);
+        }, 30000);
 
         return () => {
             window.clearInterval(intervalId);

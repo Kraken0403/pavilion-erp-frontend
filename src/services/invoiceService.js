@@ -84,7 +84,8 @@ export const addPaymentToInvoice = async (invoiceId, paymentsData) => {
    DOWNLOAD RECEIPT PDF
 --------------------------------------- */
 export const downloadReceiptPdf = async (receiptId) => {
-  const res = await api.get(`/invoices/payments/${encodeURIComponent(receiptId)}/pdf`, {
+  const res = await api.get('/invoices/payments/pdf', {
+    params: { receiptId },
     responseType: 'blob',
   });
 
