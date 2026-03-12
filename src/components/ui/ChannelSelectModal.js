@@ -9,7 +9,13 @@ import {
 } from '@mui/material';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import MailOutlineIcon from '@mui/icons-material/MailOutline';
+import { getNotificationChannelFlags } from '../../services/settingsService';
 import '../../assets/styles/ChannelSelectModal.scss';
+
+const DEFAULT_CHANNEL_FLAGS = {
+    allow_email: true,
+    allow_whatsapp: true,
+};
 
 const ChannelSelectModal = ({
     open,
@@ -23,13 +29,43 @@ const ChannelSelectModal = ({
 }) => {
     const [sendEmail, setSendEmail] = useState(defaultEmail);
     const [sendWhatsApp, setSendWhatsApp] = useState(defaultWhatsApp);
+    const [channelFlags, setChannelFlags] = useState(DEFAULT_CHANNEL_FLAGS);
+
+    const showEmailOption = Boolean(channelFlags?.allow_email);
+    const showWhatsAppOption = Boolean(channelFlags?.allow_whatsapp);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const loadChannelFlags = async () => {
+            try {
+                const flags = await getNotificationChannelFlags();
+                if (!isMounted || !flags) return;
+                setChannelFlags({
+                    allow_email: Boolean(flags.allow_email),
+                    allow_whatsapp: Boolean(flags.allow_whatsapp),
+                });
+            } catch {
+                if (!isMounted) return;
+                setChannelFlags(DEFAULT_CHANNEL_FLAGS);
+            }
+        };
+
+        if (open) {
+            loadChannelFlags();
+        }
+
+        return () => {
+            isMounted = false;
+        };
+    }, [open]);
 
     useEffect(() => {
         if (open) {
-            setSendEmail(defaultEmail);
-            setSendWhatsApp(defaultWhatsApp);
+            setSendEmail(showEmailOption ? defaultEmail : false);
+            setSendWhatsApp(showWhatsAppOption ? defaultWhatsApp : false);
         }
-    }, [open, defaultEmail, defaultWhatsApp]);
+    }, [open, defaultEmail, defaultWhatsApp, showEmailOption, showWhatsAppOption]);
 
     const canSubmit = useMemo(() => sendEmail || sendWhatsApp, [sendEmail, sendWhatsApp]);
 
@@ -47,49 +83,59 @@ const ChannelSelectModal = ({
                 <p className="channel-select-modal-subtitle">{subtitle}</p>
 
                 <div className="channel-select-options">
-                    <label className={`channel-option ${sendEmail ? 'active' : ''}`}>
-                        <FormControlLabel
-                            control={
-                                <Checkbox
-                                    checked={sendEmail}
-                                    onChange={(e) => setSendEmail(e.target.checked)}
-                                />
-                            }
-                            label={
-                                <span className="channel-option-label">
-                                    <span className="channel-option-icon channel-option-icon-email">
-                                        <MailOutlineIcon fontSize="small" />
+                    {showEmailOption ? (
+                        <label className={`channel-option ${sendEmail ? 'active' : ''}`}>
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={sendEmail}
+                                        onChange={(e) => setSendEmail(e.target.checked)}
+                                    />
+                                }
+                                label={
+                                    <span className="channel-option-label">
+                                        <span className="channel-option-icon channel-option-icon-email">
+                                            <MailOutlineIcon fontSize="small" />
+                                        </span>
+                                        <span className="channel-option-text">
+                                            <span className="channel-option-title">Email</span>
+                                            <span className="channel-option-desc">Send via inbox notification</span>
+                                        </span>
                                     </span>
-                                    <span className="channel-option-text">
-                                        <span className="channel-option-title">Email</span>
-                                        <span className="channel-option-desc">Send via inbox notification</span>
-                                    </span>
-                                </span>
-                            }
-                        />
-                    </label>
+                                }
+                            />
+                        </label>
+                    ) : null}
 
-                    <label className={`channel-option ${sendWhatsApp ? 'active' : ''}`}>
-                        <FormControlLabel
-                            control={
-                                <Checkbox
-                                    checked={sendWhatsApp}
-                                    onChange={(e) => setSendWhatsApp(e.target.checked)}
-                                />
-                            }
-                            label={
-                                <span className="channel-option-label">
-                                    <span className="channel-option-icon channel-option-icon-wa">
-                                        <WhatsAppIcon fontSize="small" />
+                    {showWhatsAppOption ? (
+                        <label className={`channel-option ${sendWhatsApp ? 'active' : ''}`}>
+                            <FormControlLabel
+                                control={
+                                    <Checkbox
+                                        checked={sendWhatsApp}
+                                        onChange={(e) => setSendWhatsApp(e.target.checked)}
+                                    />
+                                }
+                                label={
+                                    <span className="channel-option-label">
+                                        <span className="channel-option-icon channel-option-icon-wa">
+                                            <WhatsAppIcon fontSize="small" />
+                                        </span>
+                                        <span className="channel-option-text">
+                                            <span className="channel-option-title">WhatsApp</span>
+                                            <span className="channel-option-desc">Send via WhatsApp message</span>
+                                        </span>
                                     </span>
-                                    <span className="channel-option-text">
-                                        <span className="channel-option-title">WhatsApp</span>
-                                        <span className="channel-option-desc">Send via WhatsApp message</span>
-                                    </span>
-                                </span>
-                            }
-                        />
-                    </label>
+                                }
+                            />
+                        </label>
+                    ) : null}
+
+                    {!showEmailOption && !showWhatsAppOption ? (
+                        <p className="channel-select-modal-subtitle" style={{ marginTop: 4 }}>
+                            No notification channel is enabled.
+                        </p>
+                    ) : null}
                 </div>
             </DialogContent>
 

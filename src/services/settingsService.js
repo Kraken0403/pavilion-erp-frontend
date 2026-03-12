@@ -42,3 +42,15 @@ export const updateSettings = async (formData) => {
     handleError(error, 'Failed to update settings');
   }
 };
+
+export const getNotificationChannelFlags = async () => {
+  try {
+    const res = await api.get('/settings/notification-channels');
+    return {
+      allow_email: Boolean(res?.data?.allow_email),
+      allow_whatsapp: Boolean(res?.data?.allow_whatsapp),
+    };
+  } catch (error) {
+    handleError(error, 'Failed to fetch notification channel flags');
+  }
+};
