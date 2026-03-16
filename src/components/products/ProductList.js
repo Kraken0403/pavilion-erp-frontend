@@ -5,7 +5,8 @@ import React, {
   useState
 } from "react";
 
-import { Checkbox } from "@mui/material";
+import { Checkbox, IconButton, Tooltip } from "@mui/material";
+import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
 import Topbar from "../Topbar";
 import UtilsBar from "../UtilsBar";
 import PaginationBar from "../ui/PaginationBar";
@@ -29,6 +30,30 @@ import "../../assets/styles/LeadsTable.scss"; // reuse Leads table styles
 
 const PRODUCTS_PER_PAGE = 20;
 
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const getDuplicateProductName = (sourceName, products) => {
+  const normalizedName = String(sourceName || "").trim();
+  const baseName = normalizedName.replace(/ Copy(?: \d+)?$/, "");
+  const duplicatePattern = new RegExp(`^${escapeRegex(baseName)} Copy(?: (\\d+))?$`);
+
+  const duplicateNumbers = products.reduce((acc, product) => {
+    const productName = String(product?.name || "").trim();
+    const match = productName.match(duplicatePattern);
+
+    if (!match) return acc;
+
+    acc.push(match[1] ? Number(match[1]) : 1);
+    return acc;
+  }, []);
+
+  if (!duplicateNumbers.length) {
+    return `${baseName} Copy`;
+  }
+
+  return `${baseName} Copy ${Math.max(...duplicateNumbers) + 1}`;
+};
+
 const visibleFields = [
   "name",
   "brand",
@@ -48,6 +73,7 @@ function ProductList() {
   /* ---------- ADD / EDIT ---------- */
   const [open, setOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [dialogMode, setDialogMode] = useState("create");
 
   /* ---------- FILTERS ---------- */
   const [searchQuery, setSearchQuery] = useState("");
@@ -204,6 +230,7 @@ function ProductList() {
     clickTimerRef.current = setTimeout(async () => {
       try {
         const fullProduct = await fetchProductById(product.id);
+        setDialogMode("edit");
         setEditingProduct(fullProduct);
         setOpen(true);
       } catch {
@@ -215,6 +242,34 @@ function ProductList() {
       }
       clickTimerRef.current = null;
     }, 220);
+  };
+
+  const handleDuplicateClick = async (event, product) => {
+    event.stopPropagation();
+
+    try {
+      const fullProduct = await fetchProductById(product.id);
+
+      setDialogMode("duplicate");
+      setEditingProduct({
+        ...fullProduct,
+        name: getDuplicateProductName(fullProduct.name, products),
+        sku: "",
+        variants: Array.isArray(fullProduct.variants)
+          ? fullProduct.variants.map((variant) => ({
+            ...variant,
+            sku: ""
+          }))
+          : []
+      });
+      setOpen(true);
+    } catch {
+      setNotification({
+        open: true,
+        message: "❌ Failed to prepare product duplicate.",
+        severity: "error"
+      });
+    }
   };
 
   /* ================= SELECTION ================= */
@@ -283,7 +338,7 @@ function ProductList() {
 
   const handleAddProduct = async (productData) => {
     try {
-      if (editingProduct) {
+      if (dialogMode === "edit" && editingProduct?.id) {
         await updateProduct(editingProduct.id, productData);
       } else {
         await createProduct(productData);
@@ -292,10 +347,11 @@ function ProductList() {
       await loadProducts();
       setOpen(false);
       setEditingProduct(null);
+      setDialogMode("create");
 
       setNotification({
         open: true,
-        message: "✅ Product saved!",
+        message: dialogMode === "duplicate" ? "✅ Product duplicated!" : "✅ Product saved!",
         severity: "success"
       });
     } catch {
@@ -324,6 +380,7 @@ function ProductList() {
       <UtilsBar
         buttonLabel="Add Product"
         onButtonClick={() => {
+          setDialogMode("create");
           setEditingProduct(null);
           setOpen(true);
         }}
@@ -357,6 +414,7 @@ function ProductList() {
                 <th>STATUS</th>
                 {/* <th>COST</th> */}
                 <th>SELLING PRICE</th>
+                <th>ACTIONS</th>
               </tr>
             </thead>
 
@@ -383,6 +441,36 @@ function ProductList() {
                     {currency} {p.selling_price}
                     {p.selling_price_unit && <small> / {p.selling_price_unit}</small>}
                   </td>
+                  <td onClick={(e) => e.stopPropagation()}>
+                    <Tooltip title="Duplicate product">
+                      <button
+                        type="button"
+                        onClick={(e) => handleDuplicateClick(e, p)}
+                        aria-label="Create Duplicate"
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "6px",
+                          background: "transparent",
+                          border: "none",
+                          color: "#1976d2",
+                          cursor: "pointer",
+                          padding: 0,
+                          font: "inherit"
+                        }}
+                      >
+                        <IconButton
+                          size="small"
+                          component="span"
+                          disableRipple
+                          sx={{ p: 0, color: "inherit" }}
+                        >
+                          <ContentCopyOutlinedIcon fontSize="small" />
+                        </IconButton>
+                        <span>Create Duplicate</span>
+                      </button>
+                    </Tooltip>
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -400,9 +488,14 @@ function ProductList() {
       {/* ADD / EDIT */}
       <AddProductDialog
         open={open}
-        onClose={() => { setOpen(false); setEditingProduct(null); }}
+        onClose={() => {
+          setOpen(false);
+          setEditingProduct(null);
+          setDialogMode("create");
+        }}
         onAddProduct={handleAddProduct}
         productToEdit={editingProduct}
+        mode={dialogMode}
       />
 
       {/* DELETE CONFIRM */}

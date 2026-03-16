@@ -73,6 +73,26 @@ export const deleteLead = async (id) => {
 };
 
 /* ---------------------------------------
+   BULK DELETE LEADS
+--------------------------------------- */
+export const bulkDeleteLeads = async (ids = []) => {
+  try {
+    const normalizedIds = Array.isArray(ids)
+      ? [...new Set(ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))]
+      : [];
+
+    if (!normalizedIds.length) {
+      return { deleted_count: 0, deleted_ids: [], not_found_ids: [] };
+    }
+
+    const res = await api.post('/leads/bulk-delete', { ids: normalizedIds });
+    return res.data;
+  } catch (error) {
+    handleError(error, 'Failed to bulk delete leads');
+  }
+};
+
+/* ---------------------------------------
    FETCH FILTERED LEADS
 --------------------------------------- */
 export const fetchFilteredLeads = async (filters = {}) => {

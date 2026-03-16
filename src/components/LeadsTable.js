@@ -19,6 +19,7 @@ const LeadsTable = ({
   leads,
   visibleFields = [],
   onDelete,
+  onBulkDelete,
   leadStatusOptions,
   priorityOptions,
   onUpdateLead,
@@ -223,7 +224,19 @@ const LeadsTable = ({
         onExportSelected={exportToExcel}
         onDeleteSelected={() => {
           if (window.confirm(`Delete ${selectedLeads.length} leads?`)) {
-            selectedLeads.forEach(id => onDelete(id));
+            (async () => {
+              try {
+                if (typeof onBulkDelete === 'function') {
+                  await onBulkDelete(selectedLeads);
+                } else {
+                  await Promise.all(selectedLeads.map((id) => onDelete(id)));
+                }
+                setSelectedLeads([]);
+                setSelectAll(false);
+              } catch (error) {
+                console.error('Bulk delete failed:', error);
+              }
+            })();
           }
         }}
         searchValue={searchQuery}

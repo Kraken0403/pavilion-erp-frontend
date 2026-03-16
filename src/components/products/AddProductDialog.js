@@ -30,7 +30,7 @@ import { BACKEND_URL } from '../../config/env'
 
 const UNITS = ["kg", "g", "piece", "box"];
 
-function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
+function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "create" }) {
   /* ---------------- CORE PRODUCT ---------------- */
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -381,7 +381,11 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
   return (
     <Dialog className="add-product-dialog" open={open} maxWidth="md" fullWidth>
       <DialogTitle className="dialog-title">
-        {productToEdit ? "Edit Product" : "Add New Product"}
+        {mode === "edit"
+          ? "Edit Product"
+          : mode === "duplicate"
+            ? "Duplicate Product"
+            : "Add New Product"}
         <IconButton onClick={handleClose} size="small">
           <CloseIcon />
         </IconButton>
@@ -890,7 +894,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit }) {
           Cancel
         </button>
         <button className="save-btn-x" disabled={submitting} onClick={handleSave}>
-          Save
+          {mode === "duplicate" ? "Create Copy" : "Save"}
         </button>
       </DialogActions>
     </Dialog>

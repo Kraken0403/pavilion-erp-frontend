@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { fetchLeads, deleteLead, updateLead } from '../services/leadService';
+import { fetchLeads, deleteLead, updateLead, bulkDeleteLeads } from '../services/leadService';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import LeadsTable from '../components/LeadsTable';
 import Topbar from '../components/Topbar';
 import PageLoader from '../components/ui/PageLoader';
+import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import { getFieldOrder } from '../services/leadFieldService';
 import { useSettings } from '../context/SettingsContext';
 import useAutoRefresh from '../hooks/useAutoRefresh';
@@ -14,7 +15,16 @@ const Leads = () => {
     const [loading, setLoading] = useState(true);
     const [deleteId, setDeleteId] = useState(null);
     const [open, setOpen] = useState(false);
+    const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
     const hasLoadedOnceRef = useRef(false);
+
+    const showNotification = useCallback((message, severity = 'success') => {
+        setNotification({ open: true, message, severity });
+    }, []);
+
+    const handleCloseNotification = useCallback(() => {
+        setNotification((prev) => ({ ...prev, open: false }));
+    }, []);
 
     const getLeadsSignature = useCallback((items) => {
         if (!Array.isArray(items)) return '[]';
@@ -103,10 +113,40 @@ const Leads = () => {
         try {
             await deleteLead(deleteId);
             await getLeads();
+            showNotification('Lead deleted successfully', 'success');
         } catch (error) {
             console.error(error);
+            showNotification(error?.response?.data?.error || 'Failed to delete lead', 'error');
         } finally {
             setOpen(false);
+        }
+    };
+
+    const handleBulkDelete = async (leadIds = []) => {
+        const ids = Array.isArray(leadIds) ? leadIds : [];
+        if (!ids.length) return;
+
+        try {
+            const result = await bulkDeleteLeads(ids);
+            await getLeads();
+
+            const deletedCount = Number(result?.deleted_count || 0);
+            const notFoundIds = Array.isArray(result?.not_found_ids) ? result.not_found_ids : [];
+
+            if (deletedCount > 0) {
+                const baseMessage = `${deletedCount} lead${deletedCount === 1 ? '' : 's'} deleted successfully`;
+                const message = notFoundIds.length
+                    ? `${baseMessage}. Not found: ${notFoundIds.join(', ')}`
+                    : baseMessage;
+
+                showNotification(message, notFoundIds.length ? 'warning' : 'success');
+            } else {
+                showNotification('No leads were deleted', 'warning');
+            }
+        } catch (error) {
+            console.error(error);
+            showNotification(error?.response?.data?.error || 'Failed to delete selected leads', 'error');
+            throw error;
         }
     };
 
@@ -131,6 +171,7 @@ const Leads = () => {
                         leads={leads}
                         visibleFields={filteredVisibleFields}
                         onDelete={handleDeleteConfirmation}
+                        onBulkDelete={handleBulkDelete}
                         leadStatusOptions={leadStatusOptions}
                         priorityOptions={priorityOptions}
                         onUpdateLead={handleUpdateLead}
@@ -157,6 +198,13 @@ const Leads = () => {
                         <Button onClick={handleDelete} autoFocus>Yes</Button>
                     </DialogActions>
                 </Dialog>
+
+                <NotificationSnackbar
+                    open={notification.open}
+                    message={notification.message}
+                    severity={notification.severity}
+                    onClose={handleCloseNotification}
+                />
             </div>
         </>
     );
