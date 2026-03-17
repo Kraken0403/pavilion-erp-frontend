@@ -35,6 +35,10 @@ function InvoiceSettings() {
     receipt_sequence_start: 1,
     receipt_number_format: '{prefix}/{year}/{seq}',
     receipt_numbering_mode: 'continuous',
+    proforma_prefix: 'PI',
+    proforma_number_format: '{prefix}/{year}/{seq}',
+    proforma_sequence_start: 1,
+    proforma_numbering_mode: 'continuous',
     cover_letter_html: '',
     terms_conditions_html: '',
     footer_notes_html: ''
@@ -136,6 +140,52 @@ function InvoiceSettings() {
               onChange={(e) =>
                 setSettings({ ...settings, numbering_mode: e.target.value })
               }
+            >
+              {numberingModes.map(op => (
+                <MenuItem key={op.value} value={op.value}>
+                  {op.label}
+                </MenuItem>
+              ))}
+            </TextField>
+
+            {/* Proforma Numbering Section */}
+            <Typography variant="h6" mt={4}>
+              Proforma Numbering
+            </Typography>
+
+            <TextField
+              label="Proforma Prefix"
+              fullWidth
+              sx={{ mt: 2 }}
+              value={settings.proforma_prefix || ''}
+              onChange={(e) => setSettings({ ...settings, proforma_prefix: e.target.value })}
+            />
+
+            <TextField
+              label="Proforma Number Format"
+              fullWidth
+              sx={{ mt: 2 }}
+              helperText="Available tags: {prefix} {year} {month} {seq}"
+              value={settings.proforma_number_format || ''}
+              onChange={(e) => setSettings({ ...settings, proforma_number_format: e.target.value })}
+            />
+
+            <TextField
+              label="Proforma Sequence Start"
+              type="number"
+              fullWidth
+              sx={{ mt: 2 }}
+              value={settings.proforma_sequence_start}
+              onChange={(e) => setSettings({ ...settings, proforma_sequence_start: Number(e.target.value) })}
+            />
+
+            <TextField
+              label="Proforma Numbering Mode"
+              select
+              fullWidth
+              sx={{ mt: 2 }}
+              value={settings.proforma_numbering_mode || 'continuous'}
+              onChange={(e) => setSettings({ ...settings, proforma_numbering_mode: e.target.value })}
             >
               {numberingModes.map(op => (
                 <MenuItem key={op.value} value={op.value}>

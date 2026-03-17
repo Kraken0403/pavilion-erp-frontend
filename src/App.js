@@ -31,6 +31,9 @@ import InvoiceView from './pages/InvoiceView';
 import InvoiceSettings from './pages/InvoiceSettings';
 import 'react-quill/dist/quill.snow.css'
 import CreateInvoice from './pages/CreateInvoice';
+import ProformaInvoices from './pages/ProformaInvoices';
+import ProformaInvoiceView from './pages/ProformaInvoiceView';
+import CreateProformaInvoice from './pages/CreateProformaInvoice';
 import KOTBoard from './pages/KOTBoard';
 import KOTSettings from './pages/KOTSettings';
 import DeliveryBoard from './pages/DeliveryBoard';
@@ -123,6 +126,33 @@ const App = () => {
                                     element={
                                         <PrivateRoute requiredModule="invoices">
                                             <CreateInvoice />
+                                        </PrivateRoute>
+                                    }
+                                />
+
+                                <Route
+                                    path="/proforma-invoices"
+                                    element={
+                                        <PrivateRoute requiredModule="invoices">
+                                            <ProformaInvoices />
+                                        </PrivateRoute>
+                                    }
+                                />
+
+                                <Route
+                                    path="/proforma-invoices/:id"
+                                    element={
+                                        <PrivateRoute requiredModule="invoices">
+                                            <ProformaInvoiceView />
+                                        </PrivateRoute>
+                                    }
+                                />
+
+                                <Route
+                                    path="/proforma-invoices/create"
+                                    element={
+                                        <PrivateRoute requiredModule="invoices">
+                                            <CreateProformaInvoice />
                                         </PrivateRoute>
                                     }
                                 />

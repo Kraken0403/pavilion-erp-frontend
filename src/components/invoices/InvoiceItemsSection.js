@@ -7,8 +7,10 @@ function InvoiceItemsSection({
   items,
   updateItem,
   addItem,
+  removeItem,
   products,
-  handleProductSelect
+  handleProductSelect,
+  readOnly = false,
 }) {
   return (
     <div className="quotation-items-section">
@@ -22,74 +24,84 @@ function InvoiceItemsSection({
           {/* PRODUCT */}
           <Grid item xs={12} md={4}>
             <Typography className="field-label">Product</Typography>
-            <Autocomplete
-              options={products}
-              getOptionLabel={(p) => p.name || ''}
-              onChange={(e, value) =>
-                handleProductSelect(index, value)
-              }
-              renderInput={(params) => (
-                <TextField {...params} className="form-input" />
-              )}
-            />
+            {readOnly ? (
+              <Typography>{item.product?.name || item.description}</Typography>
+            ) : (
+              <Autocomplete
+                options={products}
+                getOptionLabel={(p) => p.name || ''}
+                onChange={(e, value) => handleProductSelect(index, value)}
+                renderInput={(params) => (
+                  <TextField {...params} className="form-input" />
+                )}
+              />
+            )}
           </Grid>
 
           {/* QTY */}
           <Grid item xs={12} md={2}>
             <Typography className="field-label">Qty</Typography>
-            <TextField
-              className="form-input"
-              type="number"
-              fullWidth
-              value={item.quantity}
-              onChange={(e) =>
-                updateItem(index, { quantity: e.target.value })
-              }
-            />
+            {readOnly ? (
+              <Typography>{item.quantity}</Typography>
+            ) : (
+              <TextField
+                className="form-input"
+                type="number"
+                fullWidth
+                value={item.quantity}
+                onChange={(e) => updateItem(index, { quantity: e.target.value })}
+              />
+            )}
           </Grid>
 
           {/* PRICE */}
           <Grid item xs={12} md={2}>
             <Typography className="field-label">Unit Price</Typography>
-            <TextField
-              className="form-input"
-              type="number"
-              fullWidth
-              value={item.selling_price}
-              onChange={(e) =>
-                updateItem(index, { selling_price: e.target.value })
-              }
-            />
+            {readOnly ? (
+              <Typography>{item.selling_price}</Typography>
+            ) : (
+              <TextField
+                className="form-input"
+                type="number"
+                fullWidth
+                value={item.selling_price}
+                onChange={(e) => updateItem(index, { selling_price: e.target.value })}
+              />
+            )}
           </Grid>
 
           {/* GST */}
           <Grid item xs={12} md={2}>
             <Typography className="field-label">GST %</Typography>
-            <TextField
-              className="form-input"
-              type="number"
-              fullWidth
-              value={item.gst_rate}
-              onChange={(e) =>
-                updateItem(index, { gst_rate: e.target.value })
-              }
-            />
+            {readOnly ? (
+              <Typography>{item.gst_rate}</Typography>
+            ) : (
+              <TextField
+                className="form-input"
+                type="number"
+                fullWidth
+                value={item.gst_rate}
+                onChange={(e) => updateItem(index, { gst_rate: e.target.value })}
+              />
+            )}
           </Grid>
 
           {/* DELETE */}
-          <Grid item xs={12} md={2} sx={{ display: 'flex', alignItems: 'end' }}>
-            <IconButton onClick={() =>
-              updateItem(index, { _delete: true })
-            }>
-              <DeleteIcon />
-            </IconButton>
-          </Grid>
+          {!readOnly && (
+            <Grid item xs={12} md={2} sx={{ display: 'flex', alignItems: 'end' }}>
+              <IconButton onClick={() => removeItem(index)}>
+                <DeleteIcon />
+              </IconButton>
+            </Grid>
+          )}
         </Grid>
       ))}
 
-      <button className="add-item-btn" onClick={addItem}>
-        + Add Item
-      </button>
+      {!readOnly && (
+        <button className="add-item-btn" onClick={addItem}>
+          + Add Item
+        </button>
+      )}
     </div>
   )
 }

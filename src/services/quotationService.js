@@ -57,7 +57,7 @@ export const fetchApprovedQuotations = async () => {
   const data = await fetchQuotations();
   const list = Array.isArray(data) ? data : data?.data || [];
   return list.filter(
-    (q) => String(q.status || '').toLowerCase() === 'approved'
+    (q) => String(q.status || '').trim().toLowerCase() === 'approved'
   );
 };
 

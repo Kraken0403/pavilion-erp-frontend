@@ -1,6 +1,17 @@
 import api from './api';
 import { downloadPdfFromResponse } from '../utils/pdfHelpers';
 
+// CREATE PROFORMA INVOICE
+export const createProformaInvoice = async (payload) => {
+  try {
+    const res = await api.post('/proforma-invoices', payload);
+    return res.data;
+  } catch (error) {
+    console.error('Failed to create proforma invoice:', error.response?.data || error);
+    throw error;
+  }
+};
+
 /* ---------------------------------------
    CREATE MANUAL INVOICE
 --------------------------------------- */
@@ -22,6 +33,16 @@ export const createInvoiceFromWorkOrder = async (workOrderId) => {
   return res.data;
 };
 
+export const createProformaFromQuotation = async (quotationId) => {
+  const res = await api.post(`/proforma-invoices/from-quotation/${quotationId}`);
+  return res.data;
+};
+
+export const createTaxInvoiceFromProforma = async (proformaInvoiceId) => {
+  const res = await api.post(`/proforma-invoices/${proformaInvoiceId}/create-tax-invoice`);
+  return res.data;
+};
+
 /* ---------------------------------------
    GET ALL INVOICES
 --------------------------------------- */
@@ -30,11 +51,21 @@ export const getInvoices = async () => {
   return res.data;
 };
 
+export const getProformaInvoices = async () => {
+  const res = await api.get('/proforma-invoices');
+  return res.data;
+};
+
 /* ---------------------------------------
    GET SINGLE INVOICE
 --------------------------------------- */
 export const getInvoiceById = async (id) => {
   const res = await api.get(`/invoices/${id}`);
+  return res.data;
+};
+
+export const getProformaInvoiceById = async (id) => {
+  const res = await api.get(`/proforma-invoices/${id}`);
   return res.data;
 };
 

@@ -469,10 +469,8 @@ function CreateQuotation() {
     try {
       await createQuotation(payload)
       showNotification('✅ Quotation created successfully')
-
-      // reset
-      setItems([])
-      setOverallDiscount(0)
+      // redirect to quotations list
+      window.location.href = '/quotations'
     } catch (err) {
       showNotification(
         err?.response?.data?.error ||

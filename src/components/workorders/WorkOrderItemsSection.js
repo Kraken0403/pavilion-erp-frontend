@@ -9,6 +9,20 @@ function WorkOrderItemsSection({ items = [] }) {
 
   const toNumber = (value) => Number(value || 0)
 
+  const getItemExtraDescription = (item = {}) => {
+    const raw = String(item.description || '').trim()
+    if (!raw) return ''
+
+    const productName = String(item.product_name || item.name || '').trim().toLowerCase()
+    const lines = raw
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .filter((line) => line.toLowerCase() !== productName)
+
+    return lines.join(' | ')
+  }
+
   return (
     <div className="quotation-items-section">
       <Typography className="section-title">
@@ -35,7 +49,14 @@ function WorkOrderItemsSection({ items = [] }) {
             {items.map((it, i) => (
               <tr key={i}>
                 <td>{i + 1}</td>
-                <td>{it.product_name || it.name || it.description || '—'}</td>
+                <td>
+                  <div>{it.product_name || it.name || it.description || '—'}</div>
+                  {!!getItemExtraDescription(it) && (
+                    <div style={{ fontSize: 12, color: '#6b7280', marginTop: 2 }}>
+                      {getItemExtraDescription(it)}
+                    </div>
+                  )}
+                </td>
                 <td>{it.brand || it.product_brand || '—'}</td>
                 <td>{toNumber(it.quantity ?? it.qty)}</td>
                 <td>{currency} {toNumber(it.unit_price ?? it.price ?? it.rate).toFixed(2)}</td>

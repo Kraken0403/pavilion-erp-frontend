@@ -314,6 +314,11 @@ const Sidebar = () => {
                     <ListItemText primary="Invoice List" />
                   </ListItemButton>
 
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/proforma-invoices')}>
+                    <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
+                    <ListItemText primary="Proforma Invoices" />
+                  </ListItemButton>
+
                   <ListItemButton sx={{ pl: 4 }} onClick={() => go('/invoice-settings')}>
                     <ListItemIcon><SettingsIcon /></ListItemIcon>
                     <ListItemText primary="Settings" />

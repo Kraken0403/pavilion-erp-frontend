@@ -148,6 +148,7 @@ function CreateInvoice() {
     let cgst_total = 0
     let sgst_total = 0
     let igst_total = 0
+    let grand_total = 0
 
     items.forEach(item => {
       const qty = Number(item.quantity || 0)
@@ -156,19 +157,21 @@ function CreateInvoice() {
 
       const lineBase = qty * price
 
-      subtotal += lineBase
-
       if (gstPricingMode === 'EXCLUSIVE') {
+        subtotal += lineBase
         const gstAmount = (lineBase * gst) / 100
 
         // Simplified assumption (split equally)
         cgst_total += gstAmount / 2
         sgst_total += gstAmount / 2
+        grand_total += lineBase + gstAmount
       } else {
         const base = lineBase / (1 + gst / 100)
         const gstAmount = lineBase - base
+        subtotal += base
         cgst_total += gstAmount / 2
         sgst_total += gstAmount / 2
+        grand_total += lineBase
       }
     })
 
@@ -177,7 +180,7 @@ function CreateInvoice() {
       cgst_total,
       sgst_total,
       igst_total,
-      grand_total: subtotal + cgst_total + sgst_total + igst_total
+      grand_total
     }
   }
 
@@ -254,6 +257,7 @@ function CreateInvoice() {
             invoice_number: 'NEW',
             status: 'issued'
           }}
+          documentLabel="Tax Invoice"
         />
 
         {/* CONTACT */}

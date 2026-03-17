@@ -55,6 +55,13 @@ const Reports = () => {
 
   const rowsPerPage = 10;
 
+  const panelSx = {
+    borderRadius: 2,
+    border: '1px solid #dfe8f5',
+    boxShadow: '0 10px 24px rgba(15, 23, 42, 0.06)',
+    background: '#ffffffeb',
+  };
+
   const formatDateSafe = (value) => {
     if (!value) return 'N/A';
     const formatted = formatLocalDate(value);
@@ -184,10 +191,11 @@ const Reports = () => {
             <Card
               sx={{
                 height: '100%',
-                backgroundColor: '#edf4ff',
+                background: 'linear-gradient(130deg, #edf4ff 0%, #f8fbff 100%)',
                 border: '1px solid',
                 borderColor: '#c8ddff',
-                boxShadow: 'none',
+                boxShadow: '0 6px 16px rgba(30, 64, 175, 0.08)',
+                borderRadius: 2,
               }}
             >
               <CardContent>
@@ -274,7 +282,7 @@ const Reports = () => {
       : 'Top Performance Snapshot';
 
     return (
-      <Paper sx={{ p: 3, mb: 3, border: '1px solid #d6e6ff' }}>
+      <Paper sx={{ p: 3, mb: 3, ...panelSx }}>
         <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
           {chartTitle}
         </Typography>
@@ -583,7 +591,7 @@ const Reports = () => {
       <Topbar />
       <Box sx={{ background: '#f4f6f9', minHeight: '100vh', py: 4 }}>
         <Container maxWidth="xl">
-          <Paper sx={{ p: 3, mb: 3, border: '1px solid #d6e6ff' }}>
+          <Paper sx={{ p: 3, mb: 3, ...panelSx }}>
             <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
               <Assessment sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
               <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#333' }}>
@@ -701,7 +709,7 @@ const Reports = () => {
 
           {/* Report Table */}
           {reportData && (
-            <Paper sx={{ p: 3 }}>
+            <Paper sx={{ p: 3, ...panelSx }}>
               <Typography variant="h6" sx={{ mb: 2, fontWeight: 'bold' }}>
                 Report Data
               </Typography>

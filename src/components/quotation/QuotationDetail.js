@@ -8,7 +8,6 @@ import QuotationItemsSection from './QuotationItemsSection'
 import ChannelSelectModal from '../ui/ChannelSelectModal'
 import AddLeadDialog from '../leads/AddLeadDialog'
 import AddProductDialog from '../products/AddProductDialog'
-import { createWorkOrderFromQuotation } from '../../services/workOrderServices'
 import {
   Grid,
   TextField,
@@ -21,7 +20,7 @@ import {
   updateQuotationStatus,
   updateQuotationItems,
   sendQuotationEmailToCustomer,
-  sendQuotationWhatsAppToCustomer
+  sendQuotationWhatsAppToCustomer,
 } from '../../services/quotationService'
 import { fetchLeads } from '../../services/leadService'
 import { useSettings } from '../../context/SettingsContext'
@@ -505,52 +504,16 @@ function QuotationDetail() {
   }
 
 
-  const handleCreateWorkOrder = async () => {
-    try {
-      if (quotation.status !== 'approved') {
-        return showNotification(
-          'Work Order can only be created from approved quotations',
-          'warning'
-        )
-      }
-
-      const payload = {
-        quotation_id: quotation.id
-      }
-
-      console.log('🔥 Creating WO for quotation ID:', payload)
-
-
-      const res = await createWorkOrderFromQuotation(payload.quotation_id)
-
-      showNotification('Work Order created successfully')
-
-      // 🔒 Lock quotation + mark converted
-      await updateQuotationStatus(quotation.id, 'converted')
-
-      loadQuotation()
-
-      const workOrderId =
-        res?.id ||
-        res?.work_order_id ||
-        res?.data?.id
-
-      if (!workOrderId) {
-        throw new Error('Work order created but ID not returned')
-      }
-
-      navigate(`/workorders/${workOrderId}`)
-
-
-      // 🔀 Navigate to Work Order detail
-      // navigate(`/workorders/${res.id}`)
-    } catch (err) {
-      console.error(err)
-      showNotification(
-        err?.response?.data?.error || 'Failed to create work order',
-        'error'
+  const handleCreateProforma = async () => {
+    if (quotation.status !== 'approved') {
+      return showNotification(
+        'Proforma can only be created from approved quotations',
+        'warning'
       )
     }
+
+    // Navigate to proforma create page with quotation prefill (read-only)
+    navigate('/proforma-invoices/create', { state: { quotationId: quotation.id } })
   }
 
   const handleSendQuotationEmail = async () => {
@@ -653,8 +616,7 @@ function QuotationDetail() {
               showNotification('Failed to approve quotation', 'error')
             }
           }}
-
-          onCreateWorkOrder={handleCreateWorkOrder}
+          onCreateProforma={handleCreateProforma}
           onCreateVersion={handleCreateVersion}
           onSendEmail={() => setChannelModalOpen(true)}
           onSendWhatsApp={() => setChannelModalOpen(true)}

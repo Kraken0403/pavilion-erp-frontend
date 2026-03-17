@@ -188,7 +188,7 @@ const EditForm = ({
   useEffect(() => {
     fetchUsers();
     fetchCustomFields();
-  }, []);
+  }, [fetchUsers, fetchCustomFields]);
 
   useEffect(() => {
     if (sameAsBilling) {
@@ -243,7 +243,7 @@ const EditForm = ({
         return updated;
       });
     }
-  }, [leadData?.custom_fields, customFields]);
+  }, [leadData, customFields]);
 
   // Custom field value change
   const handleFieldChange = (fieldId, value) => {

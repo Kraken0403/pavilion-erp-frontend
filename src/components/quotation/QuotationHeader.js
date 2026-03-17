@@ -4,6 +4,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined'
 import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined'
 import WorkOutlineOutlinedIcon from '@mui/icons-material/WorkOutlineOutlined'
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
 import FileCopyOutlinedIcon from '@mui/icons-material/FileCopyOutlined'
 import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsActiveOutlined'
 
@@ -17,6 +18,7 @@ function QuotationHeader({
   onStatusChange,
   onApprove,
   onCreateWorkOrder,
+  onCreateProforma,
   onCreateVersion,
   onSendEmail,
   onSendWhatsApp,
@@ -134,6 +136,18 @@ function QuotationHeader({
             )}
 
             {/* CREATE WORK ORDER */}
+            {status === 'approved' && onCreateProforma && (
+              <MenuItem
+                onClick={() => {
+                  setActionsAnchorEl(null)
+                  onCreateProforma()
+                }}
+              >
+                <ReceiptLongIcon fontSize="small" style={{ marginRight: 10 }} />
+                Send to Proforma Invoice
+              </MenuItem>
+            )}
+
             {status === 'approved' && onCreateWorkOrder && (
               <MenuItem
                 onClick={() => {
