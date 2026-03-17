@@ -7,6 +7,7 @@ import PaginationBar from '../ui/PaginationBar';
 import ChannelSelectModal from '../ui/ChannelSelectModal';
 import { sendQuotationEmailToCustomer, sendQuotationWhatsAppToCustomer, updateQuotationStatus } from '../../services/quotationService';
 import { useSettings } from "../../context/SettingsContext";
+import { displayCurrency } from '../../utils/currencyUtils';
 import { formatStatusLabel, normalizeStatusValue } from '../../utils/statusFormatter';
 import { parseDateInput } from '../../utils/dateFormatter';
 
@@ -32,7 +33,7 @@ const QuotationsTable = ({
 }) => {
   const navigate = useNavigate();
   const { settings } = useSettings();
-  const currency = settings?.currency_code || '₹';
+  const currency = displayCurrency(settings?.currency_code);
 
   const itemsPerPage = 20;
   const [currentPage, setCurrentPage] = useState(1);

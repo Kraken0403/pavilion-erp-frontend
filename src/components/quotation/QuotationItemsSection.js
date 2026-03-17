@@ -7,6 +7,7 @@ import {
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import { useSettings } from '../../context/SettingsContext'
+import { displayCurrency } from '../../utils/currencyUtils'
 import '../../assets/styles/QuotationItems.scss'
 
 function QuotationItemsSection({
@@ -22,7 +23,7 @@ function QuotationItemsSection({
   products = [],
 }) {
   const { settings } = useSettings()
-  const currency = settings?.currency_code || '₹'
+  const currency = displayCurrency(settings?.currency_code)
 
   const dragFromIndex = useRef(null)
   const [dragOverIndex, setDragOverIndex] = useState(null)

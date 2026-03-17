@@ -24,6 +24,7 @@ import {
 
 import AddProductDialog from "./AddProductDialog";
 import { useSettings } from "../../context/SettingsContext";
+import { displayCurrency } from '../../utils/currencyUtils'
 import useAutoRefresh from "../../hooks/useAutoRefresh";
 
 import "../../assets/styles/LeadsTable.scss"; // reuse Leads table styles
@@ -64,7 +65,7 @@ const visibleFields = [
 
 function ProductList() {
   const { settings } = useSettings();
-  const currency = settings?.currency_code || "INR";
+  const currency = displayCurrency(settings?.currency_code);
   const fileInputRef = useRef(null);
 
 

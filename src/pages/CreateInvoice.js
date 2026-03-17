@@ -17,6 +17,7 @@ import {
 import { fetchLeads } from '../services/leadService'
 import { createInvoice } from '../services/invoiceService'
 import { getSettings } from '../services/settingsService'
+import { displayCurrency } from '../utils/currencyUtils'
 import Topbar from '../components/Topbar'
 import { toInputDateValue } from '../utils/dateFormatter'
 
@@ -93,7 +94,7 @@ function CreateInvoice() {
     getSettings()
       .then(settings => {
         setGstPricingMode(settings?.gst_pricing_mode || 'EXCLUSIVE')
-        setCurrency(settings?.currency_code || '₹')
+        setCurrency(displayCurrency(settings?.currency_code))
       })
       .catch(() => { })
   }, [])
@@ -187,6 +188,22 @@ function CreateInvoice() {
 
   const totals = calculateTotals()
 
+  // Rounding amount: default removes decimal part (nearest integer adjustment)
+  const [roundingAmount, setRoundingAmount] = useState(null)
+  const [roundingManual, setRoundingManual] = useState(false)
+
+  useEffect(() => {
+    if (roundingManual) return
+    const grand = Number(totals.grand_total || 0)
+    const defaultRound = Math.round(grand) - grand
+    setRoundingAmount(Number(defaultRound.toFixed(2)))
+  }, [totals.grand_total, roundingManual])
+
+  const handleSetRoundingAmount = (v) => {
+    setRoundingManual(true)
+    setRoundingAmount(Number(v || 0))
+  }
+
   /* ---------------------------------------
      SUBMIT
   --------------------------------------- */
@@ -215,6 +232,8 @@ function CreateInvoice() {
       due_date: dueDate || null,
       notes: notes || null,
       source_type: 'MANUAL',
+      rounding_amount: Number(roundingAmount || 0),
+      grand_total: Number((totals.grand_total || 0) + (Number(roundingAmount) || 0)),
       items: validItems.map(i => ({
         product_id: i.product.id,
         quantity: Number(i.quantity),
@@ -291,9 +310,11 @@ function CreateInvoice() {
         {/* SUMMARY */}
         <div className="quotation-card">
           <InvoiceSummary
-            totals={totals}
+            totals={{ ...totals, grand_total: Number((totals.grand_total || 0) + (Number(roundingAmount) || 0)) }}
             currency={currency}
             pricingMode={gstPricingMode}
+            roundingAmount={roundingAmount}
+            setRoundingAmount={handleSetRoundingAmount}
           />
           <InvoiceFooterSection
             handleSubmit={handleSubmit}

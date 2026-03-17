@@ -18,6 +18,7 @@ import useAutoRefresh from '../hooks/useAutoRefresh'
 import { parseDateInput } from '../utils/dateFormatter'
 
 import { useSettings } from '../context/SettingsContext'
+import { displayCurrency } from '../utils/currencyUtils'
 import { useNotification } from '../context/NotificationContext'
 
 const statusOptions = [
@@ -63,7 +64,7 @@ function WorkOrders() {
   const navigate = useNavigate()
   const { settings } = useSettings()
   const { getUnreadNotificationFor, markRecordNotificationsSeen } = useNotification()
-  const currency = settings?.currency_code || '₹'
+  const currency = displayCurrency(settings?.currency_code)
 
   const [orders, setOrders] = useState([])
   const [searchQuery, setSearchQuery] = useState('')

@@ -1,11 +1,12 @@
 import React from 'react'
 import { Typography } from '@mui/material'
 import { useSettings } from '../../context/SettingsContext'
+import { displayCurrency } from '../../utils/currencyUtils'
 import '../../assets/styles/QuotationItems.scss'
 
 function WorkOrderItemsSection({ items = [] }) {
   const { settings } = useSettings()
-  const currency = settings?.currency_code || '₹'
+  const currency = displayCurrency(settings?.currency_code)
 
   const toNumber = (value) => Number(value || 0)
 

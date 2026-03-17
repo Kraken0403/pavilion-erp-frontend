@@ -227,7 +227,7 @@ export default function SettingsForm({ settings, onSubmit }) {
               fullWidth
               onChange={handleChange}
             >
-              <MenuItem value="INR">₹ INR</MenuItem>
+              <MenuItem value="INR">₹</MenuItem>
               <MenuItem value="USD">$ USD</MenuItem>
               <MenuItem value="EUR">€ EUR</MenuItem>
               <MenuItem value="GBP">£ GBP</MenuItem>

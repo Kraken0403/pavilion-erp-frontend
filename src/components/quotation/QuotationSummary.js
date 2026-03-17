@@ -5,6 +5,7 @@ import '../../assets/styles/QuotationItems.scss'
 import {
   TextField,
   Typography,
+  InputAdornment,
 } from '@mui/material'
 
 function QuotationSummary({
@@ -12,7 +13,10 @@ function QuotationSummary({
   overallDiscount,
   setOverallDiscount,
   currency = '₹',
-  isLocked = false
+  isLocked = false,
+  gstPricingMode = 'INCLUSIVE'
+  , roundingAmount = 0,
+  setRoundingAmount = () => {}
 }) {
   const n = v => {
     const value = Number(v || 0)
@@ -34,12 +38,14 @@ function QuotationSummary({
         {/* LEFT COLUMN */}
         <div className="qs-col qs-col-left">
 
-          <div className="qs-row">
-            <span className="qs-label muted">GST Included</span>
-            <strong className="qs-value">
-              {currency} {n(totals.totalTax)}
-            </strong>
-          </div>
+              <div className="qs-row">
+                <span className="qs-label muted">
+                  {gstPricingMode === 'INCLUSIVE' ? 'GST Included' : 'GST Exclusive'}
+                </span>
+                <strong className="qs-value">
+                  {currency} {n(totals.totalTax)}
+                </strong>
+              </div>
 
           <div className="qs-divider" />
 
@@ -63,6 +69,35 @@ function QuotationSummary({
             <strong className="qs-value">
               {currency} {n(totals.discountedSubtotal)}
             </strong>
+          </div>
+
+          {gstPricingMode !== 'INCLUSIVE' && gstPricingMode !== 'inclusive' && (
+            <div className="qs-row">
+              <span className="qs-label muted">GST (added)</span>
+              <strong className="qs-value">
+                {currency} {n(totals.totalTax)}
+              </strong>
+            </div>
+          )}
+
+          {/* Rounding (editable in-place, mirrors Overall Discount) */}
+          <div className="qs-row qs-discount">
+            <span className="qs-label">Rounding +/-</span>
+
+            <TextField
+              size="small"
+              type="number"
+              disabled={isLocked}
+              value={roundingAmount ?? 0}
+              onChange={e => setRoundingAmount(Number(e.target.value || 0))}
+              inputProps={{ style: { textAlign: 'right' } }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">{currency}</InputAdornment>
+                ),
+              }}
+              sx={{ width: 140 }}
+            />
           </div>
 
           <div className="qs-row">
@@ -107,7 +142,7 @@ function QuotationSummary({
           <div className="qs-row qs-grand">
             <span className="qs-label">Grand Total</span>
             <strong className="qs-grand-value">
-              {currency} {n(totals.grandTotal)}
+              {currency} {n((totals.grandTotal || 0) + (totals.roundingAmount || 0))}
             </strong>
           </div>
 

@@ -10,6 +10,7 @@ import QuotationItemsSection from '../components/quotation/QuotationItemsSection
 import QuotationFooterSection from '../components/quotation/QuotationFooterSection'
 import QuotationSummary from './quotation/QuotationSummary'
 import { getSettings } from '../services/settingsService'
+import { displayCurrency } from '../utils/currencyUtils'
 
 import {
   Grid,
@@ -154,7 +155,7 @@ function CreateQuotation() {
   useEffect(() => {
     getQuotationSettings()
       .then(settings => {
-        setCurrency(settings?.currency_code || '₹')
+        setCurrency(displayCurrency(settings?.currency_code))
       })
       .catch(err => console.error('Failed to load quotation settings', err))
   }, [])
@@ -395,6 +396,24 @@ function CreateQuotation() {
     gstPricingMode
   })
 
+  // Rounding amount: default removes decimal part (nearest integer adjustment)
+  const [roundingAmount, setRoundingAmount] = useState(null)
+  const [roundingManual, setRoundingManual] = useState(false)
+
+  useEffect(() => {
+    if (roundingManual) return
+    const grand = Number(totals.grandTotal || 0)
+    const defaultRound = Math.round(grand) - grand
+    setRoundingAmount(Number(defaultRound.toFixed(2)))
+  }, [totals.grandTotal, roundingManual])
+
+  const handleSetRoundingAmount = (v) => {
+    setRoundingManual(true)
+    setRoundingAmount(Number(v || 0))
+  }
+
+  const derivedTotals = { ...totals, roundingAmount: Number(roundingAmount || 0) }
+
   /* ---------------------------------------
      SUBMIT
   --------------------------------------- */
@@ -441,7 +460,8 @@ function CreateQuotation() {
 
       // Optional but recommended to store
       total_tax: Number(totals.totalTax || 0),
-      grand_total: Number(totals.grandTotal || 0),
+      grand_total: Number((totals.grandTotal || 0) + (Number(roundingAmount) || 0)),
+      rounding_amount: Number(roundingAmount || 0),
 
       items: validItems.map(i => ({
         product_id: i.product.id,
@@ -648,13 +668,16 @@ function CreateQuotation() {
 
         <div className="quotation-card">
           <QuotationSummary
-            totals={totals}
+            totals={derivedTotals}
             overallDiscount={overallDiscount}
             setOverallDiscount={setOverallDiscount}
             currency={currency}
+            gstPricingMode={gstPricingMode}
+            roundingAmount={roundingAmount}
+            setRoundingAmount={handleSetRoundingAmount}
           />
           <QuotationFooterSection
-            total={Number(totals.grandTotal || 0)}
+            total={Number((totals.grandTotal || 0) + (Number(roundingAmount) || 0))}
             handleSubmit={handleSubmit}
             currency={currency}
           />

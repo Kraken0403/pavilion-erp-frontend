@@ -25,6 +25,7 @@ import { toInputDateValue } from '../utils/dateFormatter'
 
 // 🔹 Currency
 import { useSettings } from '../context/SettingsContext'
+import { displayCurrency } from '../utils/currencyUtils'
 
 const parseJsonMaybe = (value) => {
   if (!value) return null
@@ -88,7 +89,7 @@ function WorkOrderDetail() {
   })
 
   const { settings } = useSettings()
-  const currency = settings?.currency_code || '₹'
+  const currency = displayCurrency(settings?.currency_code)
   const isCateringBusiness = settings?.business_type === 'CATERING'
   const isGeneralBusiness = String(settings?.business_type || 'GENERAL').toUpperCase() === 'GENERAL'
 

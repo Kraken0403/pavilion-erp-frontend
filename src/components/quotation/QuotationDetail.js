@@ -24,6 +24,7 @@ import {
 } from '../../services/quotationService'
 import { fetchLeads } from '../../services/leadService'
 import { useSettings } from '../../context/SettingsContext'
+import { displayCurrency } from '../../utils/currencyUtils'
 import { calculateQuotationTotals } from '../../utils/quotationCalculator'
 import QuotationSummary from './QuotationSummary'
 import QuotationFooterSection from './QuotationFooterSection'
@@ -47,7 +48,7 @@ function QuotationDetail() {
   const navigate = useNavigate()
 
   const { settings } = useSettings()
-  const currency = settings?.currency_code || '₹'
+  const currency = displayCurrency(settings?.currency_code)
   const isGeneralBusiness = String(settings?.business_type || 'GENERAL').toUpperCase() === 'GENERAL'
   const gstPricingMode = settings?.gst_pricing_mode || 'INCLUSIVE'
   const [products, setProducts] = useState([])
@@ -797,6 +798,7 @@ function QuotationDetail() {
             setOverallDiscount={setOverallDiscount}
             currency={currency}
             isLocked={isLocked}
+            gstPricingMode={gstPricingMode}
           />
 
           <QuotationFooterSection

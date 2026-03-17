@@ -14,6 +14,7 @@ import { fetchAllProducts } from '../services/productServices'
 import { fetchLeads } from '../services/leadService'
 import { createProformaInvoice, createProformaFromQuotation } from '../services/invoiceService'
 import { getSettings } from '../services/settingsService'
+import { displayCurrency } from '../utils/currencyUtils'
 import { fetchQuotationById } from '../services/quotationService'
 import { getProformaInvoiceById } from '../services/invoiceService'
 import { toInputDateValue } from '../utils/dateFormatter'
@@ -73,7 +74,7 @@ function CreateProformaInvoice() {
     getSettings()
       .then((settings) => {
         setGstPricingMode(settings?.gst_pricing_mode || 'EXCLUSIVE')
-        setCurrency(settings?.currency_code || '₹')
+        setCurrency(displayCurrency(settings?.currency_code))
       })
       .catch(() => { })
   }, [])
@@ -272,6 +273,24 @@ function CreateProformaInvoice() {
 
   const totals = calculateTotals()
 
+  // Rounding amount: default removes decimal part (nearest integer adjustment)
+  const [roundingAmount, setRoundingAmount] = useState(null)
+  const [roundingManual, setRoundingManual] = useState(false)
+
+  useEffect(() => {
+    if (roundingManual) return
+    const grand = Number(totals.grand_total || 0)
+    const defaultRound = Math.round(grand) - grand
+    setRoundingAmount(Number(defaultRound.toFixed(2)))
+  }, [totals.grand_total, roundingManual])
+
+  const handleSetRoundingAmount = (v) => {
+    setRoundingManual(true)
+    setRoundingAmount(Number(v || 0))
+  }
+
+  const derivedTotals = { ...totals, roundingAmount: Number(roundingAmount || 0), grand_total: Number((totals.grand_total || 0) + (Number(roundingAmount) || 0)) }
+
   const showNotification = (message, severity = 'success') =>
     setNotif({ open: true, message, severity })
 
@@ -303,6 +322,8 @@ function CreateProformaInvoice() {
         unit_price: Number(i.selling_price),
         gst_rate: Number(i.gst_rate || 0),
       })),
+      rounding_amount: Number(roundingAmount || 0),
+      grand_total: Number((totals.grand_total || 0) + (Number(roundingAmount) || 0)),
     }
 
     // If navigated from a quotation (prefill via location.state), set source_type and source_id
@@ -363,7 +384,7 @@ function CreateProformaInvoice() {
         </div>
 
         <div className="quotation-card">
-          <InvoiceSummary totals={totals} currency={currency} pricingMode={gstPricingMode} />
+          <InvoiceSummary totals={derivedTotals} currency={currency} pricingMode={gstPricingMode} roundingAmount={roundingAmount} setRoundingAmount={handleSetRoundingAmount} />
           <InvoiceFooterSection handleSubmit={handleSubmit} label="Create Proforma" />
         </div>
 
