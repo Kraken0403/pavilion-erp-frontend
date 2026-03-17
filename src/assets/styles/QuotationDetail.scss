@@ -1,4 +1,4 @@
-@import './variables.scss';
+@use './variables' as *;
 
 
 .quotation-detail-container {
@@ -168,9 +168,9 @@ button {
 
 /* 🟢 APPROVED */
 .status-approved {
-  background-color: #ecfdf5;
+  background-color: #abffd9;
   color: #047857;
-  border-color: #a7f3d0;
+  border-color: #7de9b7;
 }
 
 /* 🔴 REJECTED */

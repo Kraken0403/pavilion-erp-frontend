@@ -1,4 +1,4 @@
-@import './variables.scss';
+@use './variables' as *;
 
 .add-product-dialog {
     max-width: 520px;

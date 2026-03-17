@@ -293,6 +293,8 @@ function CreateProformaInvoice() {
       issue_date: invoiceDate,
       due_date: dueDate || null,
       notes: notes || null,
+      // default to manual proforma; if this form was prefilling from a quotation
+      // include the quotation as the source so server can mark it converted.
       source_type: 'MANUAL_PROFORMA',
       items: validItems.map((i) => ({
         product_id: i.product?.id || null,
@@ -301,6 +303,13 @@ function CreateProformaInvoice() {
         unit_price: Number(i.selling_price),
         gst_rate: Number(i.gst_rate || 0),
       })),
+    }
+
+    // If navigated from a quotation (prefill via location.state), set source_type and source_id
+    const qid = location?.state?.quotationId || location?.state?.quotation_id
+    if (qid) {
+      payload.source_type = 'QUOTATION_PROFORMA'
+      payload.source_id = Number(qid)
     }
 
     try {

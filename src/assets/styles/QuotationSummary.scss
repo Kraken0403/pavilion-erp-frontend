@@ -1,4 +1,5 @@
-@import './variables.scss';
+@use './variables' as *;
+@use 'sass:color' as color;
 
 .quotation-summary {
     background: #fff;
@@ -105,7 +106,7 @@
       }
   
       &:hover .MuiOutlinedInput-notchedOutline {
-        border-color: darken($input-border-color, 5%);
+        border-color: color.adjust($input-border-color, $lightness: -5%);
       }
   
       &.Mui-focused .MuiOutlinedInput-notchedOutline {

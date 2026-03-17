@@ -1,4 +1,4 @@
-@import './variables.scss';
+@use './variables' as *;
 
 .tabs-wrapper {
     width: 100%;
