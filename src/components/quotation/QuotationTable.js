@@ -309,7 +309,7 @@ const QuotationsTable = ({
                       </select>
                     ) : (
                       <span
-                        className={`status-pill status-${q.status}`}
+                        className={`status-pill status-${normalizeStatusValue(q.status)}`}
                         onClick={() => setEditingStatusId(q.id)}
                       >
                         {formatStatusLabel(q.status)}

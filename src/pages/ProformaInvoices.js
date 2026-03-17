@@ -193,13 +193,19 @@ function ProformaInvoices() {
     }
   }
 
-  const handleCreateTaxInvoice = async (e, invoiceId) => {
+  const handleCreateTaxInvoice = async (e, invoiceId, taxInvoiceId = null) => {
     e.stopPropagation()
 
     try {
+      // If taxInvoiceId already provided, just open it
+      if (taxInvoiceId) {
+        navigate(`/invoices/${taxInvoiceId}`)
+        return
+      }
+
       setCreatingTaxId(invoiceId)
       const res = await createTaxInvoiceFromProforma(invoiceId)
-      const taxInvoiceId = res?.tax_invoice?.id
+      const createdTaxInvoiceId = res?.tax_invoice?.id
 
       setNotification({
         open: true,
@@ -209,8 +215,8 @@ function ProformaInvoices() {
         severity: 'success',
       })
 
-      if (taxInvoiceId) {
-        navigate(`/invoices/${taxInvoiceId}`)
+      if (createdTaxInvoiceId) {
+        navigate(`/invoices/${createdTaxInvoiceId}`)
       }
     } catch (error) {
       setNotification({
@@ -416,10 +422,14 @@ function ProformaInvoices() {
                     variant="contained"
                     size="small"
                     disabled={creatingTaxId === inv.id}
-                    onClick={(e) => handleCreateTaxInvoice(e, inv.id)}
+                    onClick={(e) => handleCreateTaxInvoice(e, inv.id, inv.tax_invoice_id || null)}
                     sx={{ textTransform: 'none', fontWeight: 700 }}
                   >
-                    {creatingTaxId === inv.id ? 'Creating...' : 'Create Tax Invoice'}
+                    {creatingTaxId === inv.id
+                      ? 'Creating...'
+                      : inv.tax_invoice_id
+                        ? 'Open Tax Invoice'
+                        : 'Create Tax Invoice'}
                   </Button>
                 </td>
               </tr>

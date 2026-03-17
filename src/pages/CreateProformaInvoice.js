@@ -12,7 +12,8 @@ import Topbar from '../components/Topbar'
 
 import { fetchAllProducts } from '../services/productServices'
 import { fetchLeads } from '../services/leadService'
-import { createProformaInvoice, getInvoiceSettings, createProformaFromQuotation } from '../services/invoiceService'
+import { createProformaInvoice, createProformaFromQuotation } from '../services/invoiceService'
+import { getSettings } from '../services/settingsService'
 import { fetchQuotationById } from '../services/quotationService'
 import { getProformaInvoiceById } from '../services/invoiceService'
 import { toInputDateValue } from '../utils/dateFormatter'
@@ -69,7 +70,7 @@ function CreateProformaInvoice() {
   }, [])
 
   useEffect(() => {
-    getInvoiceSettings()
+    getSettings()
       .then((settings) => {
         setGstPricingMode(settings?.gst_pricing_mode || 'EXCLUSIVE')
         setCurrency(settings?.currency_code || '₹')

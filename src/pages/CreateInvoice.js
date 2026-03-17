@@ -16,7 +16,7 @@ import {
 
 import { fetchLeads } from '../services/leadService'
 import { createInvoice } from '../services/invoiceService'
-import { getInvoiceSettings } from '../services/invoiceService'
+import { getSettings } from '../services/settingsService'
 import Topbar from '../components/Topbar'
 import { toInputDateValue } from '../utils/dateFormatter'
 
@@ -90,7 +90,7 @@ function CreateInvoice() {
   --------------------------------------- */
 
   useEffect(() => {
-    getInvoiceSettings()
+    getSettings()
       .then(settings => {
         setGstPricingMode(settings?.gst_pricing_mode || 'EXCLUSIVE')
         setCurrency(settings?.currency_code || '₹')
