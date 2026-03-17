@@ -138,6 +138,50 @@
   white-space: nowrap;
 }
 
+/* Versions dropdown styling */
+.versions-toggle {
+  margin-right: 8px;
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  padding: 2px 6px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.versions-dropdown-row td {
+  padding: 8px 12px 12px 12px;
+  background: transparent;
+}
+
+.versions-dropdown {
+  background: #f4f7ff;
+  border: 1px solid #e6eefb;
+  padding: 8px;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.version-item {
+  display: grid;
+  grid-template-columns: 1fr 140px 120px 60px 140px;
+  gap: 12px;
+  align-items: center;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.version-item:hover {
+  background: #eef4ff;
+}
+
+.version-item .vi-number { font-weight: 700; }
+.version-item .vi-date, .version-item .vi-total, .version-item .vi-version { color: #444; }
+.version-item .vi-status .status-pill { font-size: 11px; padding: 4px 8px; }
+
 
 .status-pill {
   display: inline-block;

@@ -40,6 +40,7 @@ const QuotationsTable = ({
   const [selectAll, setSelectAll] = useState(false);
   const [editingStatusId, setEditingStatusId] = useState(null);
   const [channelModalOpen, setChannelModalOpen] = useState(false);
+  const [openParents, setOpenParents] = useState({});
 
   /* ================= FILTER + SORT ================= */
 
@@ -153,6 +154,20 @@ const QuotationsTable = ({
     return groupByParent(data, sortValue);
   }, [quotations, searchQuery, sortValue, dateFilter]);
 
+  // Map parentId => rows for quick lookup (used for dropdown rendering)
+  const groupsMap = useMemo(() => {
+    const m = {};
+    (quotations || []).forEach(q => {
+      const parentId = q.parent_id || q.id;
+      if (!m[parentId]) m[parentId] = [];
+      m[parentId].push(q);
+    });
+    Object.keys(m).forEach(k => {
+      m[k].sort((a, b) => (b.version || 0) - (a.version || 0));
+    });
+    return m;
+  }, [quotations]);
+
   useEffect(() => {
     setCurrentPage(1);
   }, [searchQuery, sortValue, dateFilter]);
@@ -262,62 +277,108 @@ const QuotationsTable = ({
           <tbody>
             {currentRows.map(q => {
               const isVersion = !!q.parent_id;
+              const parentId = q.parent_id || q.id;
+              const parentRow = !q.parent_id && (groupsMap[q.id] && groupsMap[q.id].length > 1);
+
+              const toggleOpen = (id) => {
+                setOpenParents(prev => ({ ...prev, [id]: !prev[id] }));
+              };
 
               return (
-                <tr
-                  key={q.id}
-                  className={`clickable-row ${isVersion ? 'quotation-version-row' : ''}`}
-                  onClick={() => navigate(`/quotations/${q.id}`)}
-                >
-                  <td onClick={e => e.stopPropagation()}>
-                    <Checkbox
-                      checked={selected.includes(q.id)}
-                      onChange={() => toggleSelect(q.id)}
-                    />
-                  </td>
+                <React.Fragment key={q.id}>
+                  <tr
+                    className={`clickable-row ${isVersion ? 'quotation-version-row' : ''}`}
+                    onClick={() => navigate(`/quotations/${q.id}`)}
+                  >
+                    <td onClick={e => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selected.includes(q.id)}
+                        onChange={() => toggleSelect(q.id)}
+                      />
+                    </td>
 
-                  <td>{getLeadName(q)}</td>
+                    <td>{getLeadName(q)}</td>
 
-                  <td>
-                    {isVersion ? '↳ ' : ''}
-                    {q.quotation_number || '—'}
-                  </td>
+                    <td>
+                      {/* If this is the parent row and has versions, show a toggle chevron */}
+                      {!isVersion && parentRow && (
+                        <button
+                          className="versions-toggle"
+                          onClick={(e) => { e.stopPropagation(); toggleOpen(q.id); }}
+                          aria-expanded={!!openParents[q.id]}
+                        >
+                          {openParents[q.id] ? '▾' : '▸'}
+                        </button>
+                      )}
 
-                  <td>{formatDate(q.quotation_date)}</td>
+                      {isVersion ? '↳ ' : ''}
+                      {q.quotation_number || '—'}
+                    </td>
 
-                  <td>{currency} {q.total_amount}</td>
+                    <td>{formatDate(q.quotation_date)}</td>
 
-                  <td>v{q.version}</td>
+                    <td>{currency} {q.total_amount}</td>
 
-                  <td onClick={e => e.stopPropagation()}>
-                    {editingStatusId === q.id ? (
-                      <select
-                        className="status-select-inline"
-                        value={normalizeStatusValue(q.status)}
-                        autoFocus
-                        onBlur={() => setEditingStatusId(null)}
-                        onChange={async (e) => {
-                          await handleStatusChange(q.id, e.target.value)
-                          setEditingStatusId(null)
-                        }}
-                      >
-                        {statusOptions.map(s => (
-                          <option key={s} value={s}>
-                            {formatStatusLabel(s)}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span
-                        className={`status-pill status-${normalizeStatusValue(q.status)}`}
-                        onClick={() => setEditingStatusId(q.id)}
-                      >
-                        {formatStatusLabel(q.status)}
-                      </span>
-                    )}
-                  </td>
+                    <td>v{q.version}</td>
 
-                </tr>
+                    <td onClick={e => e.stopPropagation()}>
+                      {editingStatusId === q.id ? (
+                        <select
+                          className="status-select-inline"
+                          value={normalizeStatusValue(q.status)}
+                          autoFocus
+                          onBlur={() => setEditingStatusId(null)}
+                          onChange={async (e) => {
+                            await handleStatusChange(q.id, e.target.value)
+                            setEditingStatusId(null)
+                          }}
+                        >
+                          {statusOptions.map(s => (
+                            <option key={s} value={s}>
+                              {formatStatusLabel(s)}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span
+                          className={`status-pill status-${normalizeStatusValue(q.status)}`}
+                          onClick={() => setEditingStatusId(q.id)}
+                        >
+                          {formatStatusLabel(q.status)}
+                        </span>
+                      )}
+                    </td>
+
+                  </tr>
+
+                  {/* Render dropdown area when parent row is expanded */}
+                  {!isVersion && openParents[q.id] && groupsMap[q.id] && groupsMap[q.id].length > 1 && (
+                    <tr className="versions-dropdown-row">
+                      <td colSpan={7}>
+                        <div className="versions-dropdown">
+                          {(groupsMap[q.id] || [])
+                            .filter(v => v.id !== q.id)
+                            .map(v => (
+                              <div
+                                key={v.id}
+                                className="version-item"
+                                onClick={() => navigate(`/quotations/${v.id}`)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => { if (e.key === 'Enter') navigate(`/quotations/${v.id}`); }}
+                              >
+                                <div className="vi-number">{v.quotation_number}</div>
+                                <div className="vi-date">{formatDate(v.quotation_date)}</div>
+                                <div className="vi-total">{currency} {v.total_amount}</div>
+                                <div className="vi-version">v{v.version}</div>
+                                <div className="vi-status"><span className={`status-pill status-${normalizeStatusValue(v.status)}`}>{formatStatusLabel(v.status)}</span></div>
+                              </div>
+                            ))}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               );
             })}
 
