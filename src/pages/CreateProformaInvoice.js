@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Container, TextField, Stack } from '@mui/material'
+import { Container } from '@mui/material'
 import { useNavigate, useLocation } from 'react-router-dom'
 
 import NotificationSnackbar from '../components/ui/NotificationSnackbar'
@@ -14,12 +14,13 @@ import { fetchAllProducts } from '../services/productServices'
 import { fetchLeads } from '../services/leadService'
 import { createProformaInvoice, getInvoiceSettings, createProformaFromQuotation } from '../services/invoiceService'
 import { fetchQuotationById } from '../services/quotationService'
+import { getProformaInvoiceById } from '../services/invoiceService'
 import { toInputDateValue } from '../utils/dateFormatter'
 
 function CreateProformaInvoice() {
   const navigate = useNavigate()
 
-  const [gstPricingMode, setGstPricingMode] = useState('EXCLUSIVE')
+  const [gstPricingMode, setGstPricingMode] = useState(null)
   const [currency, setCurrency] = useState('₹')
 
   const [leadId, setLeadId] = useState('')
@@ -28,8 +29,6 @@ function CreateProformaInvoice() {
   const [invoiceDate, setInvoiceDate] = useState(toInputDateValue(new Date()))
   const [dueDate, setDueDate] = useState('')
   const [notes, setNotes] = useState('')
-  const [eventName, setEventName] = useState('')
-  const [eventDate, setEventDate] = useState('')
 
   const [items, setItems] = useState([])
   const [products, setProducts] = useState([])
@@ -41,7 +40,9 @@ function CreateProformaInvoice() {
   })
 
   const location = useLocation()
-  const [, setReadOnlyFromQuotation] = useState(false)
+  
+  const [readOnly, setReadOnly] = useState(false)
+  const [editingProformaId, setEditingProformaId] = useState(null)
 
   useEffect(() => {
     fetchAllProducts()
@@ -97,7 +98,7 @@ function CreateProformaInvoice() {
         showNotification(err?.response?.data?.error || err.message || 'Failed to create proforma from quotation', 'error')
       }
     })()
-  }, [navigate])
+  }, [navigate, products])
 
   // If navigated with state.quotationId (from Approved Quotation dialog), prefill form and make read-only
   useEffect(() => {
@@ -114,28 +115,83 @@ function CreateProformaInvoice() {
         setDueDate(q.valid_until ? (q.valid_until.substring ? q.valid_until.substring(0, 10) : q.valid_until) : '')
         setNotes(q.notes || '')
 
-        // Event details
-        setEventName(q.event_name || '')
-        setEventDate(q.event_date ? (q.event_date.substring ? q.event_date.substring(0, 10) : q.event_date) : '')
 
-        // Items: normalize to expected shape
-        const normalized = (q.items || []).map((it) => ({
-          product: it.product_id ? { id: it.product_id, name: it.product_name || '' } : null,
-          quantity: Number(it.quantity || 1),
-          selling_price: Number(it.selling_price ?? it.unit_price ?? 0),
-          gst_rate: Number(it.tax ?? it.gst_rate ?? 0),
-          description: it.product_name || it.description || '',
-        }))
+        // Items: normalize to expected shape and map to existing product objects when available
+        const normalized = (q.items || []).map((it) => {
+          const pid = it.product_id || null
+          const prod = Array.isArray(products) ? products.find(p => Number(p.id) === Number(pid)) : null
+          return {
+            product: prod || (pid ? { id: pid, name: it.product_name || '' } : null),
+            quantity: Number(it.quantity || 1),
+            selling_price: Number(it.selling_price ?? it.unit_price ?? (prod ? prod.selling_price : 0) ?? 0),
+            gst_rate: Number(it.tax ?? it.gst_rate ?? (prod ? prod.gst_rate : 0) ?? 0),
+            description: it.product_name || it.description || '',
+          }
+        })
 
         setItems(normalized)
-        setReadOnlyFromQuotation(true)
+        
         showNotification('Form prefilled from quotation (read-only). You can create now.', 'info')
       } catch (err) {
         console.error(err)
         showNotification('Failed to load quotation for prefill', 'error')
       }
     })()
-  }, [location])
+  }, [location, products])
+
+  // If navigated with state.proformaId (Edit from Proforma details), prefill form for editing
+  useEffect(() => {
+    const pid = location?.state?.proformaId || location?.state?.proforma_id
+    if (!pid) return
+
+    ;(async () => {
+      try {
+        const p = await getProformaInvoiceById(pid)
+        setEditingProformaId(pid)
+
+        // Lead
+        setLeadId(p.lead_id || p.leadId || '')
+
+        // Header
+        setInvoiceDate(p.issue_date ? (p.issue_date.substring ? p.issue_date.substring(0, 10) : p.issue_date) : toInputDateValue(new Date()))
+        setDueDate(p.due_date ? (p.due_date.substring ? p.due_date.substring(0, 10) : p.due_date) : '')
+        setNotes(p.notes || '')
+
+        // Ensure products list available
+        let prods = products
+        if (!Array.isArray(prods) || prods.length === 0) {
+          try {
+            const res = await fetchAllProducts()
+            prods = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : Array.isArray(res?.products) ? res.products : []
+            setProducts(prods)
+          } catch (err) {
+            prods = []
+          }
+        }
+
+        // Items: map proforma_items -> form items
+        const normalized = (p.items || []).map((it) => {
+          const pid = it.product_id || null
+          const prod = Array.isArray(prods) ? prods.find(x => Number(x.id) === Number(pid)) : null
+          return {
+            product: prod || (pid ? { id: pid, name: it.product_name || it.description || '' } : null),
+            quantity: Number(it.quantity || 1),
+            selling_price: Number(it.unit_price ?? it.selling_price ?? it.unitPrice ?? 0),
+            gst_rate: Number(it.gst_rate ?? it.gstRate ?? 0),
+            description: it.description || it.product_name || '',
+          }
+        })
+
+        setItems(normalized)
+        
+        setReadOnly(Boolean(p.tax_invoice_exists))
+        showNotification(p.tax_invoice_exists ? 'This proforma is finalized (tax invoice exists).' : 'Form prefilled for edit (not saved until you submit).', p.tax_invoice_exists ? 'warning' : 'info')
+      } catch (err) {
+        console.error(err)
+        showNotification('Failed to load proforma for edit', 'error')
+      }
+    })()
+  }, [location, products])
 
   const addItem = () => {
     setItems((prev) => [
@@ -175,6 +231,7 @@ function CreateProformaInvoice() {
   }
 
   const calculateTotals = () => {
+    const mode = gstPricingMode || 'EXCLUSIVE'
     let subtotal = 0
     let cgst_total = 0
     let sgst_total = 0
@@ -187,7 +244,7 @@ function CreateProformaInvoice() {
       const gst = Number(item.gst_rate || 0)
       const lineBase = qty * price
 
-      if (gstPricingMode === 'EXCLUSIVE') {
+      if (mode === 'EXCLUSIVE') {
         subtotal += lineBase
         const gstAmount = (lineBase * gst) / 100
         cgst_total += gstAmount / 2
@@ -218,6 +275,7 @@ function CreateProformaInvoice() {
     setNotif({ open: true, message, severity })
 
   const handleSubmit = async () => {
+    if (readOnly && editingProformaId) return showNotification('This proforma is finalized and cannot be edited', 'warning')
     if (!leadId) return showNotification('Customer is required', 'warning')
     if (!invoiceDate) return showNotification('Proforma date is required', 'warning')
 
@@ -231,13 +289,13 @@ function CreateProformaInvoice() {
 
     const payload = {
       lead_id: leadId,
-      event_details: eventName ? { name: eventName, scheduled_for: eventDate || null } : null,
       issue_date: invoiceDate,
       due_date: dueDate || null,
       notes: notes || null,
       source_type: 'MANUAL_PROFORMA',
       items: validItems.map((i) => ({
-        product_id: i.product.id,
+        product_id: i.product?.id || null,
+        description: i.description || (i.product ? i.product.name : null),
         quantity: Number(i.quantity),
         unit_price: Number(i.selling_price),
         gst_rate: Number(i.gst_rate || 0),
@@ -284,10 +342,6 @@ function CreateProformaInvoice() {
         </div>
 
         <div className="quotation-card">
-          <Stack spacing={2}>
-            <TextField label="Event name" value={eventName} onChange={(e) => setEventName(e.target.value)} />
-            <TextField label="Event date" type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} InputLabelProps={{ shrink: true }} />
-          </Stack>
           <InvoiceItemsSection
             items={items}
             updateItem={updateItem}

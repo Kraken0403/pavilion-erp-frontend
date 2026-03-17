@@ -7,10 +7,8 @@ import NotificationSnackbar from '../components/ui/NotificationSnackbar'
 import PageLoader from '../components/ui/PageLoader'
 import {
   getProformaInvoiceById,
-  downloadInvoicePdf,
   createTaxInvoiceFromProforma,
-  sendInvoiceEmail,
-  sendInvoiceWhatsApp,
+  
 } from '../services/invoiceService'
 import { formatDate as formatLocalDate } from '../utils/dateFormatter'
 import { formatStatusLabel } from '../utils/statusFormatter'
@@ -31,9 +29,9 @@ function ProformaInvoiceView() {
 
   const [invoice, setInvoice] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [taxInvoiceId, setTaxInvoiceId] = useState(null)
   const [creatingTax, setCreatingTax] = useState(false)
-  const [sendingEmail, setSendingEmail] = useState(false)
-  const [sendingWhatsApp, setSendingWhatsApp] = useState(false)
+  
   const [notification, setNotification] = useState({
     open: false,
     message: '',
@@ -45,6 +43,7 @@ function ProformaInvoiceView() {
       setLoading(true)
       const data = await getProformaInvoiceById(id)
       setInvoice(data)
+      setTaxInvoiceId(data?.tax_invoice_id || null)
     } catch {
       setNotification({
         open: true,
@@ -68,7 +67,7 @@ function ProformaInvoiceView() {
 
   const handleExportPdf = async () => {
     try {
-      await downloadInvoicePdf(id)
+      await (await import('../services/invoiceService')).downloadProformaPdf(id)
     } catch {
       setNotification({
         open: true,
@@ -80,9 +79,15 @@ function ProformaInvoiceView() {
 
   const handleCreateTaxInvoice = async () => {
     try {
+      // If a tax invoice already exists, open it
+      if (taxInvoiceId) {
+        navigate(`/invoices/${taxInvoiceId}`)
+        return
+      }
+
       setCreatingTax(true)
       const res = await createTaxInvoiceFromProforma(id)
-      const taxInvoiceId = res?.tax_invoice?.id
+      const createdId = res?.tax_invoice?.id || res?.tax_invoice?.invoice?.id || null
 
       setNotification({
         open: true,
@@ -92,8 +97,8 @@ function ProformaInvoiceView() {
         severity: 'success',
       })
 
-      if (taxInvoiceId) {
-        navigate(`/invoices/${taxInvoiceId}`)
+      if (createdId) {
+        navigate(`/invoices/${createdId}`)
       }
     } catch (error) {
       setNotification({
@@ -106,37 +111,7 @@ function ProformaInvoiceView() {
     }
   }
 
-  const handleSendEmail = async () => {
-    try {
-      setSendingEmail(true)
-      await sendInvoiceEmail(id)
-      setNotification({ open: true, message: 'Email sent successfully.', severity: 'success' })
-    } catch (error) {
-      setNotification({
-        open: true,
-        message: error?.response?.data?.error || 'Failed to send email.',
-        severity: 'error',
-      })
-    } finally {
-      setSendingEmail(false)
-    }
-  }
-
-  const handleSendWhatsApp = async () => {
-    try {
-      setSendingWhatsApp(true)
-      await sendInvoiceWhatsApp(id)
-      setNotification({ open: true, message: 'WhatsApp sent successfully.', severity: 'success' })
-    } catch (error) {
-      setNotification({
-        open: true,
-        message: error?.response?.data?.error || 'Failed to send WhatsApp.',
-        severity: 'error',
-      })
-    } finally {
-      setSendingWhatsApp(false)
-    }
-  }
+  
 
   return (
     <div className="quotation-detail-container">
@@ -181,25 +156,7 @@ function ProformaInvoiceView() {
                 Export PDF
               </button>
 
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleSendEmail}
-                disabled={sendingEmail}
-                sx={{ textTransform: 'none', fontWeight: 700 }}
-              >
-                {sendingEmail ? 'Sending...' : 'Send Email'}
-              </Button>
-
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleSendWhatsApp}
-                disabled={sendingWhatsApp}
-                sx={{ textTransform: 'none', fontWeight: 700 }}
-              >
-                {sendingWhatsApp ? 'Sending...' : 'Send WhatsApp'}
-              </Button>
+              {/* Send actions moved to listing actions menu */}
 
               <Button
                 variant="contained"
@@ -208,7 +165,7 @@ function ProformaInvoiceView() {
                 disabled={creatingTax}
                 sx={{ textTransform: 'none', fontWeight: 700 }}
               >
-                {creatingTax ? 'Creating...' : 'Create Tax Invoice'}
+                {taxInvoiceId ? 'Open Tax Invoice' : (creatingTax ? 'Creating...' : 'Create Tax Invoice')}
               </Button>
             </div>
           </div>

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Chip, Checkbox } from "@mui/material";
+import { Chip, Checkbox, Dialog, DialogTitle, DialogContent, DialogActions, Button, CircularProgress, Typography, List, ListItemButton, ListItemText } from "@mui/material";
 import StatusUpdateModal from "../components/invoices/StatusUpdateModal";
 import ReceiptsModal from "../components/invoices/ReceiptsModal";
 import Topbar from "../components/Topbar";
@@ -15,6 +15,7 @@ import {
   sendInvoiceEmail,
   sendInvoiceWhatsApp,
 } from "../services/invoiceService";
+import { getProformaInvoices, createTaxInvoiceFromProforma } from "../services/invoiceService";
 import { useNavigate } from "react-router-dom";
 import * as XLSX from "xlsx";
 import "../assets/styles/LeadsTable.scss";
@@ -65,6 +66,10 @@ function Invoices() {
     severity: "info",
   });
   const [channelModalOpen, setChannelModalOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [proformaDialogOpen, setProformaDialogOpen] = useState(false);
+  const [availableProformas, setAvailableProformas] = useState([]);
+  const [loadingProformas, setLoadingProformas] = useState(false);
 
   /* ================= FETCH ================= */
 
@@ -278,6 +283,34 @@ function Invoices() {
     setReceiptsModalOpen(true);
   };
 
+  const handleOpenCreateDialog = () => setCreateDialogOpen(true);
+
+  const handleOpenProformaList = async () => {
+    setCreateDialogOpen(false);
+    setProformaDialogOpen(true);
+    setLoadingProformas(true);
+    try {
+      const list = await getProformaInvoices();
+      setAvailableProformas(Array.isArray(list) ? list : []);
+    } catch (err) {
+      setAvailableProformas([]);
+    } finally {
+      setLoadingProformas(false);
+    }
+  };
+
+  const handleCreateFromProforma = async (proformaId) => {
+    try {
+      const res = await createTaxInvoiceFromProforma(proformaId);
+      const taxInvoiceId = res?.tax_invoice?.id;
+      setNotification({ open: true, message: res?.already_existed ? 'Tax invoice already exists for this proforma.' : 'Tax invoice created successfully.', severity: 'success' });
+      setProformaDialogOpen(false);
+      if (taxInvoiceId) navigate(`/invoices/${taxInvoiceId}`);
+    } catch (err) {
+      setNotification({ open: true, message: err?.response?.data?.error || 'Failed to create invoice from proforma.', severity: 'error' });
+    }
+  };
+
   /* ================= UI ================= */
 
   return (
@@ -286,7 +319,7 @@ function Invoices() {
 
       <UtilsBar
         buttonLabel="Create Invoice"
-        onButtonClick={() => navigate("/invoices/create")}
+        onButtonClick={handleOpenCreateDialog}
 
         selectedCount={selectedInvoices.length}
         onExportSelected={exportToExcel}
@@ -298,6 +331,76 @@ function Invoices() {
         onSortChange={setSortValue}
         onDateFilterChange={setDateFilter}
       />
+
+      {/* Create dialog: Manual or From Proforma */}
+      <Dialog
+        open={createDialogOpen}
+        onClose={() => setCreateDialogOpen(false)}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Create Invoice</DialogTitle>
+        <DialogContent dividers>
+          <Button
+            variant="contained"
+            fullWidth
+            sx={{ mb: 2, borderRadius: 2, fontWeight: 700 }}
+            onClick={() => { setCreateDialogOpen(false); navigate('/invoices/create') }}
+          >
+            Manual Entry
+          </Button>
+          <Button
+            variant="outlined"
+            fullWidth
+            sx={{ borderRadius: 2, fontWeight: 700 }}
+            onClick={handleOpenProformaList}
+          >
+            From Proforma Invoice
+          </Button>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* From Proforma list dialog */}
+      <Dialog
+        open={proformaDialogOpen}
+        onClose={() => setProformaDialogOpen(false)}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>Select Proforma Invoice</DialogTitle>
+        <DialogContent dividers sx={{ minHeight: 200 }}>
+          {loadingProformas ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}>
+              <CircularProgress />
+            </div>
+          ) : availableProformas.length === 0 ? (
+            <Typography color="text.secondary" sx={{ p: 2 }}>
+              No proforma invoices available.
+            </Typography>
+          ) : (
+            <List disablePadding>
+              {availableProformas.map((p) => (
+                <ListItemButton
+                  key={p.id}
+                  onClick={() => handleCreateFromProforma(p.id)}
+                  divider
+                >
+                  <ListItemText
+                    primary={p.invoice_number || `#${p.id}`}
+                    secondary={`${p.first_name || ''} ${p.last_name || ''}`.trim() || p.lead_name || '—'}
+                  />
+                </ListItemButton>
+              ))}
+            </List>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setProformaDialogOpen(false)}>Cancel</Button>
+        </DialogActions>
+      </Dialog>
 
       <div className="table-container">
         <table className="leads-table">

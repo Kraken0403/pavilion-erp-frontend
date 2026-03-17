@@ -30,6 +30,7 @@ function InvoiceItemsSection({
               <Autocomplete
                 options={products}
                 getOptionLabel={(p) => p.name || ''}
+                value={item.product || null}
                 onChange={(e, value) => handleProductSelect(index, value)}
                 renderInput={(params) => (
                   <TextField {...params} className="form-input" />

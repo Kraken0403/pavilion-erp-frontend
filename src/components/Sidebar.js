@@ -309,14 +309,14 @@ const Sidebar = () => {
 
               <Collapse in={isExpanded('invoices')} timeout="auto" unmountOnExit>
                 <List component="div" disablePadding>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/invoices')}>
-                    <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
-                    <ListItemText primary="Invoice List" />
-                  </ListItemButton>
-
                   <ListItemButton sx={{ pl: 4 }} onClick={() => go('/proforma-invoices')}>
                     <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
                     <ListItemText primary="Proforma Invoices" />
+                  </ListItemButton>
+
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/invoices')}>
+                    <ListItemIcon><FormatListBulletedIcon /></ListItemIcon>
+                    <ListItemText primary="Invoice List" />
                   </ListItemButton>
 
                   <ListItemButton sx={{ pl: 4 }} onClick={() => go('/invoice-settings')}>

@@ -70,6 +70,19 @@ export const getProformaInvoiceById = async (id) => {
 };
 
 /* ---------------------------------------
+   SEND PROFORMA CHANNELS
+--------------------------------------- */
+export const sendProformaEmail = async (id) => {
+  const res = await api.post(`/proforma-invoices/${id}/send-email`);
+  return res.data;
+}
+
+export const sendProformaWhatsApp = async (id) => {
+  const res = await api.post(`/proforma-invoices/${id}/send-whatsapp`);
+  return res.data;
+}
+
+/* ---------------------------------------
    UPDATE STATUS
 --------------------------------------- */
 export const updateInvoiceStatus = async (id, status) => {
@@ -98,6 +111,17 @@ export const downloadInvoicePdf = async (id) => {
   });
 
   await downloadPdfFromResponse(res, `invoice-${id}.pdf`, 'Failed to download invoice PDF');
+}
+
+/* ---------------------------------------
+   DOWNLOAD PROFORMA PDF
+--------------------------------------- */
+export const downloadProformaPdf = async (id) => {
+  const res = await api.get(`/proforma-invoices/${id}/pdf`, {
+    responseType: 'blob',
+  })
+
+  await downloadPdfFromResponse(res, `proforma-${id}.pdf`, 'Failed to download proforma PDF')
 }
 
 

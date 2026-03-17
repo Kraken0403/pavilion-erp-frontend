@@ -9,11 +9,11 @@ import Topbar from '../components/Topbar'
 import UtilsBar from '../components/UtilsBar'
 import PaginationBar from '../components/ui/PaginationBar'
 import NotificationSnackbar from '../components/ui/NotificationSnackbar'
+import ChannelSelectModal from '../components/ui/ChannelSelectModal'
 import { formatDate } from '../utils/dateFormatter'
 import { formatStatusLabel } from '../utils/statusFormatter'
 import {
   getProformaInvoices,
-  downloadInvoicePdf,
   createTaxInvoiceFromProforma,
 } from '../services/invoiceService'
 import { fetchApprovedQuotations } from '../services/quotationService'
@@ -79,6 +79,7 @@ function ProformaInvoices() {
     message: '',
     severity: 'info',
   })
+  const [channelModalOpen, setChannelModalOpen] = useState(false)
 
   const loadInvoices = useCallback(async () => {
     try {
@@ -182,7 +183,7 @@ function ProformaInvoices() {
   const handleExportPdf = async (e, id) => {
     e.stopPropagation()
     try {
-      await downloadInvoicePdf(id)
+      await (await import('../services/invoiceService')).downloadProformaPdf(id)
     } catch {
       setNotification({
         open: true,
@@ -222,6 +223,34 @@ function ProformaInvoices() {
     }
   }
 
+  const handleSendReminders = async ({ sendEmail = true, sendWhatsApp = false } = {}) => {
+    if (!selectedInvoices.length) return
+
+    const ids = [...selectedInvoices]
+    const tasks = []
+
+    const { sendProformaEmail, sendProformaWhatsApp } = await import('../services/invoiceService')
+
+    if (sendEmail) tasks.push(...ids.map((id) => sendProformaEmail(id)))
+    if (sendWhatsApp) tasks.push(...ids.map((id) => sendProformaWhatsApp(id)))
+
+    const results = await Promise.allSettled(tasks)
+    const successCount = results.filter((r) => r.status === 'fulfilled').length
+    const failedCount = results.length - successCount
+
+    setNotification({
+      open: true,
+      message:
+        failedCount === 0
+          ? `📩 Notification sent successfully (${successCount} request${successCount > 1 ? 's' : ''})`
+          : `⚠️ Sent ${successCount} request(s), failed for ${failedCount}`,
+      severity: failedCount === 0 ? 'success' : 'warning',
+    })
+
+    setSelectedInvoices([])
+    setSelectAll(false)
+  }
+
   return (
     <div className="leads-table-container">
       <Topbar />
@@ -231,6 +260,7 @@ function ProformaInvoices() {
         onButtonClick={handleOpenProformaDialog}
         selectedCount={selectedInvoices.length}
         onExportSelected={exportToExcel}
+        onSendReminders={() => setChannelModalOpen(true)}
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
         sortValue={sortValue}
@@ -416,6 +446,20 @@ function ProformaInvoices() {
       <NotificationSnackbar
         {...notification}
         onClose={() => setNotification((prev) => ({ ...prev, open: false }))}
+      />
+
+      <ChannelSelectModal
+        open={channelModalOpen}
+        onClose={() => setChannelModalOpen(false)}
+        title="Send Proforma Notifications"
+        subtitle="Select channels to notify selected customers"
+        defaultEmail
+        defaultWhatsApp
+        confirmLabel="Send Notifications"
+        onConfirm={async (selection) => {
+          setChannelModalOpen(false)
+          await handleSendReminders(selection)
+        }}
       />
     </div>
   )

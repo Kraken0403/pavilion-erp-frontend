@@ -27,7 +27,7 @@ function CreateInvoice() {
      SETTINGS
   --------------------------------------- */
 
-  const [gstPricingMode, setGstPricingMode] = useState('EXCLUSIVE')
+  const [gstPricingMode, setGstPricingMode] = useState(null)
   const [currency, setCurrency] = useState('₹')
 
   /* ---------------------------------------
@@ -144,6 +144,7 @@ function CreateInvoice() {
   --------------------------------------- */
 
   const calculateTotals = () => {
+    const mode = gstPricingMode || 'EXCLUSIVE'
     let subtotal = 0
     let cgst_total = 0
     let sgst_total = 0
@@ -157,7 +158,7 @@ function CreateInvoice() {
 
       const lineBase = qty * price
 
-      if (gstPricingMode === 'EXCLUSIVE') {
+      if (mode === 'EXCLUSIVE') {
         subtotal += lineBase
         const gstAmount = (lineBase * gst) / 100
 
@@ -292,6 +293,7 @@ function CreateInvoice() {
           <InvoiceSummary
             totals={totals}
             currency={currency}
+            pricingMode={gstPricingMode}
           />
           <InvoiceFooterSection
             handleSubmit={handleSubmit}
