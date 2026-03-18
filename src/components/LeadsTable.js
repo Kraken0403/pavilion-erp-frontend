@@ -32,7 +32,7 @@ const LeadsTable = ({
   dateFilter,
   setDateFilter,
 }) => {
-  const { getUnreadNotificationFor } = useNotification();
+  const { getUnreadNotificationFor, markRecordNotificationsSeen } = useNotification();
 
   const resolveLeadBadgeLabel = (lead) => {
     const notification = getUnreadNotificationFor('leads', lead?.id);
@@ -149,7 +149,14 @@ const LeadsTable = ({
   const handleRowClick = (id) => {
     if (clickTimerRef.current) return;
 
-    clickTimerRef.current = setTimeout(() => {
+    clickTimerRef.current = setTimeout(async () => {
+      try {
+        await markRecordNotificationsSeen('leads', id);
+      } catch (err) {
+        // non-fatal: proceed to navigate even if marking fails
+        console.warn('markRecordNotificationsSeen failed for lead', id, err);
+      }
+
       navigate(`/leads/${id}/edit`);
       clickTimerRef.current = null;
     }, 220);
