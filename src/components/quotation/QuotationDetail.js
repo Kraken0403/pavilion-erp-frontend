@@ -566,10 +566,23 @@ function QuotationDetail() {
     quotationMode: quotation?.quotation_mode,
     gstPricingMode
   })
+  console.log(quotation)
 
-  const customerName = `${(quotation?.first_name || '') + ' ' + (quotation?.last_name || '')}`.trim() || quotation?.company_name || 'Customer'
+  const customerName = (
+    `${(quotation?.first_name || selectedLead?.first_name || '') + ' ' + (quotation?.last_name || selectedLead?.last_name || '')}`.trim()
+  ) || quotation?.company_name || selectedLead?.company_name || 'Customer'
   const eventName = quotation?.catering?.event_name || quotation?.event_name || ''
-  const briefSummary = [eventName, `${(items || []).length} items`].filter(Boolean).join(' · ')
+  const itemSummaries = (items || []).map(it => {
+    const name = it.product_name || it.product?.name || it.title || 'Item'
+    const qty = Number(it.quantity || it.qty || 1)
+    return `${name} x${qty}`
+  })
+  const visible = itemSummaries.slice(0, 5)
+  const briefSummary = [
+    eventName,
+    visible.join(' · '),
+    itemSummaries.length > 5 ? `+${itemSummaries.length - 5} more` : ''
+  ].filter(Boolean).join(' · ')
 
 
 
@@ -833,11 +846,11 @@ function QuotationDetail() {
       <ChannelSelectModal
         open={channelModalOpen}
         onClose={() => setChannelModalOpen(false)}
-        title={`Send Quotation ${quotation?.quotation_number || ''} to ${customerName}`}
+        title={`Share Quotation ${quotation?.quotation_number || ''} with ${customerName}`}
         subtitle={briefSummary}
         defaultEmail
         defaultWhatsApp
-        confirmLabel="Send Quotation or Share Quotation"
+        confirmLabel="Share Quotation"
         onConfirm={async ({ sendEmail = true, sendWhatsApp = false }) => {
           setChannelModalOpen(false)
           if (sendEmail) {

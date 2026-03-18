@@ -182,7 +182,7 @@ function QuotationHeader({
                 }}
               >
                 <NotificationsActiveOutlinedIcon fontSize="small" style={{ marginRight: 10 }} />
-                Send Quotation or Share Quotation
+                Share Quotation
               </MenuItem>
             )}
           </Menu>
