@@ -144,7 +144,7 @@ function QuotationHeader({
                 }}
               >
                 <ReceiptLongIcon fontSize="small" style={{ marginRight: 10 }} />
-                Send to Proforma Invoice
+                Send Proforma invoice
               </MenuItem>
             )}
 
@@ -161,7 +161,7 @@ function QuotationHeader({
             )}
 
             {/* CREATE VERSION */}
-            {onCreateVersion && status !== 'converted' && status !== 'rejected' && (
+            {onCreateVersion && status === 'pending' && !isLocked && (
               <MenuItem
                 onClick={() => {
                   setActionsAnchorEl(null)
@@ -182,7 +182,7 @@ function QuotationHeader({
                 }}
               >
                 <NotificationsActiveOutlinedIcon fontSize="small" style={{ marginRight: 10 }} />
-                Send Notification
+                Send Quotation or Share Quotation
               </MenuItem>
             )}
           </Menu>

@@ -567,6 +567,10 @@ function QuotationDetail() {
     gstPricingMode
   })
 
+  const customerName = `${(quotation?.first_name || '') + ' ' + (quotation?.last_name || '')}`.trim() || quotation?.company_name || 'Customer'
+  const eventName = quotation?.catering?.event_name || quotation?.event_name || ''
+  const briefSummary = [eventName, `${(items || []).length} items`].filter(Boolean).join(' · ')
+
 
 
   /* ---------------------------------------
@@ -829,11 +833,11 @@ function QuotationDetail() {
       <ChannelSelectModal
         open={channelModalOpen}
         onClose={() => setChannelModalOpen(false)}
-        title="Send Quotation Notification"
-        subtitle="Choose channels to notify the customer"
+        title={`Send Quotation ${quotation?.quotation_number || ''} to ${customerName}`}
+        subtitle={briefSummary}
         defaultEmail
         defaultWhatsApp
-        confirmLabel="Send Notification"
+        confirmLabel="Send Quotation or Share Quotation"
         onConfirm={async ({ sendEmail = true, sendWhatsApp = false }) => {
           setChannelModalOpen(false)
           if (sendEmail) {
