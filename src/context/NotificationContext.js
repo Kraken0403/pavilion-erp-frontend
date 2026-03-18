@@ -39,7 +39,7 @@ const getBubbleSignature = (value) => JSON.stringify({
 });
 
 export const NotificationProvider = ({ children }) => {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, modulePermissions } = useAuth();
     const [notifications, setNotifications] = useState([]);
     const [bubbleCounts, setBubbleCounts] = useState({
         count: 0,
@@ -120,26 +120,45 @@ export const NotificationProvider = ({ children }) => {
 
         isFetchingNotificationsRef.current = true;
 
-            try {
-                const data = await fetchNotificationsApi();
-                const nextNotifications = Array.isArray(data?.result) ? data.result : [];
+        try {
+            const data = await fetchNotificationsApi();
+            const nextNotifications = Array.isArray(data?.result) ? data.result : [];
 
-                setNotifications((prev) => {
-                    const prevSignature = getNotificationSignature(prev);
-                    const nextSignature = getNotificationSignature(nextNotifications);
-                    return prevSignature === nextSignature ? prev : nextNotifications;
-                });
+            // Filter notifications by module permissions so users don't see modules they
+            // don't have access to.
+            const permKeyMap = {
+                kot: 'kots',
+                delivery: 'deliveries',
+                work_orders: 'work_orders',
+                leads: 'leads',
+            };
 
-                if (typeof data?.unSeenNotifications === 'number') {
-                    const nextUnseen = Number(data.unSeenNotifications || 0);
-                    setTotalUnseen((prev) => (Number(prev || 0) === nextUnseen ? prev : nextUnseen));
+            const filtered = nextNotifications.filter((item) => {
+                const moduleKey = String(item?.module || '').trim().toLowerCase();
+                if (!moduleKey) return true;
+                const permKey = permKeyMap[moduleKey] || moduleKey;
+                if (modulePermissions && Object.prototype.hasOwnProperty.call(modulePermissions, permKey)) {
+                    return Boolean(modulePermissions[permKey]);
                 }
-            } catch (error) {
-                console.warn('fetchNotifications error:', error?.response?.data || error.message || error);
-            } finally {
-                isFetchingNotificationsRef.current = false;
+                return true;
+            });
+
+            setNotifications((prev) => {
+                const prevSignature = getNotificationSignature(prev);
+                const nextSignature = getNotificationSignature(filtered);
+                return prevSignature === nextSignature ? prev : filtered;
+            });
+
+            if (typeof data?.unSeenNotifications === 'number') {
+                const nextUnseen = Number(data.unSeenNotifications || 0);
+                setTotalUnseen((prev) => (Number(prev || 0) === nextUnseen ? prev : nextUnseen));
             }
-    }, [isAuthenticated]);
+        } catch (error) {
+            console.warn('fetchNotifications error:', error?.response?.data || error.message || error);
+        } finally {
+            isFetchingNotificationsRef.current = false;
+        }
+    }, [isAuthenticated, modulePermissions]);
 
     const fetchBubbleCounts = useCallback(async () => {
         if (!isAuthenticated) return;
@@ -148,8 +167,31 @@ export const NotificationProvider = ({ children }) => {
         isFetchingBubblesRef.current = true;
 
         try {
+            // If the user has no permissions for any of the modules that appear in
+            // bubble counts, short-circuit and zero out counts locally.
+            const relevantPerms = ['leads', 'work_orders', 'kots', 'deliveries'];
+            if (
+                modulePermissions &&
+                relevantPerms.every((p) => Object.prototype.hasOwnProperty.call(modulePermissions, p) && modulePermissions[p] === false)
+            ) {
+                setBubbleCounts({
+                    count: 0,
+                    seenNotifications: 0,
+                    unSeenNotifications: 0,
+                    leadsCount: 0,
+                    workOrderCount: 0,
+                    kotCount: 0,
+                    deliveryCount: 0,
+                    feedbackCount: 0,
+                });
+                setTotalUnseen(0);
+                return;
+            }
+
             const data = await fetchNotificationBubbleApi();
-            const next = {
+            // Build counts but respect module permissions: if a module is hidden for the
+            // current user, do not surface its counts.
+            const raw = {
                 count: Number(data?.count || 0),
                 seenNotifications: Number(data?.seenNotifications || 0),
                 unSeenNotifications: Number(data?.unSeenNotifications || 0),
@@ -158,6 +200,17 @@ export const NotificationProvider = ({ children }) => {
                 kotCount: Number(data?.kotCount || 0),
                 deliveryCount: Number(data?.deliveryCount || 0),
                 feedbackCount: Number(data?.feedbackCount || 0),
+            };
+
+            const next = {
+                count: raw.count,
+                seenNotifications: raw.seenNotifications,
+                unSeenNotifications: raw.unSeenNotifications,
+                leadsCount: modulePermissions?.leads === false ? 0 : raw.leadsCount,
+                workOrderCount: modulePermissions?.work_orders === false ? 0 : raw.workOrderCount,
+                kotCount: modulePermissions?.kots === false ? 0 : raw.kotCount,
+                deliveryCount: modulePermissions?.deliveries === false ? 0 : raw.deliveryCount,
+                feedbackCount: raw.feedbackCount,
             };
 
             setBubbleCounts((prev) => {
@@ -172,11 +225,69 @@ export const NotificationProvider = ({ children }) => {
                     : Number(next.unSeenNotifications || 0)
             ));
         } catch (error) {
-            console.warn('fetchBubbleCounts error:', error?.response?.data || error.message || error);
+                // If backend denies access to the bubble endpoint (admin-only), fall
+                // back to computing counts from the notifications list which is
+                // available to regular users.
+                console.warn('fetchBubbleCounts error:', error?.response?.data || error.message || error);
+
+                const isAdminRequired = error?.response?.status === 403 || String(error?.response?.data?.error || '').toLowerCase().includes('admin');
+                if (isAdminRequired) {
+                    try {
+                        const payload = await fetchNotificationsApi();
+                        const items = Array.isArray(payload?.result) ? payload.result : [];
+
+                        // Apply same permission filtering as notifications
+                        const permKeyMap = { kot: 'kots', delivery: 'deliveries', work_orders: 'work_orders', leads: 'leads' };
+                        const filtered = items.filter((item) => {
+                            const moduleKey = String(item?.module || '').trim().toLowerCase();
+                            if (!moduleKey) return true;
+                            const permKey = permKeyMap[moduleKey] || moduleKey;
+                            if (modulePermissions && Object.prototype.hasOwnProperty.call(modulePermissions, permKey)) {
+                                return Boolean(modulePermissions[permKey]);
+                            }
+                            return true;
+                        });
+
+                        const counts = filtered.reduce((acc, it) => {
+                            acc.count += 1;
+                            if (it.isSeen) acc.seenNotifications += 1; else acc.unSeenNotifications += 1;
+                            const mod = String(it.module || '').trim().toLowerCase();
+                            if (mod === 'leads') acc.leadsCount += 1;
+                            else if (mod === 'work_orders') acc.workOrderCount += 1;
+                            else if (mod === 'kot') acc.kotCount += 1;
+                            else if (mod === 'delivery') acc.deliveryCount += 1;
+                            else if (mod === 'feedback') acc.feedbackCount += 1;
+                            return acc;
+                        }, { count: 0, seenNotifications: 0, unSeenNotifications: 0, leadsCount: 0, workOrderCount: 0, kotCount: 0, deliveryCount: 0, feedbackCount: 0 });
+
+                        setBubbleCounts((prev) => {
+                            const prevSignature = getBubbleSignature(prev);
+                            const nextSignature = getBubbleSignature(counts);
+                            return prevSignature === nextSignature ? prev : counts;
+                        });
+
+                        setTotalUnseen((prev) => (Number(prev || 0) === Number(counts.unSeenNotifications || 0) ? prev : Number(counts.unSeenNotifications || 0)));
+                        return;
+                    } catch (innerErr) {
+                        console.warn('Fallback compute bubble counts failed:', innerErr?.response?.data || innerErr.message || innerErr);
+                    }
+                }
+
+                // If no fallback succeeded, ensure counts are at least zeroed.
+                setBubbleCounts((prev) => prev || {
+                    count: 0,
+                    seenNotifications: 0,
+                    unSeenNotifications: 0,
+                    leadsCount: 0,
+                    workOrderCount: 0,
+                    kotCount: 0,
+                    deliveryCount: 0,
+                    feedbackCount: 0,
+                });
         } finally {
             isFetchingBubblesRef.current = false;
         }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, modulePermissions]);
 
     const markNotificationSeen = useCallback(async (id) => {
         await markNotificationSeenApi(id);

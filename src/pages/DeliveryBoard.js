@@ -99,7 +99,7 @@ function DeliveryBoard() {
   const { getUnreadNotificationFor, markRecordNotificationsSeen } = useNotification();
   const location = useLocation();
   const navigate = useNavigate();
-  const [range, setRange] = useState('all');
+  const [range, setRange] = useState('today');
   const [deliveries, setDeliveries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notif, setNotif] = useState({ open: false, message: '', severity: 'success' });
@@ -360,7 +360,7 @@ function DeliveryBoard() {
                 display: 'grid',
                 gridTemplateColumns: `repeat(${cardsPerView}, 1fr)`,
                 gap: 2,
-                minHeight: 'calc(100vh - 200px)',
+                minHeight: 'calc(100vh - 300px)',
               }}
             >
               {sortedDeliveries.slice(sliderIndex, sliderIndex + cardsPerView).map((delivery) => {
@@ -374,35 +374,40 @@ function DeliveryBoard() {
                   <Card
                     key={delivery.id}
                     onClick={() => handleOpenDeliveryRecord(delivery.id)}
-                    sx={{ borderRadius: 2, height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
+                    sx={{ borderRadius: 2, height: 'calc(100vh - 300px)', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
                   >
                     <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <Typography variant="subtitle1" fontWeight={700}>
-                            <span
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => handleOpenDeliveryRecord(delivery.id)}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Enter' || event.key === ' ') {
-                                  event.preventDefault();
-                                  handleOpenDeliveryRecord(delivery.id);
-                                }
-                              }}
-                              style={{ cursor: 'pointer' }}
-                            >
-                              #{delivery.id}
-                            </span>
+                        <Stack direction="column" spacing={0}>
+                          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                            <strong>Customer:</strong> {delivery.customer_name || (delivery.event_snapshot && (delivery.event_snapshot.customer_name || delivery.event_snapshot.customer)) || 'Customer'}
                           </Typography>
-                          {badgeLabel ? (
-                            <Chip
-                              label={badgeLabel}
-                              size="small"
-                              color="error"
-                              sx={{ fontWeight: 700 }}
-                            />
-                          ) : null}
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <Typography variant="subtitle1" fontWeight={700}>
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => handleOpenDeliveryRecord(delivery.id)}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    handleOpenDeliveryRecord(delivery.id);
+                                  }
+                                }}
+                                style={{ cursor: 'pointer' }}
+                              >
+                                #{delivery.id}
+                              </span>
+                            </Typography>
+                            {badgeLabel ? (
+                              <Chip
+                                label={badgeLabel}
+                                size="small"
+                                color="error"
+                                sx={{ fontWeight: 700 }}
+                              />
+                            ) : null}
+                          </Stack>
                         </Stack>
 
                         <FormControl size="small" sx={{ minWidth: 130 }}>
@@ -431,9 +436,9 @@ function DeliveryBoard() {
                       <Typography variant="body2" sx={{ mb: 0.5 }}>
                         <strong>Date & Time:</strong> {getDeliveryDateTimeLabel(delivery)}
                       </Typography>
-                      <Typography variant="body2" sx={{ mb: 0.5 }}>
+                      {/* <Typography variant="body2" sx={{ mb: 0.5 }}>
                         <strong>Customer:</strong> {delivery.customer_name || '—'}
-                      </Typography>
+                      </Typography> */}
                       <Typography variant="body2" sx={{ mb: 0.5 }}>
                         <strong>Phone:</strong> {delivery.customer_phone || '—'}
                       </Typography>
@@ -448,7 +453,7 @@ function DeliveryBoard() {
                         Items ({delivery.items?.length || 0}) • Total Qty: {formatQty(totalQty)}
                       </Typography>
 
-                      <Box sx={{ flex: 1, overflow: 'auto', pr: 1, mb: 2 }}>
+                      <Box sx={{ flex: 1, overflow: 'auto', pr: 1, mb: 1 }}>
                         {(delivery.items || []).map((item) => (
                           <Box
                             key={item.id}

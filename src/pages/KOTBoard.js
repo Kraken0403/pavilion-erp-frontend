@@ -50,7 +50,7 @@ function KOTBoard() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [range, setRange] = useState('all');
+  const [range, setRange] = useState('today');
   const [kots, setKots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [notif, setNotif] = useState({ open: false, message: '', severity: 'success' });
@@ -349,7 +349,7 @@ function KOTBoard() {
                 display: 'grid',
                 gridTemplateColumns: `repeat(${cardsPerView}, 1fr)`,
                 gap: 2,
-                minHeight: 'calc(100vh - 200px)',
+                minHeight: 'calc(100vh - 300px)',
               }}
             >
               {filteredAndSortedKots.slice(sliderIndex, sliderIndex + cardsPerView).map((kot) => {
@@ -363,35 +363,40 @@ function KOTBoard() {
                   <Card
                     key={kot.id}
                     onClick={() => handleOpenKotRecord(kot.id)}
-                    sx={{ borderRadius: 2, height: 'calc(100vh - 200px)', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
+                    sx={{ borderRadius: 2, height: 'calc(100vh - 300px)', display: 'flex', flexDirection: 'column', cursor: 'pointer' }}
                   >
                     <CardContent sx={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                       <Stack direction="row" alignItems="center" justifyContent="space-between" mb={1}>
-                        <Stack direction="row" alignItems="center" spacing={1}>
-                          <Typography variant="subtitle1" fontWeight={700}>
-                            <span
-                              role="button"
-                              tabIndex={0}
-                              onClick={() => handleOpenKotRecord(kot.id)}
-                              onKeyDown={(event) => {
-                                if (event.key === 'Enter' || event.key === ' ') {
-                                  event.preventDefault();
-                                  handleOpenKotRecord(kot.id);
-                                }
-                              }}
-                              style={{ cursor: 'pointer' }}
-                            >
-                              {kot.work_order_number}
-                            </span>
+                        <Stack direction="column" spacing={0}>
+                          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.5 }}>
+                            <strong>Customer:</strong> {kot.customer_name || (event && (event.customer_name || event.customer)) || 'Customer'}
                           </Typography>
-                          {badgeLabel ? (
-                            <Chip
-                              label={badgeLabel}
-                              size="small"
-                              color="error"
-                              sx={{ fontWeight: 700 }}
-                            />
-                          ) : null}
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <Typography variant="subtitle1" fontWeight={700}>
+                              <span
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => handleOpenKotRecord(kot.id)}
+                                onKeyDown={(event) => {
+                                  if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    handleOpenKotRecord(kot.id);
+                                  }
+                                }}
+                                style={{ cursor: 'pointer' }}
+                              >
+                                {kot.work_order_number}
+                              </span>
+                            </Typography>
+                            {badgeLabel ? (
+                              <Chip
+                                label={badgeLabel}
+                                size="small"
+                                color="error"
+                                sx={{ fontWeight: 700 }}
+                              />
+                            ) : null}
+                          </Stack>
                         </Stack>
 
                         <FormControl size="small" sx={{ minWidth: 130 }}>
@@ -420,9 +425,9 @@ function KOTBoard() {
                       <Typography variant="body2" sx={{ mb: 0.5 }}>
                         <strong>Scheduled:</strong> {formatDateTime(kot.scheduled_for)}
                       </Typography>
-                      <Typography variant="body2" sx={{ mb: 1.5 }}>
+                      {/* <Typography variant="body2" sx={{ mb: 1.5 }}>
                         <strong>Customer:</strong> {kot.customer_name || '—'}
-                      </Typography>
+                      </Typography> */}
 
                       {!!String(event.notes || '').trim() && (
                         <Typography variant="body2" sx={{ mb: 1.5, whiteSpace: 'pre-wrap' }}>
