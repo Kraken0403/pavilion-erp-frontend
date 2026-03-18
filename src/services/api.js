@@ -103,8 +103,11 @@ api.interceptors.response.use(
       }
     }
 
-    // ❌ Any other 401/403 → logout
-    if (status === 401 || status === 403) {
+    // ❌ Logout on 401. For 403 only logout for non-notification routes
+    if (
+      status === 401 ||
+      (status === 403 && !String(originalRequest?.url || '').includes('/notifications'))
+    ) {
       if (process.env.NODE_ENV !== 'production' || process.env.REACT_APP_DEBUG_AXIOS === 'true') {
         console.debug('[AXIOS DEBUG] Received', status, 'for', originalRequest?.url, 'dispatching logout');
       }

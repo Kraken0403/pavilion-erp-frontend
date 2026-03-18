@@ -120,23 +120,25 @@ export const NotificationProvider = ({ children }) => {
 
         isFetchingNotificationsRef.current = true;
 
-        try {
-            const data = await fetchNotificationsApi();
-            const nextNotifications = Array.isArray(data?.result) ? data.result : [];
+            try {
+                const data = await fetchNotificationsApi();
+                const nextNotifications = Array.isArray(data?.result) ? data.result : [];
 
-            setNotifications((prev) => {
-                const prevSignature = getNotificationSignature(prev);
-                const nextSignature = getNotificationSignature(nextNotifications);
-                return prevSignature === nextSignature ? prev : nextNotifications;
-            });
+                setNotifications((prev) => {
+                    const prevSignature = getNotificationSignature(prev);
+                    const nextSignature = getNotificationSignature(nextNotifications);
+                    return prevSignature === nextSignature ? prev : nextNotifications;
+                });
 
-            if (typeof data?.unSeenNotifications === 'number') {
-                const nextUnseen = Number(data.unSeenNotifications || 0);
-                setTotalUnseen((prev) => (Number(prev || 0) === nextUnseen ? prev : nextUnseen));
+                if (typeof data?.unSeenNotifications === 'number') {
+                    const nextUnseen = Number(data.unSeenNotifications || 0);
+                    setTotalUnseen((prev) => (Number(prev || 0) === nextUnseen ? prev : nextUnseen));
+                }
+            } catch (error) {
+                console.warn('fetchNotifications error:', error?.response?.data || error.message || error);
+            } finally {
+                isFetchingNotificationsRef.current = false;
             }
-        } finally {
-            isFetchingNotificationsRef.current = false;
-        }
     }, [isAuthenticated]);
 
     const fetchBubbleCounts = useCallback(async () => {
@@ -169,6 +171,8 @@ export const NotificationProvider = ({ children }) => {
                     ? prev
                     : Number(next.unSeenNotifications || 0)
             ));
+        } catch (error) {
+            console.warn('fetchBubbleCounts error:', error?.response?.data || error.message || error);
         } finally {
             isFetchingBubblesRef.current = false;
         }
