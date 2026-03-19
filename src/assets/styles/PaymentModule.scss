@@ -91,6 +91,16 @@
         font-size: 12px;
     }
 
+    .module-footer {
+        padding: 8px 20px 20px 20px;
+        display: flex;
+        justify-content: flex-end;
+        align-items: center;
+        background: transparent;
+        border-top: 1px solid transparent;
+        margin-top: 8px;
+    }
+
     @media (max-width: 900px) {
         .module-summary {
             grid-template-columns: 1fr;

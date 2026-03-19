@@ -1,4 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
+import PaginationBar from '../components/ui/PaginationBar';
 import { Chip } from '@mui/material';
 import Topbar from '../components/Topbar';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
@@ -37,6 +38,8 @@ function Payments() {
 
     const [receiptsModalOpen, setReceiptsModalOpen] = useState(false);
     const [receiptsModalInvoice, setReceiptsModalInvoice] = useState(null);
+    const [page, setPage] = useState(1);
+    const PENDING_PER_PAGE = 20;
 
     const [notification, setNotification] = useState({
         open: false,
@@ -85,6 +88,14 @@ function Payments() {
                 .some((value) => String(value || '').toLowerCase().includes(q))
         );
     }, [rows, searchQuery]);
+
+    // reset page when filter changes
+    React.useEffect(() => setPage(1), [searchQuery, rows]);
+
+    const paginatedRows = useMemo(() => {
+        const start = (page - 1) * PENDING_PER_PAGE;
+        return filteredRows.slice(start, start + PENDING_PER_PAGE);
+    }, [filteredRows, page]);
 
     const summary = useMemo(() => {
         return filteredRows.reduce(
@@ -176,7 +187,7 @@ function Payments() {
                                 </td>
                             </tr>
                         ) : filteredRows.length ? (
-                            filteredRows.map((row) => (
+                            paginatedRows.map((row) => (
                                 <tr key={row.id}>
                                     <td>{row.invoice_number}</td>
                                     <td>{row.customer_name || '—'}</td>
@@ -221,6 +232,15 @@ function Payments() {
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            <div className="module-footer">
+                <PaginationBar
+                    currentPage={page}
+                    totalItems={filteredRows.length}
+                    itemsPerPage={PENDING_PER_PAGE}
+                    onPageChange={setPage}
+                />
             </div>
 
             <StatusUpdateModal

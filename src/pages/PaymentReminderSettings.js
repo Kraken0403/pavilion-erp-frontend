@@ -140,10 +140,10 @@ const PaymentReminderSettings = () => {
 
               <div className="auto-toggle-card">
                 <div>
-                  <div className="title">Auto WhatsApp Reminders (Later)</div>
+                  <div className="title">Auto WhatsApp Reminders</div>
                   <div className="subtitle">
                     {settings.is_whatsapp_enabled
-                      ? 'WhatsApp reminders are marked enabled for future rollout.'
+                      ? 'WhatsApp reminders are currently running.'
                       : 'WhatsApp reminders are currently disabled.'}
                   </div>
                 </div>
@@ -193,7 +193,7 @@ const PaymentReminderSettings = () => {
                 </div>
 
                 <div className="time-field">
-                  <label>WhatsApp Send Time (Future)</label>
+                  <label>WhatsApp Send Time</label>
                   <input
                     className="input"
                     type="time"

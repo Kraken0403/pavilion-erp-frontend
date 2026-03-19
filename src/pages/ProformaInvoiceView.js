@@ -1,7 +1,13 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Box, Button, Chip, Divider, Grid, Typography } from '@mui/material'
+import { Box, Button, Chip, Divider, Grid, Typography, Menu, MenuItem, IconButton, ListItemIcon } from '@mui/material'
+import MoreVertIcon from '@mui/icons-material/MoreVert'
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
+import ShareIcon from '@mui/icons-material/Share'
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined'
+import ChannelSelectModal from '../components/ui/ChannelSelectModal'
+import { formatQty, formatMoney } from '../utils/formatters'
+import { sendProformaEmail, sendProformaWhatsApp } from '../services/invoiceService'
 import Topbar from '../components/Topbar'
 import NotificationSnackbar from '../components/ui/NotificationSnackbar'
 import PageLoader from '../components/ui/PageLoader'
@@ -37,6 +43,17 @@ function ProformaInvoiceView() {
     message: '',
     severity: 'info',
   })
+  const [channelModalOpen, setChannelModalOpen] = useState(false)
+  const [actionsAnchor, setActionsAnchor] = useState(null)
+
+  const getShareSubtitle = () => {
+    const items = invoice?.items || []
+    if (!items.length) return ''
+    const visible = items.slice(0, 5)
+    const parts = visible.map(i => `${i.description} x${formatQty(i.quantity)} · ${formatMoney(i.line_total || i.lineTotal || 0)}`)
+    const more = items.length > 5 ? ` · +${items.length - 5} more` : ''
+    return parts.join(' · ') + more
+  }
 
   const loadInvoice = useCallback(async () => {
     try {
@@ -156,17 +173,30 @@ function ProformaInvoiceView() {
                 Export PDF
               </button>
 
-              {/* Send actions moved to listing actions menu */}
-
-              <Button
-                variant="contained"
-                size="small"
-                onClick={handleCreateTaxInvoice}
-                disabled={creatingTax}
-                sx={{ textTransform: 'none', fontWeight: 700 }}
-              >
-                {taxInvoiceId ? 'Open Tax Invoice' : (creatingTax ? 'Creating...' : 'Create Tax Invoice')}
-              </Button>
+              {/* Actions menu */}
+              <div>
+                <IconButton size="small" onClick={(e) => setActionsAnchor(e.currentTarget)}>
+                  <MoreVertIcon />
+                </IconButton>
+                <Menu
+                  anchorEl={actionsAnchor}
+                  open={Boolean(actionsAnchor)}
+                  onClose={() => setActionsAnchor(null)}
+                >
+                  <MenuItem onClick={() => { setActionsAnchor(null); handleCreateTaxInvoice(); }}>
+                    <ListItemIcon>
+                      <ReceiptLongIcon fontSize="small" />
+                    </ListItemIcon>
+                    {creatingTax ? 'Creating...' : (taxInvoiceId ? 'Open Tax Invoice' : 'Create Tax Invoice')}
+                  </MenuItem>
+                  <MenuItem onClick={() => { setChannelModalOpen(true); setActionsAnchor(null); }}>
+                    <ListItemIcon>
+                      <ShareIcon fontSize="small" />
+                    </ListItemIcon>
+                    Share Proforma Invoice
+                  </MenuItem>
+                </Menu>
+              </div>
             </div>
           </div>
 
@@ -218,7 +248,7 @@ function ProformaInvoiceView() {
                 {(invoice.items || []).length ? invoice.items.map((item) => (
                   <tr key={item.id}>
                     <td>{item.description}</td>
-                    <td>{item.quantity}</td>
+                    <td>{formatQty(item.quantity)}</td>
                     <td>{formatMoney(item.unit_price)}</td>
                     <td>{item.gst_rate}%</td>
                     <td>{formatMoney(item.line_total)}</td>
@@ -238,18 +268,26 @@ function ProformaInvoiceView() {
                 <Typography variant="body2" color="text.secondary">Subtotal</Typography>
                 <Typography variant="body2">{formatMoney(invoice.subtotal)}</Typography>
               </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">CGST</Typography>
-                <Typography variant="body2">{formatMoney(invoice.cgst_total)}</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">SGST</Typography>
-                <Typography variant="body2">{formatMoney(invoice.sgst_total)}</Typography>
-              </Box>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                <Typography variant="body2" color="text.secondary">IGST</Typography>
-                <Typography variant="body2">{formatMoney(invoice.igst_total)}</Typography>
-              </Box>
+              {Number(invoice.cgst_total || 0) > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary">CGST</Typography>
+                  <Typography variant="body2">{formatMoney(invoice.cgst_total)}</Typography>
+                </Box>
+              )}
+
+              {Number(invoice.sgst_total || 0) > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary">SGST</Typography>
+                  <Typography variant="body2">{formatMoney(invoice.sgst_total)}</Typography>
+                </Box>
+              )}
+
+              {Number(invoice.igst_total || 0) > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                  <Typography variant="body2" color="text.secondary">IGST</Typography>
+                  <Typography variant="body2">{formatMoney(invoice.igst_total)}</Typography>
+                </Box>
+              )}
 
               <Divider sx={{ mb: 1.5 }} />
 
@@ -265,6 +303,25 @@ function ProformaInvoiceView() {
       <NotificationSnackbar
         {...notification}
         onClose={() => setNotification((prev) => ({ ...prev, open: false }))}
+      />
+      <ChannelSelectModal
+        open={channelModalOpen}
+        onClose={() => setChannelModalOpen(false)}
+        title={`Share Proforma ${invoice?.invoice_number || ''} with ${customerName}`}
+        subtitle={getShareSubtitle()}
+        defaultEmail
+        defaultWhatsApp={false}
+        confirmLabel="Share Proforma"
+        onConfirm={async ({ sendEmail = true, sendWhatsApp = false }) => {
+          setChannelModalOpen(false)
+          try {
+            if (sendEmail) await sendProformaEmail(id)
+            if (sendWhatsApp) await sendProformaWhatsApp(id)
+            setNotification({ open: true, message: '📩 Notification sent', severity: 'success' })
+          } catch {
+            setNotification({ open: true, message: '❌ Failed to send notification', severity: 'error' })
+          }
+        }}
       />
     </div>
   )

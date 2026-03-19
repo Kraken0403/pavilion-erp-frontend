@@ -4,6 +4,7 @@ import {
   Dialog, DialogTitle, DialogContent, DialogActions,
   List, ListItemButton, ListItemText, CircularProgress, Typography
 } from '@mui/material'
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
 import { useNavigate } from 'react-router-dom'
 import Topbar from '../components/Topbar'
 import UtilsBar from '../components/UtilsBar'
@@ -421,6 +422,7 @@ function ProformaInvoices() {
                   <Button
                     variant="contained"
                     size="small"
+                    startIcon={<ReceiptLongIcon />}
                     disabled={creatingTaxId === inv.id}
                     onClick={(e) => handleCreateTaxInvoice(e, inv.id, inv.tax_invoice_id || null)}
                     sx={{ textTransform: 'none', fontWeight: 700 }}

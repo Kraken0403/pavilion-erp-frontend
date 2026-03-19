@@ -20,10 +20,15 @@ import {
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadIcon from "@mui/icons-material/Download";
+import ShareIcon from '@mui/icons-material/Share';
+import ChannelSelectModal from '../ui/ChannelSelectModal';
+import { sendReceiptEmail, sendReceiptWhatsApp } from '../../services/invoiceService';
 import { downloadReceiptPdf } from "../../services/invoiceService";
 
 function ReceiptsModal({ open, onClose, invoice, onError }) {
     const [downloading, setDownloading] = useState(null);
+    const [channelOpen, setChannelOpen] = useState(false);
+    const [selectedReceipt, setSelectedReceipt] = useState(null);
 
     const payments = invoice?.payments || [];
     const invoiceNumber = invoice?.invoice_number || `#${invoice?.id}`;
@@ -210,18 +215,30 @@ function ReceiptsModal({ open, onClose, invoice, onError }) {
                                                 )}
                                             </TableCell>
                                             <TableCell align="center">
-                                                <IconButton
-                                                    size="small"
-                                                    color="primary"
-                                                    onClick={() => handleDownload(p.recieptId)}
-                                                    disabled={downloading === p.recieptId}
-                                                >
-                                                    {downloading === p.recieptId ? (
-                                                        <CircularProgress size={18} />
-                                                    ) : (
-                                                        <DownloadIcon fontSize="small" />
-                                                    )}
-                                                </IconButton>
+                                                <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
+                                                    <IconButton
+                                                        size="small"
+                                                        color="primary"
+                                                        onClick={() => handleDownload(p.recieptId)}
+                                                        disabled={downloading === p.recieptId}
+                                                    >
+                                                        {downloading === p.recieptId ? (
+                                                            <CircularProgress size={18} />
+                                                        ) : (
+                                                            <DownloadIcon fontSize="small" />
+                                                        )}
+                                                    </IconButton>
+                                                    <IconButton
+                                                        size="small"
+                                                        color="primary"
+                                                        onClick={() => {
+                                                            setSelectedReceipt(p.recieptId);
+                                                            setChannelOpen(true);
+                                                        }}
+                                                    >
+                                                        <ShareIcon fontSize="small" />
+                                                    </IconButton>
+                                                </div>
                                             </TableCell>
                                         </TableRow>
                                     ))}
@@ -237,6 +254,30 @@ function ReceiptsModal({ open, onClose, invoice, onError }) {
                     Close
                 </Button>
             </DialogActions>
+
+            <ChannelSelectModal
+                open={channelOpen}
+                onClose={() => { setChannelOpen(false); setSelectedReceipt(null); }}
+                title={`Share Receipt ${selectedReceipt || ''} with ${invoice?.billing_snapshot?.name || invoice?.first_name || ''}`}
+                subtitle={`Receipt for invoice ${invoice?.invoice_number || invoice?.id}`}
+                defaultEmail={true}
+                defaultWhatsApp={false}
+                confirmLabel="Share Receipt"
+                onConfirm={async ({ sendEmail = true, sendWhatsApp = false }) => {
+                    setChannelOpen(false);
+                    const rid = selectedReceipt;
+                    try {
+                        if (sendEmail) await sendReceiptEmail(rid);
+                        if (sendWhatsApp) await sendReceiptWhatsApp(rid);
+                        onError?.('📩 Receipt sent successfully.');
+                    } catch (err) {
+                        console.error('sendReceipt error', err);
+                        onError?.('❌ Failed to send receipt.');
+                    } finally {
+                        setSelectedReceipt(null);
+                    }
+                }}
+            />
         </Dialog>
     );
 }

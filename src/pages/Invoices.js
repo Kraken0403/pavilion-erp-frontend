@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 
-import { Chip, Checkbox, Dialog, DialogTitle, DialogContent, DialogActions, Button, CircularProgress, Typography, List, ListItemButton, ListItemText } from "@mui/material";
+import { Chip, Checkbox, Dialog, DialogTitle, DialogContent, DialogActions, Button, CircularProgress, Typography, List, ListItemButton, ListItemText, FormControl, InputLabel, Select, MenuItem, Box, IconButton } from "@mui/material";
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import StatusUpdateModal from "../components/invoices/StatusUpdateModal";
 import ReceiptsModal from "../components/invoices/ReceiptsModal";
 import Topbar from "../components/Topbar";
@@ -43,6 +44,7 @@ function Invoices() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortValue, setSortValue] = useState("latest");
   const [dateFilter, setDateFilter] = useState({});
+  const [statusFilter, setStatusFilter] = useState('all');
 
   /* ================= SELECTION ================= */
   const [selectedInvoices, setSelectedInvoices] = useState([]);
@@ -181,6 +183,33 @@ function Invoices() {
 
   /* ================= FILTER + SORT ================= */
 
+  // helper to determine overdue status when backend flag not present
+  const computeIsOverdue = (inv) => {
+    if (typeof inv?.is_overdue === 'boolean') return inv.is_overdue;
+
+    const grand = Number(inv?.grand_total || 0)
+    let paid = Number(inv?.paid_amount || 0)
+    if (!paid && Array.isArray(inv?.payments) && inv.payments.length) {
+      paid = inv.payments.reduce((s, p) => {
+        if (String(p.paymentType || '').toUpperCase() === 'OTHER') return s
+        return s + Number(p.amount || 0)
+      }, 0)
+    }
+    const balanceDue = Math.max(0, grand - paid)
+    if (balanceDue <= 0) return false
+
+    try {
+      const dueDate = new Date(inv.due_date || inv.dueDate || inv.issue_date)
+      if (Number.isNaN(dueDate.getTime())) return false
+      const dueOnly = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate())
+      const today = new Date();
+      const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+      return dueOnly < todayOnly
+    } catch (e) {
+      return false
+    }
+  }
+
   const processedInvoices = useMemo(() => {
     let data = [...invoices];
 
@@ -212,6 +241,15 @@ function Invoices() {
       );
     }
 
+    /* Status filter */
+    if (statusFilter && statusFilter !== 'all') {
+      if (statusFilter === 'overdue') {
+        data = data.filter((inv) => computeIsOverdue(inv));
+      } else {
+        data = data.filter((inv) => String(inv?.status || '').toLowerCase() === String(statusFilter || '').toLowerCase());
+      }
+    }
+
     /* Sorting */
     switch (sortValue) {
       case "latest":
@@ -239,7 +277,7 @@ function Invoices() {
     }
 
     return data;
-  }, [invoices, searchQuery, sortValue, dateFilter]);
+  }, [invoices, searchQuery, sortValue, dateFilter, statusFilter]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -331,6 +369,26 @@ function Invoices() {
         onSortChange={setSortValue}
         onDateFilterChange={setDateFilter}
       />
+
+      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', mb: 2 }}>
+        <FormControl size="small" sx={{ minWidth: 180 }}>
+          <InputLabel id="status-filter-label">Status</InputLabel>
+          <Select
+            labelId="status-filter-label"
+            label="Status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <MenuItem value="all">All</MenuItem>
+            <MenuItem value="draft">Draft</MenuItem>
+            <MenuItem value="issued">Issued</MenuItem>
+            <MenuItem value="part-payment">Part-payment</MenuItem>
+            <MenuItem value="paid">Paid</MenuItem>
+            <MenuItem value="cancelled">Cancelled</MenuItem>
+            <MenuItem value="overdue">Overdue</MenuItem>
+          </Select>
+        </FormControl>
+      </Box>
 
       {/* Create dialog: Manual or From Proforma */}
       <Dialog
@@ -453,6 +511,14 @@ function Invoices() {
                     onClick={(e) => handleStatusChipClick(e, inv.id)}
                     sx={{ cursor: "pointer" }}
                   />
+                  {computeIsOverdue(inv) && (
+                    <Chip
+                      label="Overdue"
+                      color="warning"
+                      size="small"
+                      sx={{ ml: 1 }}
+                    />
+                  )}
                 </td>
 
                 <td
@@ -473,7 +539,16 @@ function Invoices() {
                       sx={{ cursor: "pointer" }}
                     />
                   ) : (
-                    <span style={{ color: '#999', fontSize: '12px' }}>No Receipts</span>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      aria-label="Generate Receipt"
+                      startIcon={<AddCircleOutlineIcon />}
+                      onClick={(e) => { e.stopPropagation(); setStatusModalInvoiceId(inv.id); setStatusModalOpen(true); }}
+                      sx={{ textTransform: 'none', fontWeight: 700 }}
+                    >
+                      Generate Receipt
+                    </Button>
                   )}
                 </td>
               </tr>

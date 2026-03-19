@@ -9,7 +9,7 @@ import {
 
 import { getUserById } from '../services/userServices';
 import { sendEmail, sendWhatsApp } from '../services/spEmailServices';
-import { toInputDateValue } from '../utils/dateFormatter';
+import { toInputDateValue, formatTime12Hour } from '../utils/dateFormatter';
 
 const toDateOnly = (value) => {
     if (!value) return '';
@@ -19,15 +19,19 @@ const toDateOnly = (value) => {
 const toTimeOnly = (value) => {
     if (!value) return '';
     const raw = String(value).trim();
-    const fromString = raw.match(/^(\d{2}:\d{2})(?::\d{2})?$/);
-    if (fromString) return fromString[1];
+    const fromString = raw.match(/^(\d{2}):(\d{2})(?::\d{2})?$/);
+    if (fromString) {
+        const h = Number(fromString[1]);
+        const m = Number(fromString[2]);
+        const d = new Date();
+        d.setHours(h, m, 0, 0);
+        return formatTime12Hour(d);
+    }
 
     const parsed = new Date(raw);
     if (Number.isNaN(parsed.getTime())) return '';
 
-    const hh = String(parsed.getHours()).padStart(2, '0');
-    const mm = String(parsed.getMinutes()).padStart(2, '0');
-    return `${hh}:${mm}`;
+    return formatTime12Hour(parsed);
 };
 
 const sanitizeLeadDates = (lead) => {

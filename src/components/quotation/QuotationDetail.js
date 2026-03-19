@@ -37,6 +37,7 @@ import {
 import '../../assets/styles/QuotationDetail.scss'
 
 import '../../assets/styles/LeadsTable.scss'
+import { formatQty, formatMoney } from '../../utils/formatters'
 
 /* ---------------------------------------
    CONSTANTS — MUST MATCH DB ENUMS
@@ -574,8 +575,9 @@ function QuotationDetail() {
   const eventName = quotation?.catering?.event_name || quotation?.event_name || ''
   const itemSummaries = (items || []).map(it => {
     const name = it.product_name || it.product?.name || it.title || 'Item'
-    const qty = Number(it.quantity || it.qty || 1)
-    return `${name} x${qty}`
+    const qty = formatQty(it.quantity || it.qty || 1)
+    const amt = formatMoney(it.line_total || it.lineTotal || (Number(it.selling_price || it.unit_price || 0) * Number(it.quantity || it.qty || 0)))
+    return `${name} x${qty} · ${amt}`
   })
   const visible = itemSummaries.slice(0, 5)
   const briefSummary = [

@@ -78,6 +78,21 @@ export const generateWorkOrderReport = async (startDate, endDate) => {
 };
 
 /**
+ * Generate Dashboard / Monthly Aggregated Data
+ */
+export const generateDashboardReport = async (month, months = 6) => {
+  try {
+    const response = await api.get('/reports/dashboard', {
+      params: { month, months }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error generating dashboard report:', error);
+    throw error;
+  }
+};
+
+/**
  * Download Report PDF
  */
 export const downloadReportPdf = async (reportType, startDate, endDate, salesType = 'combined') => {

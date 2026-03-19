@@ -163,3 +163,16 @@ export const sendInvoiceWhatsApp = async (id) => {
   const res = await api.post(`/invoices/${id}/send-whatsapp`);
   return res.data;
 };
+
+/* ---------------------------------------
+   SEND RECEIPT CHANNELS
+--------------------------------------- */
+export const sendReceiptEmail = async (receiptId) => {
+  const res = await api.post(`/invoices/payments/${receiptId}/send-email`);
+  return res.data;
+};
+
+export const sendReceiptWhatsApp = async (receiptId) => {
+  const res = await api.post(`/invoices/payments/${receiptId}/send-whatsapp`);
+  return res.data;
+};

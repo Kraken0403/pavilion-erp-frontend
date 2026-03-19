@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Menu, MenuItem } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 
@@ -7,9 +7,9 @@ import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined'
 import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined'
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
 import { generateWorkOrderPdf } from '../../services/workOrderServices'
+import { getInvoices, getProformaInvoices } from '../../services/invoiceService'
 // import { generateWorkOrderPdf } from '../../services/workOrderService'
 import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
-import { createInvoiceFromWorkOrder } from '../../services/invoiceService'
 import RestaurantMenuOutlinedIcon from '@mui/icons-material/RestaurantMenuOutlined'
 import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
 import { formatStatusLabel } from '../../utils/statusFormatter'
@@ -26,23 +26,34 @@ function WorkOrderHeader({
   const [anchorEl, setAnchorEl] = useState(null)
   const navigate = useNavigate()
 
-  const handleSendToInvoice = async () => {
+
+  const handleCreateProforma = () => {
     if (!id) return
-  
-    try {
-      const res = await createInvoiceFromWorkOrder(id)
-  
-      if (res.already_existed) {
-        navigate(`/invoices/${res.id}`)
-        return
-      }
-  
-      navigate(`/invoices/${res.id}`)
-    } catch (err) {
-      console.error('Send to invoice failed:', err)
-      alert('Failed to create invoice')
-    }
+    setAnchorEl(null)
+    navigate('/proforma-invoices/create', { state: { workOrderId: id } })
   }
+
+  const [hasLinkedInvoice, setHasLinkedInvoice] = useState(false)
+
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        if (!id) return
+        const [invoicesRes, proformasRes] = await Promise.all([getInvoices(), getProformaInvoices()])
+        const invoices = Array.isArray(invoicesRes) ? invoicesRes : invoicesRes?.data || []
+        const proformas = Array.isArray(proformasRes) ? proformasRes : proformasRes?.data || []
+
+        const hasInv = invoices.some(i => String(i.source_type || '').toUpperCase() === 'WORK_ORDER' && Number(i.source_id) === Number(id))
+        const hasPro = proformas.some(p => String(p.source_type || '').toUpperCase().includes('WORK') && Number(p.source_id) === Number(id)) || proformas.some(p => Number(p.source_id) === Number(id))
+
+        if (mounted) setHasLinkedInvoice(Boolean(hasInv || hasPro))
+      } catch (err) {
+        // ignore errors
+      }
+    })()
+    return () => { mounted = false }
+  }, [id])
   
 
   if (!workOrder) return null
@@ -120,15 +131,25 @@ function WorkOrderHeader({
               Download PDF
             </MenuItem>
 
-            <MenuItem
-              onClick={() => {
-                setAnchorEl(null)
-                handleSendToInvoice()
-              }}
-            >
-              <ReceiptLongOutlinedIcon fontSize="small" style={{ marginRight: 10 }} />
-              Send to Invoice
-            </MenuItem>
+            {/* "Send to Invoice" option removed per request */}
+
+            {!hasLinkedInvoice && (
+              <MenuItem
+                onClick={() => {
+                  setAnchorEl(null)
+                  handleCreateProforma()
+                }}
+              >
+                <ReceiptLongOutlinedIcon fontSize="small" style={{ marginRight: 10 }} />
+                Create Proforma Invoice
+              </MenuItem>
+            )}
+            {hasLinkedInvoice && (
+              <MenuItem disabled>
+                <ReceiptLongOutlinedIcon fontSize="small" style={{ marginRight: 10 }} />
+                Proforma / Tax Invoice exists
+              </MenuItem>
+            )}
 
             {showGenerateKOT && (
               <MenuItem

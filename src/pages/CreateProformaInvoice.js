@@ -15,9 +15,10 @@ import { fetchLeads } from '../services/leadService'
 import { createProformaInvoice, createProformaFromQuotation } from '../services/invoiceService'
 import { getSettings } from '../services/settingsService'
 import { displayCurrency } from '../utils/currencyUtils'
-import { fetchQuotationById } from '../services/quotationService'
+import { fetchQuotationById, updateQuotationStatus } from '../services/quotationService'
 import { getProformaInvoiceById } from '../services/invoiceService'
 import { toInputDateValue } from '../utils/dateFormatter'
+import { fetchWorkOrderById } from '../services/workOrderServices'
 
 function CreateProformaInvoice() {
   const navigate = useNavigate()
@@ -70,6 +71,25 @@ function CreateProformaInvoice() {
       .catch((err) => console.error('Failed to load leads', err))
   }, [])
 
+  // helper to derive gst rate: if item provides gst_rate use it, otherwise
+  // if item.tax looks like an amount compute percentage = (tax / (qty*unit)) * 100
+  const deriveGstRate = (it, prod) => {
+    const explicit = it.gst_rate ?? it.gstRate
+    if (typeof explicit !== 'undefined' && explicit !== null && explicit !== '') return Number(explicit)
+
+    const taxAmount = Number(it.tax ?? it.tax_amount ?? it.gst_amount ?? NaN)
+    const qty = Number(it.quantity ?? it.qty ?? 1)
+    const unit = Number(it.selling_price ?? it.unit_price ?? it.price ?? (prod ? prod.selling_price : 0))
+
+    if (!Number.isNaN(taxAmount) && qty > 0 && unit > 0) {
+      const base = qty * unit
+      // avoid division by zero
+      if (base > 0) return Number(((taxAmount / base) * 100).toFixed(2))
+    }
+
+    return Number(prod?.gst_rate ?? 0)
+  }
+
   useEffect(() => {
     getSettings()
       .then((settings) => {
@@ -92,6 +112,13 @@ function CreateProformaInvoice() {
         const id = created?.id || created?.proforma_id || created?.proformaInvoiceId
         if (id) {
           showNotification('Proforma created from quotation', 'success')
+          // Mark the quotation converted in the backend and continue
+          try {
+            await updateQuotationStatus(Number(quotationId), 'converted')
+          } catch (e) {
+            console.warn('Failed to update quotation status after proforma creation', e && e.message ? e.message : e)
+          }
+
           setTimeout(() => navigate(`/proforma-invoices/${id}`), 500)
         } else {
           showNotification('Proforma created but id not returned', 'warning')
@@ -126,7 +153,7 @@ function CreateProformaInvoice() {
             product: prod || (pid ? { id: pid, name: it.product_name || '' } : null),
             quantity: Number(it.quantity || 1),
             selling_price: Number(it.selling_price ?? it.unit_price ?? (prod ? prod.selling_price : 0) ?? 0),
-            gst_rate: Number(it.tax ?? it.gst_rate ?? (prod ? prod.gst_rate : 0) ?? 0),
+            gst_rate: deriveGstRate(it, prod),
             description: it.product_name || it.description || '',
           }
         })
@@ -137,6 +164,59 @@ function CreateProformaInvoice() {
       } catch (err) {
         console.error(err)
         showNotification('Failed to load quotation for prefill', 'error')
+      }
+    })()
+  }, [location, products])
+
+  // If navigated with state.workOrderId or ?workOrderId=..., prefill form from work order
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const workOrderId = params.get('workOrderId') || params.get('work_order_id') || location?.state?.workOrderId || location?.state?.work_order_id
+    if (!workOrderId) return
+
+    ;(async () => {
+      try {
+        const wo = await fetchWorkOrderById(workOrderId)
+
+        // Lead
+        setLeadId(wo.lead_id || wo.leadId || wo.customer_id || '')
+
+        // Header: prefer event_date, else created_at / today
+        setInvoiceDate(wo.event_date ? (wo.event_date.substring ? wo.event_date.substring(0,10) : wo.event_date) : toInputDateValue(new Date()))
+        setDueDate('')
+        setNotes(wo.notes || wo.description || '')
+
+        // Ensure products list available
+        let prods = products
+        if (!Array.isArray(prods) || prods.length === 0) {
+          try {
+            const res = await fetchAllProducts()
+            prods = Array.isArray(res) ? res : Array.isArray(res?.data) ? res.data : Array.isArray(res?.products) ? res.products : []
+            setProducts(prods)
+          } catch (err) {
+            prods = []
+          }
+        }
+
+        // Items: normalize work order items -> form items
+        const normalized = (wo.items || []).map((it) => {
+          const pid = it.product_id || it.productId || null
+          const prod = Array.isArray(prods) ? prods.find(p => Number(p.id) === Number(pid)) : null
+          return {
+            product: prod || (pid ? { id: pid, name: it.product_name || it.name || it.description || '' } : null),
+            quantity: Number(it.quantity || it.qty || 1),
+            selling_price: Number(it.unit_price ?? it.selling_price ?? (prod ? prod.selling_price : 0) ?? 0),
+            gst_rate: deriveGstRate(it, prod),
+            description: it.description || it.product_name || it.name || '',
+          }
+        })
+
+        setItems(normalized)
+
+        showNotification('Form prefilled from work order. You can create now.', 'info')
+      } catch (err) {
+        console.error(err)
+        showNotification('Failed to load work order for prefill', 'error')
       }
     })()
   }, [location, products])
@@ -333,8 +413,24 @@ function CreateProformaInvoice() {
       payload.source_id = Number(qid)
     }
 
+    // If navigated from a work order, mark the proforma source
+    const wid = location?.state?.workOrderId || location?.state?.work_order_id
+    if (wid) {
+      payload.source_type = 'WORKORDER_PROFORMA'
+      payload.source_id = Number(wid)
+    }
+
     try {
       await createProformaInvoice(payload)
+      // If created from a quotation, mark quotation as converted
+      try {
+        if (payload.source_type && String(payload.source_type).toUpperCase().includes('QUOTATION') && payload.source_id) {
+          await updateQuotationStatus(Number(payload.source_id), 'converted')
+        }
+      } catch (e) {
+        console.warn('Failed to update quotation status after manual proforma creation', e && e.message ? e.message : e)
+      }
+
       showNotification('Proforma invoice created successfully')
       setTimeout(() => navigate('/proforma-invoices'), 700)
     } catch (err) {

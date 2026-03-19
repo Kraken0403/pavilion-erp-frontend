@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import PaginationBar from '../components/ui/PaginationBar';
 import Topbar from '../components/Topbar';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import ChannelSelectModal from '../components/ui/ChannelSelectModal';
@@ -27,6 +28,8 @@ const PaymentReminders = () => {
   const [loading, setLoading] = useState(true);
   const [sendingByInvoiceId, setSendingByInvoiceId] = useState({});
   const [rows, setRows] = useState([]);
+  const [page, setPage] = useState(1);
+  const REMINDERS_PER_PAGE = 20;
 
   const [searchQuery, setSearchQuery] = useState('');
   const [notification, setNotification] = useState({
@@ -68,6 +71,13 @@ const PaymentReminders = () => {
       ].some((value) => String(value || '').toLowerCase().includes(q))
     );
   }, [rows, searchQuery]);
+
+  React.useEffect(() => setPage(1), [searchQuery, rows]);
+
+  const paginatedRows = useMemo(() => {
+    const start = (page - 1) * REMINDERS_PER_PAGE;
+    return filteredRows.slice(start, start + REMINDERS_PER_PAGE);
+  }, [filteredRows, page]);
 
   const summary = useMemo(() => {
     return filteredRows.reduce(
@@ -173,7 +183,7 @@ const PaymentReminders = () => {
                 </td>
               </tr>
             ) : filteredRows.length ? (
-              filteredRows.map((row) => (
+              paginatedRows.map((row) => (
                 <tr key={row.id}>
                   <td>{row.invoice_number}</td>
                   <td>{row.customer_name}</td>
@@ -203,6 +213,15 @@ const PaymentReminders = () => {
             )}
           </tbody>
         </table>
+      </div>
+
+      <div className="module-footer">
+        <PaginationBar
+          currentPage={page}
+          totalItems={filteredRows.length}
+          itemsPerPage={REMINDERS_PER_PAGE}
+          onPageChange={setPage}
+        />
       </div>
 
       <NotificationSnackbar

@@ -66,7 +66,7 @@ const Dashboard = () => {
   const [kots, setKots] = useState([])
   const [pendingInvoicesPage, setPendingInvoicesPage] = useState(() => {
     const savedPage = Number(sessionStorage.getItem(DASHBOARD_PENDING_INVOICES_PAGE_KEY))
-    return Number.isFinite(savedPage) && savedPage >= 0 ? savedPage : 0
+  // (Duplicate later in file removed)
   })
   const [pendingInvoicesRowsPerPage, setPendingInvoicesRowsPerPage] = useState(() => {
     const savedRows = Number(sessionStorage.getItem(DASHBOARD_PENDING_INVOICES_ROWS_KEY))
@@ -111,6 +111,14 @@ const Dashboard = () => {
 
   const formatDate = (date) =>
     date ? formatLocalDate(date) : '-'
+
+  function getInvoiceDate(inv) {
+    return parseDateInput(inv?.issue_date || inv?.created_at || inv?.date || 0)
+  }
+
+  function isValidDate(date) {
+    return date instanceof Date && !Number.isNaN(date.getTime())
+  }
 
   /* =======================
      LOAD DATA
@@ -298,12 +306,62 @@ const Dashboard = () => {
     0
   )
 
+  // Selected month derived dates (used by pending invoice filters)
+  const [selectedYear, selectedMonthIndex] = selectedMonthKey.split('-').map(Number)
+  const selectedMonthDate = new Date(selectedYear, Math.max(0, selectedMonthIndex - 1), 1)
+  const currentMonthStart = new Date(selectedMonthDate.getFullYear(), selectedMonthDate.getMonth(), 1)
+  const previousMonthStart = new Date(selectedMonthDate.getFullYear(), selectedMonthDate.getMonth() - 1, 1)
+  const nextMonthStart = new Date(selectedMonthDate.getFullYear(), selectedMonthDate.getMonth() + 1, 1)
+  const monthFormatter = new Intl.DateTimeFormat('en-IN', { month: 'short' })
+
+  // helper: determine if invoice is overdue
+  function isOverdueInvoice(inv) {
+    if (typeof inv?.is_overdue === 'boolean') return inv.is_overdue
+
+    const status = String(inv?.status || '').trim().toLowerCase()
+    if (status === 'paid' || status === 'cancelled') return false
+
+    const grand = Number(inv?.grand_total || 0)
+    let paid = Number(inv?.paid_amount || 0)
+    if (!paid && Array.isArray(inv?.payments) && inv.payments.length) {
+      paid = inv.payments.reduce((s, p) => {
+        if (String(p.paymentType || '').toUpperCase() === 'OTHER') return s
+        return s + Number(p.amount || 0)
+      }, 0)
+    }
+    const balanceDue = Math.max(0, grand - paid)
+    if (balanceDue <= 0) return false
+
+    const dueDate = parseDateInput(inv?.due_date || inv?.dueDate || inv?.issue_date || 0)
+    return dueDate instanceof Date && !Number.isNaN(dueDate.getTime()) && dueDate < new Date()
+  }
+
+  // Include invoices that are overdue regardless of the issue month,
+  // and also include issued invoices from the selected month with a positive balance.
   const pendingInvoices = invoices
-    .filter(
-      (inv) =>
-        inv.status !== 'paid' &&
-        inv.status !== 'cancelled'
-    )
+    .filter((inv) => {
+      const date = getInvoiceDate(inv)
+
+      // Determine balance due robustly: prefer backend `balance_due`, else compute from payments
+      const grand = Number(inv?.grand_total || 0)
+      let paid = Number(inv?.paid_amount || 0)
+      if (!paid && Array.isArray(inv?.payments) && inv.payments.length) {
+        paid = inv.payments.reduce((s, p) => {
+          if (String(p.paymentType || '').toUpperCase() === 'OTHER') return s
+          return s + Number(p.amount || 0)
+        }, 0)
+      }
+      const balanceDue = Math.max(0, grand - paid)
+
+      const status = String(inv?.status || '').trim().toLowerCase()
+      const isIssued = status === 'issued'
+      const inSelectedMonth = isValidDate(date) && date >= currentMonthStart && date < nextMonthStart
+
+      // Include if invoice is overdue (server or computed) OR it's an issued invoice within selected month with balance
+      if (isOverdueInvoice(inv)) return true
+      if (isIssued && inSelectedMonth && balanceDue > 0) return true
+      return false
+    })
     .sort(
       (a, b) =>
         (parseDateInput(b.issue_date || 0) || new Date(0)) -
@@ -314,16 +372,9 @@ const Dashboard = () => {
     (k) => String(k?.status || '').toLowerCase() === 'pending'
   ).length
 
-  const isOverdueInvoice = (inv) => {
-    const status = String(inv?.status || '').toLowerCase()
-    if (status === 'paid' || status === 'cancelled') return false
-    const dueDate = parseDateInput(inv?.due_date || inv?.dueDate || inv?.issue_date || 0)
-    return dueDate instanceof Date && !Number.isNaN(dueDate.getTime()) && dueDate < new Date()
-  }
-
   const filteredPendingInvoices = pendingInvoices.filter((inv) => {
     if (pendingInvoiceFilter === 'issued') {
-      return String(inv?.status || '').toLowerCase() === 'issued'
+      return String(inv?.status || '').trim().toLowerCase() === 'issued'
     }
     if (pendingInvoiceFilter === 'overdue') {
       return isOverdueInvoice(inv)
@@ -387,22 +438,13 @@ const Dashboard = () => {
 
   const invoiceCollectionRate = invoices.length
     ? Math.round(
-      (invoices.filter((inv) => String(inv?.status || '').toLowerCase() === 'paid').length /
+      (invoices.filter((inv) => String(inv?.status || '').trim().toLowerCase() === 'paid').length /
         invoices.length) *
       100
     )
     : 0
 
-  const [selectedYear, selectedMonthIndex] = selectedMonthKey.split('-').map(Number)
-  const selectedMonthDate = new Date(selectedYear, Math.max(0, selectedMonthIndex - 1), 1)
-  const currentMonthStart = new Date(selectedMonthDate.getFullYear(), selectedMonthDate.getMonth(), 1)
-  const previousMonthStart = new Date(selectedMonthDate.getFullYear(), selectedMonthDate.getMonth() - 1, 1)
-  const nextMonthStart = new Date(selectedMonthDate.getFullYear(), selectedMonthDate.getMonth() + 1, 1)
-  const monthFormatter = new Intl.DateTimeFormat('en-IN', { month: 'short' })
-
-  const getInvoiceDate = (inv) => parseDateInput(inv?.issue_date || inv?.created_at || inv?.date || 0)
-
-  const isValidDate = (date) => date instanceof Date && !Number.isNaN(date.getTime())
+  // selected-month dates and helpers are defined earlier above
 
   const thisMonthRevenue = invoices.reduce((sum, inv) => {
     const date = getInvoiceDate(inv)
@@ -452,9 +494,9 @@ const Dashboard = () => {
   const selectedRangeRevenue = revenueTrend.reduce((sum, month) => sum + Number(month?.value || 0), 0)
   const selectedRangeAverage = revenueTrend.length ? Math.round(selectedRangeRevenue / revenueTrend.length) : 0
 
-  const paidInvoicesCount = invoices.filter((inv) => String(inv?.status || '').toLowerCase() === 'paid').length
-  const issuedInvoicesCount = invoices.filter((inv) => String(inv?.status || '').toLowerCase() === 'issued').length
-  const cancelledInvoicesCount = invoices.filter((inv) => String(inv?.status || '').toLowerCase() === 'cancelled').length
+  const paidInvoicesCount = invoices.filter((inv) => String(inv?.status || '').trim().toLowerCase() === 'paid').length
+  const issuedInvoicesCount = invoices.filter((inv) => String(inv?.status || '').trim().toLowerCase() === 'issued').length
+  const cancelledInvoicesCount = invoices.filter((inv) => String(inv?.status || '').trim().toLowerCase() === 'cancelled').length
 
   const overdueInvoicesCount = invoices.filter((inv) => isOverdueInvoice(inv)).length
 
@@ -464,7 +506,7 @@ const Dashboard = () => {
     : 0
 
   const totalPaidAmount = invoices.reduce((sum, inv) => {
-    const status = String(inv?.status || '').toLowerCase()
+    const status = String(inv?.status || '').trim().toLowerCase()
     return status === 'paid' ? sum + Number(inv?.grand_total || 0) : sum
   }, 0)
 
@@ -1029,7 +1071,7 @@ const Dashboard = () => {
                         { key: 'all', label: `All (${pendingInvoices.length})` },
                         {
                           key: 'issued',
-                          label: `Issued (${pendingInvoices.filter((inv) => String(inv?.status || '').toLowerCase() === 'issued').length})`,
+                          label: `Issued (${pendingInvoices.filter((inv) => String(inv?.status || '').trim().toLowerCase() === 'issued').length})`,
                         },
                         {
                           key: 'overdue',
@@ -1085,22 +1127,35 @@ const Dashboard = () => {
                           </TableCell>
 
                           <TableCell>
-                            <Chip
-                              label={inv.status}
-                              size="small"
-                              sx={{
-                                fontWeight: 700,
-                                textTransform: 'capitalize',
-                                backgroundColor:
-                                  inv.status === 'issued'
-                                    ? '#e3f2fd'
-                                    : '#fff3e0',
-                                color:
-                                  inv.status === 'issued'
-                                    ? '#1976d2'
-                                    : '#ef6c00',
-                              }}
-                            />
+                            {isOverdueInvoice(inv) ? (
+                              <Chip
+                                label="Overdue"
+                                size="small"
+                                sx={{
+                                  fontWeight: 700,
+                                  textTransform: 'capitalize',
+                                  backgroundColor: '#fff7ed',
+                                  color: '#b45309',
+                                }}
+                              />
+                            ) : (
+                              <Chip
+                                label={inv.status}
+                                size="small"
+                                sx={{
+                                  fontWeight: 700,
+                                  textTransform: 'capitalize',
+                                  backgroundColor:
+                                    inv.status === 'issued'
+                                      ? '#e3f2fd'
+                                      : '#fff3e0',
+                                  color:
+                                    inv.status === 'issued'
+                                      ? '#1976d2'
+                                      : '#ef6c00',
+                                }}
+                              />
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}

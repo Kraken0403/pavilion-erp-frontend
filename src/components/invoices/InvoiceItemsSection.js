@@ -43,7 +43,7 @@ function InvoiceItemsSection({
           <Grid item xs={12} md={2}>
             <Typography className="field-label">Qty</Typography>
             {readOnly ? (
-              <Typography>{item.quantity}</Typography>
+              <Typography>{(function(){ try { const { formatQty } = require('../../utils/formatters'); return formatQty(item.quantity) } catch { return item.quantity } })()}</Typography>
             ) : (
               <TextField
                 className="form-input"
