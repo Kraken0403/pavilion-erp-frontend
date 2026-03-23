@@ -113,6 +113,9 @@ export default function CreateWorkOrder() {
             unit_price: it.selling_price || 0,
             discount: it.discount || 0,
             tax: it.tax || 0,
+            making: it.making || it.making_size || 0,
+            slitting: it.slitting || it.slitting_size || it.slitting_mm || 0,
+            thickness: it.thickness || it.thick || it.thickness_mm || 0,
           }))
         : [];
 
@@ -135,6 +138,9 @@ export default function CreateWorkOrder() {
         product_id: null,
         product_name: "",
         quantity: 1,
+        making: 0, // mm
+        slitting: 0, // mm
+        thickness: 0, // mm
         unit_price: 0,
         discount: 0,
         tax: 0,
@@ -161,7 +167,43 @@ export default function CreateWorkOrder() {
       product_name: product.name,
       unit_price: product.sell_price || 0,
     };
+
+    // Attempt to pick slitting and thickness from product fields (support common keys)
+    const slittingCandidates = ['slitting_size', 'slitting', 'slittingSize', 'slit', 'slitting_mm'];
+    const thicknessCandidates = ['thickness', 'thick', 'thickness_mm'];
+
+    const findField = (obj, candidates) => {
+      for (const k of candidates) {
+        if (Object.prototype.hasOwnProperty.call(obj, k) && obj[k] != null) return obj[k];
+      }
+      return null;
+    };
+
+    const sl = findField(product, slittingCandidates);
+    const th = findField(product, thicknessCandidates);
+
+    if (sl != null) newItems[index].slitting = Number(sl) || 0;
+    if (th != null) newItems[index].thickness = Number(th) || 0;
+
     setItems(newItems);
+  };
+
+  // helper to compute totals for an item
+  const computeTotals = (it) => {
+    const making = Number(it.making) || 0; // mm
+    const slitting = Number(it.slitting) || 0; // mm
+    const count = Number(it.quantity) || 0; // count
+    const thick = Number(it.thickness) || 0; // mm
+
+    const totalSqft = ((making / 25.4) * (slitting / 25.4) / 144 * count) || 0;
+    const totalRft = ((making * 3.281 * count) / 1000) || 0;
+    const weight = ((making * slitting * thick * count * 7.85) / 1e6) || 0;
+
+    return {
+      totalSqft: Number(totalSqft.toFixed(2)),
+      totalRft: Number(totalRft.toFixed(2)),
+      weight: Number(weight.toFixed(2)),
+    };
   };
 
   // -------------------- CALCULATE TOTAL --------------------
@@ -207,14 +249,23 @@ export default function CreateWorkOrder() {
           event_time: eventTime,
           event_location: eventLocation,
           notes,
-          items: items.map(item => ({
-            product_id: item.product_id || null,
-            product_name: item.product_name,
-            quantity: Number(item.quantity) || 0,
-            unit_price: Number(item.unit_price) || 0,
-            discount: Number(item.discount) || 0,
-            tax: Number(item.tax) || 0
-          }))
+              items: items.map(item => {
+                const totals = computeTotals(item);
+                return {
+                  product_id: item.product_id || null,
+                  product_name: item.product_name,
+                  quantity: Number(item.quantity) || 0,
+                  unit_price: Number(item.unit_price) || 0,
+                  discount: Number(item.discount) || 0,
+                  tax: Number(item.tax) || 0,
+                  making: Number(item.making) || 0,
+                  slitting: Number(item.slitting) || 0,
+                  thickness: Number(item.thickness) || 0,
+                  total_rft: totals.totalRft,
+                  total_sqft: totals.totalSqft,
+                  weight: totals.weight,
+                };
+              })
         };
 
         const res = await createManualWorkOrder(payload);
@@ -445,15 +496,17 @@ val && setCreationMode(val);
             ) : (
               <Table>
                 <TableHead>
-                  <TableRow>
-                    <TableCell>Product</TableCell>
-                    <TableCell align="right">Quantity</TableCell>
-                    <TableCell align="right">Unit Price</TableCell>
-                    <TableCell align="right">Discount</TableCell>
-                    <TableCell align="right">Tax</TableCell>
-                    <TableCell align="right">Line Total</TableCell>
-                    {creationMode === "manual" && <TableCell></TableCell>}
-                  </TableRow>
+                    <TableRow>
+                      <TableCell>Product</TableCell>
+                      <TableCell>Making Size (mm)</TableCell>
+                      <TableCell align="right">Number (qty)</TableCell>
+                      <TableCell align="right">Slitting Size (mm)</TableCell>
+                      <TableCell align="right">Thickness (mm)</TableCell>
+                      <TableCell align="right">Total RFT</TableCell>
+                      <TableCell align="right">Total SQFT</TableCell>
+                      <TableCell align="right">Weight</TableCell>
+                      {creationMode === "manual" && <TableCell></TableCell>}
+                    </TableRow>
                 </TableHead>
                 <TableBody>
                   {items.map((item, index) => {
@@ -461,6 +514,8 @@ val && setCreationMode(val);
                       (Number(item.quantity) || 0) * (Number(item.unit_price) || 0) -
                       (Number(item.discount) || 0) +
                       (Number(item.tax) || 0);
+
+                    const totals = computeTotals(item);
 
                     return (
                       <TableRow key={index}>
@@ -480,6 +535,21 @@ val && setCreationMode(val);
                             item.product_name
                           )}
                         </TableCell>
+
+                        <TableCell>
+                          {creationMode === "manual" ? (
+                            <TextField
+                              type="number"
+                              value={item.making}
+                              onChange={(e) => updateItem(index, 'making', e.target.value)}
+                              size="small"
+                              sx={{ width: 120 }}
+                            />
+                          ) : (
+                            item.making || '-'
+                          )}
+                        </TableCell>
+
                         <TableCell align="right">
                           {creationMode === "manual" ? (
                             <TextField
@@ -493,49 +563,20 @@ val && setCreationMode(val);
                             item.quantity
                           )}
                         </TableCell>
+
+                        <TableCell align="right">{item.slitting || '-'}</TableCell>
+                        <TableCell align="right">{item.thickness || '-'}</TableCell>
+
                         <TableCell align="right">
-                          {creationMode === "manual" ? (
-                            <TextField
-                              type="number"
-                              value={item.unit_price}
-                              onChange={(e) => updateItem(index, 'unit_price', e.target.value)}
-                              size="small"
-                              sx={{ width: 120 }}
-                            />
-                          ) : (
-                            `${settings?.currency_symbol || '₹'}${item.unit_price}`
-                          )}
+                          <Typography fontWeight={600}>{totals.totalRft}</Typography>
                         </TableCell>
+
                         <TableCell align="right">
-                          {creationMode === "manual" ? (
-                            <TextField
-                              type="number"
-                              value={item.discount}
-                              onChange={(e) => updateItem(index, 'discount', e.target.value)}
-                              size="small"
-                              sx={{ width: 100 }}
-                            />
-                          ) : (
-                            `${settings?.currency_symbol || '₹'}${item.discount}`
-                          )}
+                          <Typography fontWeight={600}>{totals.totalSqft}</Typography>
                         </TableCell>
+
                         <TableCell align="right">
-                          {creationMode === "manual" ? (
-                            <TextField
-                              type="number"
-                              value={item.tax}
-                              onChange={(e) => updateItem(index, 'tax', e.target.value)}
-                              size="small"
-                              sx={{ width: 100 }}
-                            />
-                          ) : (
-                            `${settings?.currency_symbol || '₹'}${item.tax}`
-                          )}
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography fontWeight={600}>
-                            {settings?.currency_symbol || '₹'}{lineTotal.toFixed(2)}
-                          </Typography>
+                          <Typography fontWeight={600}>{totals.weight}</Typography>
                         </TableCell>
                         {creationMode === "manual" && (
                           <TableCell>

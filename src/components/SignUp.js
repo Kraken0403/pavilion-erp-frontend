@@ -151,6 +151,14 @@ function SignUp() {
         if (prev && userList?.some((user) => String(user.id) === String(prev))) {
           return prev;
         }
+
+        // Prefer selecting a non-customer user for permission editing by default
+        const nonCustomer = (userList || []).find((u) => {
+          const roleName = String(u.role_name || u.role || '').toLowerCase();
+          return roleName !== 'customer';
+        });
+
+        if (nonCustomer) return String(nonCustomer.id);
         return userList?.length ? String(userList[0].id) : '';
       });
     } catch (error) {
@@ -681,11 +689,13 @@ function SignUp() {
                 value={selectedPermissionUserId}
                 onChange={(e) => setSelectedPermissionUserId(e.target.value)}
               >
-                {users.map((user) => (
-                  <MenuItem key={user.id} value={String(user.id)}>
-                    {user.name} ({user.email})
-                  </MenuItem>
-                ))}
+                {users
+                  .filter((user) => String(user.role_name || user.role || '').toLowerCase() !== 'customer')
+                  .map((user) => (
+                    <MenuItem key={user.id} value={String(user.id)}>
+                      {user.name} ({user.email})
+                    </MenuItem>
+                  ))}
               </Select>
             </FormControl>
 

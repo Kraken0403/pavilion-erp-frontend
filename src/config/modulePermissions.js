@@ -1,6 +1,7 @@
 export const MODULE_PERMISSION_KEYS = [
   'dashboard',
   'leads',
+  'customers',
   'quotations',
   'work_orders',
   'kots',
@@ -17,6 +18,7 @@ export const MODULE_PERMISSION_KEYS = [
 export const MODULE_PERMISSION_LABELS = {
   dashboard: 'Dashboard',
   leads: 'Leads',
+  customers: 'Customers',
   quotations: 'Quotations',
   work_orders: 'Work Orders',
   kots: 'KOT',
@@ -44,6 +46,7 @@ export const MODULE_DEFAULT_ROUTES = {
   reports: '/reports',
   users: '/users',
   settings: '/settings',
+  customers: '/customers',
 };
 
 export const getDefaultModulePermissions = () => {
