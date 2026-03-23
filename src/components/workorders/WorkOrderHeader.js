@@ -26,11 +26,10 @@ function WorkOrderHeader({
   const [anchorEl, setAnchorEl] = useState(null)
   const navigate = useNavigate()
 
-
   const handleCreateProforma = () => {
-    if (!id) return
+    if (!workOrder?.id) return
     setAnchorEl(null)
-    navigate('/proforma-invoices/create', { state: { workOrderId: id } })
+    navigate('/proforma-invoices/create', { state: { workOrderId: workOrder.id } })
   }
 
   const [hasLinkedInvoice, setHasLinkedInvoice] = useState(false)
@@ -39,13 +38,14 @@ function WorkOrderHeader({
     let mounted = true
     ;(async () => {
       try {
-        if (!id) return
+        const workOrderId = workOrder?.id
+        if (!workOrderId) return
         const [invoicesRes, proformasRes] = await Promise.all([getInvoices(), getProformaInvoices()])
         const invoices = Array.isArray(invoicesRes) ? invoicesRes : invoicesRes?.data || []
         const proformas = Array.isArray(proformasRes) ? proformasRes : proformasRes?.data || []
 
-        const hasInv = invoices.some(i => String(i.source_type || '').toUpperCase() === 'WORK_ORDER' && Number(i.source_id) === Number(id))
-        const hasPro = proformas.some(p => String(p.source_type || '').toUpperCase().includes('WORK') && Number(p.source_id) === Number(id)) || proformas.some(p => Number(p.source_id) === Number(id))
+        const hasInv = invoices.some(i => String(i.source_type || '').toUpperCase() === 'WORK_ORDER' && Number(i.source_id) === Number(workOrderId))
+        const hasPro = proformas.some(p => String(p.source_type || '').toUpperCase().includes('WORK') && Number(p.source_id) === Number(workOrderId)) || proformas.some(p => Number(p.source_id) === Number(workOrderId))
 
         if (mounted) setHasLinkedInvoice(Boolean(hasInv || hasPro))
       } catch (err) {
@@ -53,7 +53,7 @@ function WorkOrderHeader({
       }
     })()
     return () => { mounted = false }
-  }, [id])
+  }, [workOrder])
   
 
   if (!workOrder) return null

@@ -173,6 +173,10 @@ const Sidebar = () => {
                     <ListItemIcon><PeopleIcon /></ListItemIcon>
                     <ListItemText primary={withSubmenuBadge('View Leads', 'leads')} />
                   </ListItemButton>
+                  <ListItemButton sx={{ pl: 4 }} onClick={() => go('/customers')}>
+                    <ListItemIcon><PeopleIcon /></ListItemIcon>
+                    <ListItemText primary="Customers (Website)" />
+                  </ListItemButton>
                   <ListItemButton sx={{ pl: 4 }} onClick={() => go('/leads/settings')}>
                     <ListItemIcon><SettingsIcon /></ListItemIcon>
                     <ListItemText primary="Lead Settings" />
