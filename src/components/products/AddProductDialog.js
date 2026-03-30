@@ -161,7 +161,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
 
     setGstRate(productToEdit.gst_rate ?? 0);
     setHsnSac(productToEdit.hsn_sac || "");
-    setIsActive(Number(productToEdit.is_active ?? 1) === 0 ? 0 : 1);
+    setIsActive(Number(productToEdit.is_active ?? 1));
     setSelectedAddOnProducts(productToEdit.add_on_products || []);
 
     // If backend returns variants inside productToEdit (it should from getProductById)
@@ -719,7 +719,10 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
           fullWidth
           select
           value={isActive}
-          onChange={e => setIsActive(Number(e.target.value || 1))}
+          onChange={e => {
+            const v = Number(e.target.value);
+            setIsActive(Number.isNaN(v) ? 1 : v);
+          }}
         >
           <MenuItem value={1}>Active</MenuItem>
           <MenuItem value={0}>Inactive</MenuItem>
