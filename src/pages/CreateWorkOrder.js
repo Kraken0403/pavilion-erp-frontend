@@ -25,6 +25,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 
 import Topbar from "../components/Topbar";
 import NotificationSnackbar from "../components/ui/NotificationSnackbar";
+import TimePicker12 from '../components/TimePicker12'
 
 import {
   fetchApprovedQuotations,
@@ -439,15 +440,13 @@ val && setCreationMode(val);
                       />
                     </Grid>
                     <Grid item xs={12} md={3}>
-                      <TextField
-                        label="Event Time"
-                        type="time"
-                        value={eventTime}
-                        onChange={(e) => setEventTime(e.target.value)}
-                        InputLabelProps={{ shrink: true }}
-                        fullWidth
-                        disabled={creationMode === "quotation"}
-                      />
+                        <TimePicker12
+                          label="Event Time"
+                          value={eventTime}
+                          onChange={(val) => setEventTime(val)}
+                          className="form-input"
+                          disabled={creationMode === "quotation"}
+                        />
                     </Grid>
                     <Grid item xs={12} md={6}>
                       <TextField
@@ -509,12 +508,7 @@ val && setCreationMode(val);
                     </TableRow>
                 </TableHead>
                 <TableBody>
-                  {items.map((item, index) => {
-                    const lineTotal =
-                      (Number(item.quantity) || 0) * (Number(item.unit_price) || 0) -
-                      (Number(item.discount) || 0) +
-                      (Number(item.tax) || 0);
-
+                    {items.map((item, index) => {
                     const totals = computeTotals(item);
 
                     return (

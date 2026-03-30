@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Topbar from '../components/Topbar';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import PageLoader from '../components/ui/PageLoader';
+import TimePicker12 from '../components/TimePicker12'
 import {
   getPaymentReminderSettings,
   savePaymentReminderSettings,
@@ -63,14 +64,6 @@ const PaymentReminderSettings = () => {
   useEffect(() => {
     loadSettings();
   }, []);
-
-  const handleChange = (event) => {
-    const { name, value, checked, type } = event.target;
-    setSettings((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -183,23 +176,17 @@ const PaymentReminderSettings = () => {
 
                 <div className="time-field">
                   <label>Email Send Time</label>
-                  <input
-                    className="input"
-                    type="time"
-                    name="email_send_time"
+                  <TimePicker12
                     value={settings.email_send_time}
-                    onChange={handleChange}
+                    onChange={(val) => setSettings((prev) => ({ ...prev, email_send_time: val }))}
                   />
                 </div>
 
                 <div className="time-field">
                   <label>WhatsApp Send Time</label>
-                  <input
-                    className="input"
-                    type="time"
-                    name="whatsapp_send_time"
+                  <TimePicker12
                     value={settings.whatsapp_send_time}
-                    onChange={handleChange}
+                    onChange={(val) => setSettings((prev) => ({ ...prev, whatsapp_send_time: val }))}
                   />
                 </div>
               </div>

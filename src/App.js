@@ -7,6 +7,7 @@ import Dashboard from './pages/Dashboard';
 import Leads from './pages/Leads';
 import EditLead from './pages/EditLead';
 import NewLead from './pages/NewLead'; // Import NewLead page
+import Customers from './pages/Customers';
 import CreateQuotation from './components/CreateQuotation'; // Import CreateQuotation page
 import Layout from './components/Layout';
 import './assets/styles/global.scss';
@@ -210,6 +211,15 @@ const App = () => {
                                         </PrivateRoute>
                                     }
                                 />
+                                <Route
+                                    path="/customers"
+                                    element={
+                                        <PrivateRoute requiredModule="customers">
+                                            <Customers />
+                                        </PrivateRoute>
+                                    }
+                                />
+                                
                                 <Route
                                     path="/leads/new"  // New route for creating a lead
                                     element={

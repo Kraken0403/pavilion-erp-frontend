@@ -28,6 +28,7 @@ import { displayCurrency } from '../../utils/currencyUtils'
 import useAutoRefresh from "../../hooks/useAutoRefresh";
 
 import "../../assets/styles/LeadsTable.scss"; // reuse Leads table styles
+import * as XLSX from 'xlsx';
 
 const PRODUCTS_PER_PAGE = 20;
 
@@ -104,6 +105,39 @@ function ProductList() {
 
   const triggerBulkImport = () => {
     fileInputRef.current?.click();
+  };
+
+  /* ================= EXPORT ================= */
+  const exportToExcel = () => {
+    try {
+      if (!selectedProducts.length) {
+        setNotification({ open: true, message: 'Select products to export', severity: 'warning' });
+        return;
+      }
+
+      const selectedData = products
+        .filter((p) => selectedProducts.includes(p.id))
+        .map((p) => ({
+          id: p.id,
+          name: p.name || '',
+          brand: p.brand || '',
+          category: p.category_name || '',
+          type: p.type || '',
+          sku: p.sku || '',
+          cost: p.cost || 0,
+          selling_price: p.selling_price || 0,
+          selling_price_unit: p.selling_price_unit || '',
+          status: Number(p.is_active || 0) === 1 ? 'Active' : 'Inactive',
+        }));
+
+      const ws = XLSX.utils.json_to_sheet(selectedData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Products');
+      XLSX.writeFile(wb, `products-selected-${new Date().toISOString().substring(0,10)}.xlsx`);
+    } catch (err) {
+      console.error('Export failed', err);
+      setNotification({ open: true, message: 'Failed to export products', severity: 'error' });
+    }
   };
 
 
@@ -387,6 +421,7 @@ function ProductList() {
         }}
         selectedCount={selectedProducts.length}
         onDeleteSelected={askBulkDelete}
+        onExportSelected={exportToExcel}
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
         sortValue={sortValue}

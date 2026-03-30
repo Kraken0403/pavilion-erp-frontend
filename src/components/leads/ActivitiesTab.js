@@ -5,7 +5,7 @@ import {
   deleteActivity
 } from "../../services/activityService";
 
-import { formatDateTime, formatDate } from "../../utils/dateFormatter";
+import { formatDateTime, formatDate, formatTime12Hour } from "../../utils/dateFormatter";
 
 import CallIcon from "@mui/icons-material/Call";
 import EventIcon from "@mui/icons-material/Event";
@@ -18,6 +18,7 @@ import ConfirmDialog from "../ui/ConfirmDialog";
 import NotificationSnackbar from "../ui/NotificationSnackbar";
 
 import "../../assets/styles/ActivitiesTab.scss";
+import TimePicker12 from '../TimePicker12'
 
 const DESCRIPTION_CHAR_LIMIT = 200;
 
@@ -272,15 +273,13 @@ const ActivitiesTab = ({ leadId }) => {
 
             <div className="act-input">
               <label>Time</label>
-              <input
-                type="time"
-                name="due_time"
+              <TimePicker12
                 value={activity.due_time}
-                onChange={handleChange}
+                onChange={(val) => setActivity((prev) => ({ ...prev, due_time: val }))}
               />
               {activity.due_time && (
                 <div className="date-preview">
-                  {activity.due_time.slice(0, 5)}
+                  {formatTime12Hour(`1970-01-01T${activity.due_time}`) || activity.due_time}
                 </div>
               )}
             </div>

@@ -1,15 +1,14 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { fetchLeads } from '../services/leadService';
-import LeadsTable from '../components/LeadsTable';
+import { generateCustomerReport } from '../services/reportService';
 import Topbar from '../components/Topbar';
+import '../assets/styles/LeadsTable.scss';
 import PageLoader from '../components/ui/PageLoader';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
-import { getFieldOrder } from '../services/leadFieldService';
-import { useSettings } from '../context/SettingsContext';
+import CustomersTable from '../components/CustomersTable';
+// no field order/settings needed for report-driven customers list
 import useAutoRefresh from '../hooks/useAutoRefresh';
 
 const Customers = () => {
-    const { settings } = useSettings();
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
@@ -23,30 +22,17 @@ const Customers = () => {
         if (!Array.isArray(items)) return '[]';
 
         return JSON.stringify(
-            items.map((item) => ({
-                id: Number(item?.id || 0),
-                updated_at: String(item?.updated_at || ''),
-                email: String(item?.email || ''),
-                first_name: String(item?.first_name || ''),
-                last_name: String(item?.last_name || ''),
+            items.map((c) => ({
+                name: String(c?.customer_name || ''),
+                email: String(c?.customer_email || ''),
+                phone: String(c?.customer_phone || ''),
+                total_invoices: Number(c?.total_invoices || 0),
+                total_spent: Number(c?.total_spent || 0),
             }))
         );
     }, []);
 
-    const [visibleFields, setVisibleFields] = useState([]);
-
-    const fetchFieldOrder = useCallback(async () => {
-        try {
-            const response = await getFieldOrder();
-            setVisibleFields(response.fieldOrder || []);
-        } catch (error) {
-            console.error(error);
-        }
-    }, []);
-
-    useEffect(() => {
-        fetchFieldOrder();
-    }, [fetchFieldOrder]);
+    // visibleFields not required for report-driven customers list
 
     const getCustomers = useCallback(async ({ silent = false } = {}) => {
         if (!silent && !hasLoadedOnceRef.current) {
@@ -54,19 +40,17 @@ const Customers = () => {
         }
 
         try {
-            const response = await fetchLeads();
-            const nextLeads = Array.isArray(response?.leads) ? response.leads : [];
-
-            // Only website customers
-            const websiteLeads = nextLeads.filter(l => {
-                const src = String(l?.source || '').toLowerCase();
-                return src.includes('website') || src.includes('web');
-            });
+            // Request customers derived from invoices (report) for a wide date range
+            const endDate = new Date().toISOString().slice(0, 10);
+            const startDate = '2000-01-01';
+            // Request only frontend orders (website) customers
+            const resp = await generateCustomerReport(startDate, endDate, 'FRONTEND_ORDER');
+            const rows = Array.isArray(resp?.data) ? resp.data : [];
 
             setCustomers((prev) => {
                 const prevSignature = getCustomersSignature(prev);
-                const nextSignature = getCustomersSignature(websiteLeads);
-                return prevSignature === nextSignature ? prev : websiteLeads;
+                const nextSignature = getCustomersSignature(rows);
+                return prevSignature === nextSignature ? prev : rows;
             });
         } catch (error) {
             console.error(error);
@@ -101,11 +85,7 @@ const Customers = () => {
                 {loading ? (
                     <PageLoader message="Loading customers..." minHeight={260} />
                 ) : (
-                    <LeadsTable
-                        leads={customers}
-                        visibleFields={visibleFields}
-                        // reuse existing table actions where applicable
-                    />
+                    <CustomersTable customers={customers} />
                 )}
 
                 <NotificationSnackbar

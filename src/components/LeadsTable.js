@@ -25,12 +25,12 @@ const LeadsTable = ({
   onUpdateLead,
 
   // FILTER STATE FROM PARENT
-  searchQuery,
-  setSearchQuery,
-  sortValue,
-  setSortValue,
-  dateFilter,
-  setDateFilter,
+  searchQuery = '',
+  setSearchQuery = () => {},
+  sortValue = '',
+  setSortValue = () => {},
+  dateFilter = {},
+  setDateFilter = () => {},
 }) => {
   const { getUnreadNotificationFor, markRecordNotificationsSeen } = useNotification();
 

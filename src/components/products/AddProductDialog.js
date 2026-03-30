@@ -28,7 +28,24 @@ import "../../assets/styles/AddProductDialog.scss";
 import { BACKEND_URL } from '../../config/env'
 
 
-const UNITS = ["kg", "g", "piece", "box"];
+const UNITS = [
+  'ml',
+  'ltr',
+  'l',
+  'kg',
+  'g',
+  'pcs',
+  'piece',
+  'bottle',
+  'can',
+  'cup',
+  'tsp',
+  'tbsp',
+  'box',
+  'pack',
+  'pouch',
+  'dozen'
+];
 
 function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "create" }) {
   /* ---------------- CORE PRODUCT ---------------- */

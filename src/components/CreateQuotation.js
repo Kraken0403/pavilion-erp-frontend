@@ -17,6 +17,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
+import TimePicker12 from './TimePicker12'
 import {
   fetchAllProducts,
   createProduct,
@@ -587,18 +588,11 @@ function CreateQuotation() {
                 {/* EVENT TIME */}
                 <Grid item xs={12} md={4}>
                   <Typography className="field-label">Event Time</Typography>
-                  <TextField
+                  <TimePicker12
+                    label="Event Time"
                     className="form-input"
-                    type="time"
-                    fullWidth
                     value={cateringMeta.event_time || ''}
-                    onChange={(e) =>
-                      setCateringMeta((p) => ({
-                        ...p,
-                        event_time: e.target.value,
-                      }))
-                    }
-                    InputLabelProps={{ shrink: true }}
+                    onChange={(val) => setCateringMeta((p) => ({ ...p, event_time: val }))}
                   />
                 </Grid>
 

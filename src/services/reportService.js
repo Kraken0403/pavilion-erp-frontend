@@ -20,10 +20,13 @@ export const generateSalesReport = async (startDate, endDate, reportType = 'comb
 /**
  * Generate Customer Report
  */
-export const generateCustomerReport = async (startDate, endDate) => {
+export const generateCustomerReport = async (startDate, endDate, sourceType = null) => {
   try {
+    const params = { startDate, endDate };
+    if (sourceType) params.sourceType = sourceType;
+
     const response = await api.get('/reports/customers', {
-      params: { startDate, endDate }
+      params
     });
     return response.data;
   } catch (error) {
@@ -31,6 +34,7 @@ export const generateCustomerReport = async (startDate, endDate) => {
     throw error;
   }
 };
+
 
 /**
  * Generate Product Report

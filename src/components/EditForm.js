@@ -19,6 +19,7 @@ import {
   Menu,
   MenuItem
 } from '@mui/material'
+import TimePicker12 from './TimePicker12'
 import ChannelSelectModal from './ui/ChannelSelectModal';
 
 const indianStates = [
@@ -90,14 +91,21 @@ const InputField = ({ label, type, id, name, value, onChange, options = [], disa
   return (
     <div className="input-field">
       <label htmlFor={id}>{label}:</label>
-      <input
-        type={type}
-        id={id}
-        name={name}
-        value={value ?? ""}
-        onChange={onChange}
-        disabled={disabled}
-      />
+      {type === 'time' ? (
+        <TimePicker12
+          value={value ?? ''}
+          onChange={(val) => onChange({ target: { name, value: val } })}
+        />
+      ) : (
+        <input
+          type={type}
+          id={id}
+          name={name}
+          value={value ?? ""}
+          onChange={onChange}
+          disabled={disabled}
+        />
+      )}
     </div>
   );
 };

@@ -24,6 +24,7 @@ import {
   Assessment,
   PictureAsPdf
 } from '@mui/icons-material';
+import * as XLSX from 'xlsx';
 import Topbar from '../components/Topbar';
 import {
   generateSalesReport,
@@ -153,6 +154,37 @@ const Reports = () => {
     } catch (err) {
       console.error('Error downloading PDF:', err);
       setError('Failed to download PDF. Please try again.');
+    }
+  };
+
+  const handleExportExcel = () => {
+    try {
+      if (!Array.isArray(reportData) || reportData.length === 0) {
+        setError('No data to export');
+        return;
+      }
+
+      // Only product export is supported for Excel right now
+      if (reportType !== 'products') {
+        setError('Excel export currently supports Product Report only');
+        return;
+      }
+
+      const sheetData = reportData.map((row) => ({
+        'Product Name': row.product_name || '',
+        'Quantity Sold': row.total_quantity_sold || 0,
+        'Times Ordered': row.times_ordered || 0,
+        'Avg Price': row.avg_price || 0,
+        'Total Revenue': row.total_revenue || 0,
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(sheetData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Products');
+      XLSX.writeFile(wb, `products-report-${toInputDateValue(new Date())}.xlsx`);
+    } catch (err) {
+      console.error('Error exporting Excel:', err);
+      setError('Failed to export Excel. Check console for details.');
     }
   };
 
@@ -622,6 +654,9 @@ const Reports = () => {
                   <Button variant="contained" color="primary" startIcon={<PictureAsPdf />} onClick={handleDownloadPdf} sx={{ fontWeight: 700 }}>
                     Export PDF
                   </Button>
+                  <Button variant="contained" color="success" onClick={handleExportExcel} sx={{ fontWeight: 700 }}>
+                    Export Excel
+                  </Button>
                 </Box>
               </Box>
 
@@ -745,6 +780,19 @@ const Reports = () => {
                       color="error"
                     >
                       PDF
+                    </Button>
+                  </Grid>
+                )}
+
+                {reportData && reportType === 'products' && (
+                  <Grid item xs={12} sm={6} md={2}>
+                    <Button
+                      variant="outlined"
+                      fullWidth
+                      onClick={handleExportExcel}
+                      color="success"
+                    >
+                      Excel
                     </Button>
                   </Grid>
                 )}
