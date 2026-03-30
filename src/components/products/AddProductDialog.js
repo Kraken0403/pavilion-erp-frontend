@@ -720,8 +720,8 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
           select
           value={isActive}
           onChange={e => {
-            const v = Number(e.target.value);
-            setIsActive(Number.isNaN(v) ? 1 : v);
+            const v = parseInt(e.target.value, 10);
+            setIsActive(Number.isFinite(v) ? v : 1);
           }}
         >
           <MenuItem value={1}>Active</MenuItem>
