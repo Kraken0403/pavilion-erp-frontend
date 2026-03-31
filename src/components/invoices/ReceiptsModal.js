@@ -24,6 +24,7 @@ import ShareIcon from '@mui/icons-material/Share';
 import ChannelSelectModal from '../ui/ChannelSelectModal';
 import { sendReceiptEmail, sendReceiptWhatsApp } from '../../services/invoiceService';
 import { downloadReceiptPdf } from "../../services/invoiceService";
+import { formatDate } from '../../utils/dateFormatter';
 
 function ReceiptsModal({ open, onClose, invoice, onError }) {
     const [downloading, setDownloading] = useState(null);
@@ -45,14 +46,7 @@ function ReceiptsModal({ open, onClose, invoice, onError }) {
         }
     };
 
-    const formatDate = (dateStr) => {
-        if (!dateStr) return "—";
-        return new Date(dateStr).toLocaleDateString("en-IN", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        });
-    };
+    // use shared date formatter (dd/mm/yyyy)
 
     const methodColors = {
         "Bank Transfer": "primary",

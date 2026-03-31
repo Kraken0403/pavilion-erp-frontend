@@ -421,34 +421,26 @@ const EditForm = ({
                   <>
                     <div className="detail-input-row">
                       <InputField
-                        label="Event Type"
+                        label="Event Name"
                         type="text"
-                        id="event_type"
-                        name="event_type"
-                        value={leadData.event_type}
+                        id="event_name"
+                        name="event_name"
+                        value={leadData.event_name}
                         onChange={handleChange}
                       />
                       <InputField
-                        label="Event Date"
-                        type="date"
-                        id="event_date"
-                        name="event_date"
-                        value={leadData.event_date}
+                        label="PAX"
+                        type="number"
+                        id="pax"
+                        name="pax"
+                        value={leadData.pax}
                         onChange={handleChange}
                       />
                     </div>
 
                     <div className="detail-input-row">
                       <InputField
-                        label="Event Time"
-                        type="time"
-                        id="event_time"
-                        name="event_time"
-                        value={leadData.event_time}
-                        onChange={handleChange}
-                      />
-                      <InputField
-                        label="Event Location"
+                        label="Event Venue"
                         type="text"
                         id="event_location"
                         name="event_location"
@@ -459,19 +451,38 @@ const EditForm = ({
 
                     <div className="detail-input-row">
                       <InputField
-                        label="PAX"
-                        type="number"
-                        id="pax"
-                        name="pax"
-                        value={leadData.pax}
+                        label="Event Start Date"
+                        type="date"
+                        id="event_start_date"
+                        name="event_start_date"
+                        value={leadData.event_start_date}
                         onChange={handleChange}
                       />
                       <InputField
-                        label="Product Name"
-                        type="text"
-                        id="product_name"
-                        name="product_name"
-                        value={leadData.product_name}
+                        label="Event Start Time"
+                        type="time"
+                        id="event_start_time"
+                        name="event_start_time"
+                        value={leadData.event_start_time}
+                        onChange={handleChange}
+                      />
+                    </div>
+
+                    <div className="detail-input-row">
+                      <InputField
+                        label="Event End Date"
+                        type="date"
+                        id="event_end_date"
+                        name="event_end_date"
+                        value={leadData.event_end_date}
+                        onChange={handleChange}
+                      />
+                      <InputField
+                        label="Event End Time"
+                        type="time"
+                        id="event_end_time"
+                        name="event_end_time"
+                        value={leadData.event_end_time}
                         onChange={handleChange}
                       />
                     </div>

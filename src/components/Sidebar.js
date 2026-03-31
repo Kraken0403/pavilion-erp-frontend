@@ -292,8 +292,8 @@ const Sidebar = () => {
             </>
           )}
 
-          {/* DELIVERY - CATERING ONLY */}
-          {isCateringBusiness && canAccessModule('deliveries') && (
+          {/* DELIVERY */}
+          {canAccessModule('deliveries') && (
             <>
               <ListItemButton onClick={() => toggleModule('deliveries')}>
                 <ListItemIcon><LocalShippingIcon /></ListItemIcon>

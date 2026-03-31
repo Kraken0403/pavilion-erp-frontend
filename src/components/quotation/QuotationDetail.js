@@ -13,6 +13,7 @@ import {
   TextField,
   Typography,
 } from '@mui/material'
+import TimePicker12 from '../TimePicker12'
 import {
   fetchQuotationById,
   createQuotation,
@@ -82,6 +83,10 @@ function QuotationDetail() {
     event_name: '',
     event_date: '',
     event_time: '',
+    event_start_date: '',
+    event_start_time: '',
+    event_end_date: '',
+    event_end_time: '',
     event_location: ''
   })
 
@@ -261,12 +266,16 @@ function QuotationDetail() {
       setLoading(true)
       const data = await fetchQuotationById(id)
       setQuotation(data)
-      if (data.quotation_mode === 'CATERING') {
+        if (data.quotation_mode === 'CATERING') {
         setPax(Number(data.pax) || 1)
         setCateringMeta({
           event_name: data.event_name || '',
           event_date: data.event_date ? (data.event_date.match(/^\d{4}-\d{2}-\d{2}/) ? data.event_date.substring(0, 10) : data.event_date) : '',
           event_time: data.event_time || '',
+          event_start_date: data.event_start_date ? (data.event_start_date.match(/^\d{4}-\d{2}-\d{2}/) ? data.event_start_date.substring(0, 10) : data.event_start_date) : '',
+          event_start_time: data.event_start_time || '',
+          event_end_date: data.event_end_date ? (data.event_end_date.match(/^\d{4}-\d{2}-\d{2}/) ? data.event_end_date.substring(0, 10) : data.event_end_date) : '',
+          event_end_time: data.event_end_time || '',
           event_location: data.event_location || ''
         })
       }
@@ -444,7 +453,12 @@ function QuotationDetail() {
 
         ...(quotation?.quotation_mode === 'CATERING' && {
           pax,
-          ...cateringMeta
+          event_name: cateringMeta.event_name || null,
+          event_location: cateringMeta.event_location || null,
+          event_start_date: cateringMeta.event_start_date || null,
+          event_start_time: cateringMeta.event_start_time || null,
+          event_end_date: cateringMeta.event_end_date || null,
+          event_end_time: cateringMeta.event_end_time || null
         })
       })
 
@@ -484,10 +498,12 @@ function QuotationDetail() {
         items: payloadItems,
         ...(quotation.quotation_mode === 'CATERING' && {
           pax,
-          event_name: cateringMeta.event_name,
-          event_date: cateringMeta.event_date || null,
-          event_time: cateringMeta.event_time || null,
-          event_location: cateringMeta.event_location || null
+          event_name: cateringMeta.event_name || null,
+          event_location: cateringMeta.event_location || null,
+          event_start_date: cateringMeta.event_start_date || null,
+          event_start_time: cateringMeta.event_start_time || null,
+          event_end_date: cateringMeta.event_end_date || null,
+          event_end_time: cateringMeta.event_end_time || null
         })
       }
 
@@ -686,7 +702,6 @@ function QuotationDetail() {
               </Typography>
 
               <Grid container spacing={2}>
-                {/* EVENT NAME */}
                 <Grid item xs={12} md={4}>
                   <Typography className="field-label">Event Name</Typography>
                   <TextField
@@ -694,89 +709,88 @@ function QuotationDetail() {
                     fullWidth
                     disabled={isLocked}
                     value={cateringMeta.event_name || ''}
-                    onChange={(e) =>
-                      setCateringMeta((p) => ({
-                        ...p,
-                        event_name: e.target.value,
-                      }))
-                    }
+                    onChange={(e) => setCateringMeta(p => ({ ...p, event_name: e.target.value }))}
                   />
                 </Grid>
 
-                {/* EVENT DATE */}
                 <Grid item xs={12} md={4}>
-                  <Typography className="field-label">Event Date</Typography>
-                  <TextField
-                    className="form-input"
-                    type="date"
-                    fullWidth
-                    disabled={isLocked}
-                    value={cateringMeta.event_date || ''}
-                    onChange={(e) =>
-                      setCateringMeta((p) => ({
-                        ...p,
-                        event_date: e.target.value,
-                      }))
-                    }
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-
-                {/* EVENT TIME */}
-                <Grid item xs={12} md={4}>
-                  <Typography className="field-label">Event Time</Typography>
-                  <TextField
-                    className="form-input"
-                    placeholder="7 PM – 11 PM"
-                    fullWidth
-                    disabled={isLocked}
-                    value={cateringMeta.event_time || ''}
-                    onChange={(e) =>
-                      setCateringMeta((p) => ({
-                        ...p,
-                        event_time: e.target.value,
-                      }))
-                    }
-                  />
-                </Grid>
-
-                {/* EVENT LOCATION */}
-                <Grid item xs={12} md={6}>
-                  <Typography className="field-label">Event Location / Venue</Typography>
-                  <TextField
-                    className="form-input"
-                    fullWidth
-                    disabled={isLocked}
-                    value={cateringMeta.event_location || ''}
-                    onChange={(e) =>
-                      setCateringMeta((p) => ({
-                        ...p,
-                        event_location: e.target.value,
-                      }))
-                    }
-                  />
-                </Grid>
-
-                {/* PAX */}
-                <Grid item xs={12} md={6}>
                   <Typography className="field-label">PAX</Typography>
                   <TextField
                     className="form-input"
                     type="number"
                     fullWidth
                     disabled={isLocked}
-                    inputProps={{ min: 1 }}
-                    value={pax ?? ''}
-                    onChange={(e) => {
-                      const raw = e.target.value
+                    value={pax || ''}
+                    onChange={(e) => setPax(e.target.value === '' ? null : Number(e.target.value))}
+                  />
+                </Grid>
 
-                      if (raw === '') {
-                        setPax(null)
-                        return
-                      }
+                <Grid item xs={12} md={4}>
+                  <Typography className="field-label">Event Venue</Typography>
+                  <TextField
+                    className="form-input"
+                    fullWidth
+                    disabled={isLocked}
+                    value={cateringMeta.event_location || ''}
+                    onChange={(e) => setCateringMeta(p => ({ ...p, event_location: e.target.value }))}
+                  />
+                </Grid>
 
-                      setPax(Math.max(1, Number(raw)))
-                    }}
+                <Grid item xs={12} md={3}>
+                  <Typography className="field-label">Event Start Date</Typography>
+                  <TextField
+                    className="form-input"
+                    type="date"
+                    fullWidth
+                    disabled={isLocked}
+                    value={cateringMeta.event_start_date || ''}
+                    onChange={(e) =>
+                      setCateringMeta((p) => ({
+                        ...p,
+                        event_start_date: e.target.value,
+                      }))
+                    }
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={3}>
+                  <Typography className="field-label">Event Start Time</Typography>
+                  <TimePicker12
+                    value={cateringMeta.event_start_time || ''}
+                    onChange={(v) => setCateringMeta((p) => ({ ...p, event_start_time: v }))}
+                    minuteStep={1}
+                    disabled={isLocked}
+                    className="form-input"
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={3}>
+                  <Typography className="field-label">Event End Date</Typography>
+                  <TextField
+                    className="form-input"
+                    type="date"
+                    fullWidth
+                    disabled={isLocked}
+                    value={cateringMeta.event_end_date || ''}
+                    onChange={(e) =>
+                      setCateringMeta((p) => ({
+                        ...p,
+                        event_end_date: e.target.value,
+                      }))
+                    }
+                    InputLabelProps={{ shrink: true }}
+                  />
+                </Grid>
+
+                <Grid item xs={12} md={3}>
+                  <Typography className="field-label">Event End Time</Typography>
+                  <TimePicker12
+                    value={cateringMeta.event_end_time || ''}
+                    onChange={(v) => setCateringMeta((p) => ({ ...p, event_end_time: v }))}
+                    minuteStep={1}
+                    disabled={isLocked}
+                    className="form-input"
                   />
                 </Grid>
               </Grid>

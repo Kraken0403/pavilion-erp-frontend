@@ -710,7 +710,7 @@ function SignUp() {
                 <Stack spacing={1.25} sx={{ marginBottom: '16px' }}>
                   {MODULE_PERMISSION_KEYS.map((key) => {
                     // Hide catering-specific modules if business type is not CATERING
-                    const isCateringModule = ['kots', 'deliveries'].includes(key);
+                    const isCateringModule = ['kots'].includes(key);
                     const isCateringBusiness = settings?.business_type === 'CATERING';
                     if (isCateringModule && !isCateringBusiness) {
                       return null;

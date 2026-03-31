@@ -30,7 +30,7 @@ import {
     downloadReceiptPdf,
 } from "../../services/invoiceService";
 import { formatStatusLabel } from "../../utils/statusFormatter";
-import { toInputDateValue } from "../../utils/dateFormatter";
+import { toInputDateValue, formatDate } from "../../utils/dateFormatter";
 
 const statusColors = {
     draft: "default",
@@ -538,9 +538,7 @@ function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
                                                 <TableCell>{p.paymentType}</TableCell>
                                                 <TableCell>₹{Number(p.amount).toFixed(2)}</TableCell>
                                                 <TableCell>
-                                                    {p.paymentDate
-                                                        ? new Date(p.paymentDate).toLocaleDateString()
-                                                        : "-"}
+                                                    {p.paymentDate ? formatDate(p.paymentDate) : "-"}
                                                 </TableCell>
                                                 <TableCell align="center">
                                                     <IconButton

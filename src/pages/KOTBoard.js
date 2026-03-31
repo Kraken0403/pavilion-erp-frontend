@@ -359,6 +359,8 @@ function KOTBoard() {
                 const action = String(notification?.action || '').toLowerCase();
                 const badgeLabel = notification ? (/(create|new|added)/.test(action) ? 'NEW' : 'UPDATED') : '';
 
+                const notes = String(kot.work_order_notes || event.notes || '').trim();
+
                 return (
                   <Card
                     key={kot.id}
@@ -429,10 +431,11 @@ function KOTBoard() {
                         <strong>Customer:</strong> {kot.customer_name || '—'}
                       </Typography> */}
 
-                      {!!String(event.notes || '').trim() && (
-                        <Typography variant="body2" sx={{ mb: 1.5, whiteSpace: 'pre-wrap' }}>
-                          <strong>Notes:</strong> {event.notes}
-                        </Typography>
+                      {!!notes && (
+                        <Box sx={{ mb: 1.5, bgcolor: 'rgba(255,243,205,0.95)', p: 1, borderRadius: 1 }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontWeight: 700, mb: 0.5 }}>Notes</Typography>
+                          <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap' }}>{notes}</Typography>
+                        </Box>
                       )}
 
                       <Typography variant="subtitle2" sx={{ mb: 1 }}>

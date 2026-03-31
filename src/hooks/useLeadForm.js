@@ -91,6 +91,10 @@ const useLeadForm = (initialLeadData, isEdit = false, leadId = null) => {
                     ...lead,
                     event_date: toDateOnly(lead.event_date),
                     event_time: toTimeOnly(lead.event_time),
+                    event_start_date: toDateOnly(lead.event_start_date),
+                    event_start_time: toTimeOnly(lead.event_start_time),
+                    event_end_date: toDateOnly(lead.event_end_date),
+                    event_end_time: toTimeOnly(lead.event_end_time),
                     custom_fields: lead.custom_fields || []
                 }));
 

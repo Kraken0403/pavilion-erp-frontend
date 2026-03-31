@@ -15,7 +15,7 @@ import {
 } from '../services/workOrderServices'
 import { formatStatusLabel, normalizeStatusValue } from '../utils/statusFormatter'
 import useAutoRefresh from '../hooks/useAutoRefresh'
-import { parseDateInput } from '../utils/dateFormatter'
+import { parseDateInput, formatDate as formatDateUtil } from '../utils/dateFormatter'
 
 import { useSettings } from '../context/SettingsContext'
 import { displayCurrency } from '../utils/currencyUtils'
@@ -33,7 +33,7 @@ const formatDate = (iso) => {
   if (!iso) return '—'
   const parsed = parseDateInput(iso)
   if (!parsed) return '—'
-  return parsed.toLocaleDateString('en-IN')
+  return formatDateUtil(parsed)
 }
 
 const normalizeWorkOrderStatus = (status) => {

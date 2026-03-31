@@ -6,7 +6,7 @@ const parseModel = (val) => {
   const raw = String(val || '').trim()
   // match 24h HH:MM or 12h with AM/PM
   const m = raw.match(/^(\d{1,2}):(\d{2})(?:\s*(AM|PM))?$/i)
-  if (!m) return { hour: '', minute: '00', am: 'AM' }
+  if (!m) return { hour: new Date().getHours(), minute: new Date().getMinutes(), am: 'AM' }
   const numH = Number(m[1])
   const minutes = pad(m[2])
   const ampm = (m[3] || '').toUpperCase()
@@ -52,8 +52,17 @@ export default function TimePicker12({ value = '', onChange = () => {}, hourStar
 
   useEffect(() => {
     const p = parseModel(value)
-    setSelected({ hour: p.hour, minute: p.minute })
-    setAmpm(p.am || 'AM')
+    // normalize fallback to padded 12-hour values
+    const normHour = typeof p.hour === 'number' ? pad(((p.hour % 12) === 0 ? 12 : (p.hour % 12))) : pad(p.hour)
+    const normMinute = typeof p.minute === 'number' ? pad(p.minute) : pad(p.minute)
+    const normAm = p.am || 'AM'
+    setSelected({ hour: normHour, minute: normMinute })
+    setAmpm(normAm)
+    // If no explicit value was provided, emit the current time as selected
+    if (!value) {
+      const out = to24(normHour, normMinute, normAm)
+      try { onChange(out) } catch (e) { /* ignore */ }
+    }
     // scroll after render
     setTimeout(() => scrollToSelected(), 0)
   }, [value, scrollToSelected])
@@ -108,7 +117,7 @@ export default function TimePicker12({ value = '', onChange = () => {}, hourStar
   }
 
   const displayCollapsed = () => {
-    if (!selected.hour) return `--:00 ${ampm}`
+    if (!selected.hour || !selected.minute) return `--:-- ${ampm}`
     return `${Number(selected.hour)}:${selected.minute} ${ampm}`
   }
 

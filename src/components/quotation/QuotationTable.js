@@ -9,7 +9,7 @@ import { sendQuotationEmailToCustomer, sendQuotationWhatsAppToCustomer, updateQu
 import { useSettings } from "../../context/SettingsContext";
 import { displayCurrency } from '../../utils/currencyUtils';
 import { formatStatusLabel, normalizeStatusValue } from '../../utils/statusFormatter';
-import { parseDateInput } from '../../utils/dateFormatter';
+import { parseDateInput, formatDate as formatDateUtil } from '../../utils/dateFormatter';
 
 const statusOptions = ['pending', 'approved', 'rejected', 'converted'];
 
@@ -17,7 +17,7 @@ const formatDate = (iso) => {
   if (!iso) return '—';
   const parsed = parseDateInput(iso);
   if (!parsed) return '—';
-  return parsed.toLocaleDateString('en-IN');
+  return formatDateUtil(parsed);
 };
 
 const QuotationsTable = ({

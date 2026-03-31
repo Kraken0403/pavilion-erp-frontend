@@ -59,6 +59,10 @@ export default function CreateWorkOrder() {
   const [eventDate, setEventDate] = useState("");
   const [eventTime, setEventTime] = useState("");
   const [eventLocation, setEventLocation] = useState("");
+  const [event_start_date, setEventStartDate] = useState("");
+  const [event_start_time, setEventStartTime] = useState("");
+  const [event_end_date, setEventEndDate] = useState("");
+  const [event_end_time, setEventEndTime] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState([]);
 
@@ -104,6 +108,10 @@ export default function CreateWorkOrder() {
       setEventDate(q.event_date || "");
       setEventTime(q.event_time || "");
       setEventLocation(q.event_location || "");
+      setEventStartDate(q.event_start_date || "")
+      setEventStartTime(q.event_start_time || "")
+      setEventEndDate(q.event_end_date || "")
+      setEventEndTime(q.event_end_time || "")
       setNotes(q.notes || "");
 
       const mappedItems = Array.isArray(q.items)
@@ -245,10 +253,12 @@ export default function CreateWorkOrder() {
           customer_gst: customerGst,
           mode,
           pax: pax || null,
-          event_name: eventName,
-          event_date: eventDate,
-          event_time: eventTime,
-          event_location: eventLocation,
+          event_name: eventName || null,
+          event_location: eventLocation || null,
+          event_start_date: event_start_date || null,
+          event_start_time: event_start_time || null,
+          event_end_date: event_end_date || null,
+          event_end_time: event_end_time || null,
           notes,
               items: items.map(item => {
                 const totals = computeTotals(item);
@@ -409,31 +419,12 @@ val && setCreationMode(val);
 
                 {mode === "CATERING" && (
                   <>
-                    <Grid item xs={12} md={6}>
-                      <TextField
-                        label="PAX"
-                        type="number"
-                        value={pax}
-                        onChange={(e) => setPax(e.target.value)}
-                        fullWidth
-                        disabled={creationMode === "quotation"}
-                      />
-                    </Grid>
-                    <Grid item xs={12} md={6}>
-                      <TextField
-                        label="Event Name"
-                        value={eventName}
-                        onChange={(e) => setEventName(e.target.value)}
-                        fullWidth
-                        disabled={creationMode === "quotation"}
-                      />
-                    </Grid>
                     <Grid item xs={12} md={3}>
                       <TextField
-                        label="Event Date"
+                        label="Start Date"
                         type="date"
-                        value={eventDate}
-                        onChange={(e) => setEventDate(e.target.value)}
+                        value={event_start_date}
+                        onChange={(e) => setEventStartDate(e.target.value)}
                         InputLabelProps={{ shrink: true }}
                         fullWidth
                         disabled={creationMode === "quotation"}
@@ -441,21 +432,32 @@ val && setCreationMode(val);
                     </Grid>
                     <Grid item xs={12} md={3}>
                         <TimePicker12
-                          label="Event Time"
-                          value={eventTime}
-                          onChange={(val) => setEventTime(val)}
+                          label="Start Time"
+                          value={event_start_time}
+                          onChange={(val) => setEventStartTime(val)}
                           className="form-input"
                           disabled={creationMode === "quotation"}
                         />
                     </Grid>
-                    <Grid item xs={12} md={6}>
+                    <Grid item xs={12} md={3}>
                       <TextField
-                        label="Event Location"
-                        value={eventLocation}
-                        onChange={(e) => setEventLocation(e.target.value)}
+                        label="End Date"
+                        type="date"
+                        value={event_end_date}
+                        onChange={(e) => setEventEndDate(e.target.value)}
+                        InputLabelProps={{ shrink: true }}
                         fullWidth
                         disabled={creationMode === "quotation"}
                       />
+                    </Grid>
+                    <Grid item xs={12} md={3}>
+                        <TimePicker12
+                          label="End Time"
+                          value={event_end_time}
+                          onChange={(val) => setEventEndTime(val)}
+                          className="form-input"
+                          disabled={creationMode === "quotation"}
+                        />
                     </Grid>
                   </>
                 )}
