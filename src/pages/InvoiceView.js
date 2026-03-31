@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from "react";
+import DOMPurify from 'dompurify';
 import { useParams } from "react-router-dom";
 import { Box, Chip, Divider, Grid, Typography, Menu, MenuItem, IconButton, ListItemIcon } from "@mui/material";
 import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
@@ -259,7 +260,7 @@ function InvoiceView() {
               <tbody>
                 {(invoice.items || []).length ? invoice.items.map((item) => (
                   <tr key={item.id}>
-                    <td style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{item.description}</td>
+                    <td style={{ whiteSpace: 'normal', wordBreak: 'break-word' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(String(item.description || '')) }} />
                     <td>{formatQty(item.quantity)}</td>
                     <td>
                       {formatMoney(item.unit_price)}

@@ -93,8 +93,11 @@ button {
 /* Allow invoice/quotation description column to show newlines and wrap */
 .table-container .leads-table td:first-child,
 .table-container .leads-table th:first-child {
+  /* Allow long descriptions to wrap and use reasonable column width */
   white-space: pre-wrap;
   word-break: break-word;
+  width: auto;
+  min-width: 160px;
   max-width: 520px;
 }
 

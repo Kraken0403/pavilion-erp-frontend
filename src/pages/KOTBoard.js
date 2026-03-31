@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import DOMPurify from 'dompurify';
 import {
   Box,
   Button,
@@ -457,7 +458,7 @@ function KOTBoard() {
                                 variant="caption"
                                 color="text.secondary"
                                 sx={{ display: 'block', mt: 0.25 }}
-                                dangerouslySetInnerHTML={{ __html: item.product_description }}
+                                dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(String(item.product_description || '')) }}
                               />
                             )}
                           </Box>
