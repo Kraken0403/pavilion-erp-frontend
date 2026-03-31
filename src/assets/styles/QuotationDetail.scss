@@ -90,6 +90,14 @@ button {
   text-align: center;
 }
 
+/* Allow invoice/quotation description column to show newlines and wrap */
+.table-container .leads-table td:first-child,
+.table-container .leads-table th:first-child {
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-width: 520px;
+}
+
 
 .quotation-head {
   display: flex;

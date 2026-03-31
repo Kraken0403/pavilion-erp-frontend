@@ -259,7 +259,7 @@ function InvoiceView() {
               <tbody>
                 {(invoice.items || []).length ? invoice.items.map((item) => (
                   <tr key={item.id}>
-                    <td>{item.description}</td>
+                    <td style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{item.description}</td>
                     <td>{formatQty(item.quantity)}</td>
                     <td>
                       {formatMoney(item.unit_price)}
