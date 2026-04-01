@@ -9,6 +9,8 @@ import {
     markRecordNotificationsSeenApi,
 } from '../services/notificationService';
 
+import { connectSocket, authenticateSocket, disconnectSocket } from '../services/socket';
+
 const NotificationContext = createContext(null);
 
 const getNotificationSignature = (items) => {
@@ -409,6 +411,58 @@ export const NotificationProvider = ({ children }) => {
             window.clearInterval(intervalId);
         };
     }, [isAuthenticated, fetchBubbleCounts, fetchNotifications]);
+
+    // Socket: listen for real-time notifications and update local state optimistically
+    useEffect(() => {
+        if (!isAuthenticated) return undefined;
+
+        const token = localStorage.getItem('token');
+        const socket = connectSocket();
+
+        const handleNotification = (n) => {
+            const normalized = {
+                id: Number(n?.id || 0),
+                module: String(n?.module || '').trim().toLowerCase(),
+                action: n?.action || null,
+                source_id: Number(n?.sourceId || n?.source_id || 0),
+                redirect_url: n?.redirectUrl || n?.redirect_url || null,
+                isSeen: false,
+                created_at: n?.created_at || new Date().toISOString(),
+                by_user_id: n?.byUserId || n?.by_userId || null,
+            };
+
+            setNotifications((prev) => {
+                const exists = Array.isArray(prev) && prev.some((it) => Number(it?.id || 0) === Number(normalized.id || 0));
+                if (exists) return prev;
+                return [normalized, ...prev];
+            });
+
+            setBubbleCounts((prev) => {
+                const next = { ...(prev || {}) };
+                next.count = Number(prev?.count || 0) + 1;
+                next.unSeenNotifications = Number(prev?.unSeenNotifications || 0) + 1;
+
+                const m = normalized.module;
+                if (m === 'leads') next.leadsCount = Number(prev?.leadsCount || 0) + 1;
+                else if (m === 'work_orders') next.workOrderCount = Number(prev?.workOrderCount || 0) + 1;
+                else if (m === 'kot') next.kotCount = Number(prev?.kotCount || 0) + 1;
+                else if (m === 'delivery') next.deliveryCount = Number(prev?.deliveryCount || 0) + 1;
+                else if (m === 'feedback') next.feedbackCount = Number(prev?.feedbackCount || 0) + 1;
+
+                return next;
+            });
+
+            setTotalUnseen((prev) => Number(prev || 0) + 1);
+        };
+
+        socket.on('notification', handleNotification);
+        if (token) authenticateSocket(token);
+
+        return () => {
+            try { socket.off('notification', handleNotification); } catch (e) { }
+            try { disconnectSocket(); } catch (e) { }
+        };
+    }, [isAuthenticated]);
 
     const contextValue = useMemo(
         () => ({
