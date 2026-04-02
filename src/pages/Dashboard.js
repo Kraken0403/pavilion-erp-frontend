@@ -65,8 +65,8 @@ const Dashboard = () => {
   const [workOrders, setWorkOrders] = useState([])
   const [kots, setKots] = useState([])
   const [pendingInvoicesPage, setPendingInvoicesPage] = useState(() => {
-    const savedPage = Number(sessionStorage.getItem(DASHBOARD_PENDING_INVOICES_PAGE_KEY))
-  // (Duplicate later in file removed)
+    const savedPage = Number(sessionStorage.getItem(DASHBOARD_PENDING_INVOICES_PAGE_KEY));
+    return Number.isInteger(savedPage) && savedPage >= 0 ? savedPage : 0;
   })
   const [pendingInvoicesRowsPerPage, setPendingInvoicesRowsPerPage] = useState(() => {
     const savedRows = Number(sessionStorage.getItem(DASHBOARD_PENDING_INVOICES_ROWS_KEY))

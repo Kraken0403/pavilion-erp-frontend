@@ -4,8 +4,31 @@ let socket = null;
 
 export const connectSocket = (opts = {}) => {
   if (socket) return socket;
+  // Normalize backend URL: prefer explicit opt, then WS override, then API base.
+  // Strip any API path segments so the client connects to the server origin
+  // where the Socket.IO server is mounted (invalid namespaces often come
+  // from connecting to a path like '/api').
+  let backend = opts.url || process.env.REACT_APP_WS_URL || process.env.REACT_APP_API_BASE_URL || '';
+  if (!backend && typeof window !== 'undefined') backend = window.location.origin;
+  try {
+    // If the URL includes an '/api' path (or other path), remove it and use origin
+    const tmp = new URL(backend);
+    const apiIndex = tmp.pathname.toLowerCase().indexOf('/api');
+    if (apiIndex >= 0) {
+      backend = tmp.origin;
+    } else if (tmp.pathname && tmp.pathname !== '/') {
+      // If any path exists, prefer the origin to avoid namespace mismatches
+      backend = tmp.origin;
+    } else {
+      backend = tmp.origin;
+    }
+  } catch (e) {
+    // If not a full URL, try to strip common prefixes
+    const idx = String(backend || '').indexOf('/api');
+    if (idx >= 0) backend = backend.slice(0, idx);
+  }
 
-  const backend = opts.url || process.env.REACT_APP_WS_URL || process.env.REACT_APP_API_BASE_URL || '';
+  console.debug('Socket connecting to backend origin:', backend);
   const token = opts.token || localStorage.getItem('token') || null;
 
   const options = {
@@ -53,8 +76,10 @@ export const authenticateSocket = (token) => {
   socket.emit('authenticate', token);
 };
 
-export default {
+const socketService = {
   connectSocket,
   disconnectSocket,
   authenticateSocket,
 };
+
+export default socketService;

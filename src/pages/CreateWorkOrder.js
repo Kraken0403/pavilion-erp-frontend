@@ -56,8 +56,6 @@ export default function CreateWorkOrder() {
   const [mode, setMode] = useState("GENERAL");
   const [pax, setPax] = useState("");
   const [eventName, setEventName] = useState("");
-  const [eventDate, setEventDate] = useState("");
-  const [eventTime, setEventTime] = useState("");
   const [eventLocation, setEventLocation] = useState("");
   const [event_start_date, setEventStartDate] = useState("");
   const [event_start_time, setEventStartTime] = useState("");
@@ -105,8 +103,6 @@ export default function CreateWorkOrder() {
       setMode(q.quotation_mode || "GENERAL");
       setPax(q.pax || "");
       setEventName(q.event_name || "");
-      setEventDate(q.event_date || "");
-      setEventTime(q.event_time || "");
       setEventLocation(q.event_location || "");
       setEventStartDate(q.event_start_date || "")
       setEventStartTime(q.event_start_time || "")

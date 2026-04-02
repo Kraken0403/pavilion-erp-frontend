@@ -4,6 +4,7 @@ import {
   normalizeModulePermissions,
 } from '../config/modulePermissions';
 import { getUserVisibilityPermissions } from '../services/userServices';
+import { connectSocket, authenticateSocket, disconnectSocket } from '../services/socket';
 
 const AuthContext = createContext(null);
 
@@ -69,6 +70,13 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', token);
     setCurrentUser(user);
     loadUserPermissions(user?.id);
+    try {
+      connectSocket();
+      if (token) authenticateSocket(token);
+    } catch (e) {
+      // non-fatal
+      console.warn('Socket auth during login failed', e && e.message ? e.message : e);
+    }
   };
 
   const logout = () => {
@@ -76,6 +84,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     setCurrentUser(null);
     setModulePermissions(getDefaultModulePermissions());
+    try { disconnectSocket(); } catch (e) { }
   };
 
   const canAccessModule = (moduleKey) => {

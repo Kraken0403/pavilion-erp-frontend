@@ -65,7 +65,7 @@ export default function TimePicker12({ value = '', onChange = () => {}, hourStar
     }
     // scroll after render
     setTimeout(() => scrollToSelected(), 0)
-  }, [value, scrollToSelected])
+  }, [value, scrollToSelected, onChange])
 
   useEffect(() => {
     const onDoc = (e) => {

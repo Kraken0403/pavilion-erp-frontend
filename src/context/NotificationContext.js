@@ -54,6 +54,8 @@ export const NotificationProvider = ({ children }) => {
         feedbackCount: 0,
     });
     const [totalUnseen, setTotalUnseen] = useState(0);
+    // update tab badge/title when unseen count changes
+    useTabBadge(totalUnseen);
     const isFetchingNotificationsRef = useRef(false);
     const isFetchingBubblesRef = useRef(false);
 
@@ -498,4 +500,44 @@ export const NotificationProvider = ({ children }) => {
     return <NotificationContext.Provider value={contextValue}>{children}</NotificationContext.Provider>;
 };
 
+
+
 export const useNotification = () => useContext(NotificationContext);
+
+// Tab badge: reflect unseen notifications using App Badging API when available,
+// otherwise prepend a dot/count to the document title.
+export function useTabBadge(totalUnseen) {
+    const originalTitleRef = React.useRef(typeof document !== 'undefined' ? document.title : '');
+
+    React.useEffect(() => {
+        if (typeof navigator !== 'undefined' && navigator.setAppBadge) {
+            try {
+                if (Number(totalUnseen || 0) > 0) {
+                    navigator.setAppBadge(Number(totalUnseen || 0));
+                } else {
+                    navigator.clearAppBadge && navigator.clearAppBadge();
+                }
+            } catch (e) {
+                // ignore
+            }
+            return;
+        }
+
+        // Fallback: update document.title
+        try {
+            const orig = originalTitleRef.current || '';
+            if (Number(totalUnseen || 0) > 0) {
+                document.title = `(${Number(totalUnseen || 0)}) ${orig}`;
+            } else {
+                document.title = orig;
+            }
+        } catch (e) {
+            // ignore
+        }
+
+        const savedOrig = originalTitleRef.current;
+        return () => {
+            try { document.title = savedOrig || ''; } catch (e) { }
+        };
+    }, [totalUnseen]);
+}
