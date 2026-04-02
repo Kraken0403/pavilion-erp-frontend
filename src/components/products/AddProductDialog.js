@@ -24,6 +24,8 @@ import {
   uploadProductImage
 } from "../../services/productServices";
 
+import { useConfirm } from "../../context/ConfirmContext";
+
 import "../../assets/styles/AddProductDialog.scss";
 import { BACKEND_URL } from '../../config/env'
 
@@ -101,6 +103,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
 
   /* ---------------- SUBMIT ---------------- */
   const [submitting, setSubmitting] = useState(false);
+  const showConfirm = useConfirm();
 
   /* ---------------- LOAD MASTER DATA ---------------- */
   useEffect(() => {
@@ -237,7 +240,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
       setPreviewUrl("")
     } catch (err) {
       console.error(err)
-      alert("Image upload failed")
+      await showConfirm({ message: "Image upload failed", confirmText: "OK" });
     } finally {
       setUploadingImage(false)
     }
@@ -312,25 +315,25 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
     // Basic validations (frontend)
     if (!name.trim()) {
       setSubmitting(false);
-      alert("Name is required");
+      await showConfirm({ message: "Name is required", confirmText: "OK" });
       return;
     }
 
     if (!category) {
       setSubmitting(false);
-      alert("Category is required");
+      await showConfirm({ message: "Category is required", confirmText: "OK" });
       return;
     }
 
     if (sellingPrice === "" || Number(sellingPrice) <= 0) {
       setSubmitting(false);
-      alert("Selling price is required and must be > 0");
+      await showConfirm({ message: "Selling price is required and must be > 0", confirmText: "OK" });
       return;
     }
 
     if (Number(gstRate) < 0 || Number(gstRate) > 28) {
       setSubmitting(false);
-      alert("GST rate must be between 0 and 28%");
+      await showConfirm({ message: "GST rate must be between 0 and 28%", confirmText: "OK" });
       return;
     }
 

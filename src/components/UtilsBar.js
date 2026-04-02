@@ -75,6 +75,13 @@ const UtilsBar = ({
 
         <Button
           className="secondary-btn"
+          onClick={onImportBulk}
+        >
+          Import
+        </Button>
+
+        <Button
+          className="secondary-btn"
           onClick={(e) => setActionsAnchor(e.currentTarget)}
           startIcon={<MoreVertIcon />}
         >

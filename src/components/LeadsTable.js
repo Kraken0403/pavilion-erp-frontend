@@ -31,6 +31,7 @@ const LeadsTable = ({
   setSortValue = () => {},
   dateFilter = {},
   setDateFilter = () => {},
+  onImportBulk,
 }) => {
   const { getUnreadNotificationFor, markRecordNotificationsSeen } = useNotification();
 
@@ -251,6 +252,7 @@ const LeadsTable = ({
         sortValue={sortValue}
         onSortChange={setSortValue}
         onDateFilterChange={setDateFilter}
+        onImportBulk={onImportBulk}
       />
 
       <div className="table-container">

@@ -62,6 +62,7 @@ import {
 } from '../config/modulePermissions';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { useConfirm } from '../context/ConfirmContext';
 
 function SignUp() {
   const { currentUser, loadUserPermissions } = useAuth();
@@ -129,6 +130,7 @@ function SignUp() {
   const [userPermissions, setUserPermissions] = useState(getDefaultModulePermissions());
   const [loadingPermissions, setLoadingPermissions] = useState(false);
   const [savingPermissions, setSavingPermissions] = useState(false);
+  const showConfirm = useConfirm();
 
   const loadUsersAndRoles = useCallback(async () => {
     if (!isAdmin) {
@@ -162,11 +164,11 @@ function SignUp() {
         return userList?.length ? String(userList[0].id) : '';
       });
     } catch (error) {
-      alert(error?.response?.data?.error || 'Failed to load users/roles');
+      await showConfirm({ message: error?.response?.data?.error || 'Failed to load users/roles', confirmText: 'OK' });
     } finally {
       setLoading(false);
     }
-  }, [isAdmin]);
+  }, [isAdmin, showConfirm]);
 
   useEffect(() => {
     loadUsersAndRoles();
@@ -214,11 +216,11 @@ function SignUp() {
       setUserPermissions(normalizeModulePermissions(data?.permissions));
     } catch (error) {
       setUserPermissions(getDefaultModulePermissions());
-      alert(error?.response?.data?.error || 'Failed to fetch user permissions');
+      await showConfirm({ message: error?.response?.data?.error || 'Failed to fetch user permissions', confirmText: 'OK' });
     } finally {
       setLoadingPermissions(false);
     }
-  }, []);
+  }, [showConfirm]);
 
   useEffect(() => {
     if (selectedPermissionUserId) {
@@ -245,9 +247,9 @@ function SignUp() {
       });
       setOpenCreateUserModal(false);
       await loadUsersAndRoles();
-      alert('User created successfully');
+      await showConfirm({ message: 'User created successfully', confirmText: 'OK' });
     } catch (error) {
-      alert(error?.response?.data?.error || 'Failed to create user');
+      await showConfirm({ message: error?.response?.data?.error || 'Failed to create user', confirmText: 'OK' });
     } finally {
       setSavingUser(false);
     }
@@ -272,7 +274,7 @@ function SignUp() {
     const roleChanged = Number(editingUserForm.roleId || 0) !== Number(selectedUser?.role_id || 0);
 
     if (selectedUserIsAdmin && roleChanged) {
-      alert('Admin role cannot be changed');
+      await showConfirm({ message: 'Admin role cannot be changed', confirmText: 'OK' });
       return;
     }
 
@@ -286,9 +288,9 @@ function SignUp() {
       setEditingUserId(null);
       setEditingUserIsAdmin(false);
       await loadUsersAndRoles();
-      alert('User updated successfully');
+      await showConfirm({ message: 'User updated successfully', confirmText: 'OK' });
     } catch (error) {
-      alert(error?.response?.data?.error || 'Failed to update user');
+      await showConfirm({ message: error?.response?.data?.error || 'Failed to update user', confirmText: 'OK' });
     }
   };
 
@@ -305,7 +307,7 @@ function SignUp() {
     } catch (error) {
       setOpenDeleteUserModal(false);
       setDeletingUser(null);
-      alert(error?.response?.data?.error || 'Failed to fetch delete impact');
+      await showConfirm({ message: error?.response?.data?.error || 'Failed to fetch delete impact', confirmText: 'OK' });
     } finally {
       setDeletingUserLoading(false);
     }
@@ -317,7 +319,7 @@ function SignUp() {
     try {
       if (deleteUserImpact?.totalAssignments > 0) {
         if (!reassignToUserId) {
-          alert('Please select a reassignment user');
+          await showConfirm({ message: 'Please select a reassignment user', confirmText: 'OK' });
           return;
         }
 
@@ -331,9 +333,9 @@ function SignUp() {
       setDeleteUserImpact(null);
       setReassignToUserId('');
       await loadUsersAndRoles();
-      alert('User deleted successfully');
+      await showConfirm({ message: 'User deleted successfully', confirmText: 'OK' });
     } catch (error) {
-      alert(error?.response?.data?.error || 'Failed to delete user');
+      await showConfirm({ message: error?.response?.data?.error || 'Failed to delete user', confirmText: 'OK' });
     }
   };
 
@@ -345,9 +347,9 @@ function SignUp() {
       setRoleForm({ name: '', description: '' });
       setOpenCreateRoleModal(false);
       await loadUsersAndRoles();
-      alert('Role created successfully');
+      await showConfirm({ message: 'Role created successfully', confirmText: 'OK' });
     } catch (error) {
-      alert(error?.response?.data?.error || 'Failed to create role');
+      await showConfirm({ message: error?.response?.data?.error || 'Failed to create role', confirmText: 'OK' });
     } finally {
       setSavingRole(false);
     }
@@ -377,7 +379,7 @@ function SignUp() {
 
   const handleDeleteRoleStart = async (role) => {
     if (String(role.name || '').toLowerCase() === 'admin') {
-      alert('Admin role cannot be deleted');
+      await showConfirm({ message: 'Admin role cannot be deleted', confirmText: 'OK' });
       return;
     }
 
@@ -392,7 +394,7 @@ function SignUp() {
     } catch (error) {
       setOpenDeleteRoleModal(false);
       setDeletingRole(null);
-      alert(error?.response?.data?.error || 'Failed to fetch role delete impact');
+      await showConfirm({ message: error?.response?.data?.error || 'Failed to fetch role delete impact', confirmText: 'OK' });
     } finally {
       setDeletingRoleLoading(false);
     }
@@ -417,15 +419,15 @@ function SignUp() {
       setDeletingRole(null);
       setDeleteRoleImpact(null);
       await loadUsersAndRoles();
-      alert('Role deleted successfully');
+      await showConfirm({ message: 'Role deleted successfully', confirmText: 'OK' });
     } catch (error) {
-      alert(error?.response?.data?.error || 'Failed to delete role');
+      await showConfirm({ message: error?.response?.data?.error || 'Failed to delete role', confirmText: 'OK' });
     }
   };
 
   const handleSavePermissions = async () => {
     if (!selectedPermissionUserId) {
-      alert('Select a user first');
+      await showConfirm({ message: 'Select a user first', confirmText: 'OK' });
       return;
     }
 
@@ -435,9 +437,9 @@ function SignUp() {
       if (Number(currentUser?.id) === Number(selectedPermissionUserId)) {
         await loadUserPermissions(currentUser.id);
       }
-      alert('Permissions saved successfully');
+      await showConfirm({ message: 'Permissions saved successfully', confirmText: 'OK' });
     } catch (error) {
-      alert(error?.response?.data?.error || 'Failed to save permissions');
+      await showConfirm({ message: error?.response?.data?.error || 'Failed to save permissions', confirmText: 'OK' });
     } finally {
       setSavingPermissions(false);
     }

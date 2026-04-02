@@ -25,6 +25,7 @@ import {
   updateCustomField,
   deleteCustomField,
 } from "../../services/customFieldServices";
+import { useConfirm } from "../../context/ConfirmContext";
 import SettingsHeading from "../settings/SettingsHeading";
 
 const CreateCustomFields = () => {
@@ -37,6 +38,7 @@ const CreateCustomFields = () => {
   });
   const [editingField, setEditingField] = useState(null);
   const [currentOption, setCurrentOption] = useState("");
+  const showConfirm = useConfirm();
 
   const fieldTypes = ["text", "number", "email", "date", "checkbox", "select"];
 
@@ -79,17 +81,17 @@ const CreateCustomFields = () => {
 
   const handleSaveField = async () => {
     if (!newField.field_name) {
-      alert("Field label is required");
+      await showConfirm({ message: "Field label is required", confirmText: "OK" });
       return;
     }
 
     try {
       if (editingField) {
         await updateCustomField(editingField.field_id, newField);
-        alert("Field updated successfully!");
+        await showConfirm({ message: "Field updated successfully!", confirmText: "OK" });
       } else {
         await createCustomField(newField);
-        alert("Field added successfully!");
+        await showConfirm({ message: "Field added successfully!", confirmText: "OK" });
       }
       setNewField({ field_name: "", field_type: "text", is_required: false, options: [] });
       setEditingField(null);
@@ -97,7 +99,7 @@ const CreateCustomFields = () => {
       fetchAllFields();
     } catch (error) {
       console.error("Error saving field:", error);
-      alert("Failed to save field.");
+      await showConfirm({ message: "Failed to save field.", confirmText: "OK" });
     }
   };
 
@@ -114,11 +116,11 @@ const CreateCustomFields = () => {
   const handleDeleteField = async (fieldId) => {
     try {
       await deleteCustomField(fieldId);
-      alert("Field deleted successfully!");
+      await showConfirm({ message: "Field deleted successfully!", confirmText: "OK" });
       fetchAllFields();
     } catch (error) {
       console.error("Error deleting field:", error);
-      alert("Failed to delete field.");
+      await showConfirm({ message: "Failed to delete field.", confirmText: "OK" });
     }
   };
 

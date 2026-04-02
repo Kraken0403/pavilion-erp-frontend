@@ -159,7 +159,12 @@ const EditForm = ({
   const fetchUsers = useCallback(async () => {
     try {
       const userList = await getAllUsers();
-      setUsers(userList);
+      // Only include users with role containing 'salesman'
+      const salesUsers = (Array.isArray(userList) ? userList : []).filter((u) => {
+        const roleText = String(u.role_name || u.role || '').toLowerCase();
+        return roleText.includes('salesman');
+      });
+      setUsers(salesUsers);
       setLoading(false);
     } catch (err) {
       console.error("Error fetching users:", err);

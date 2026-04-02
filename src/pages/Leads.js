@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { fetchLeads, deleteLead, updateLead, bulkDeleteLeads } from '../services/leadService';
+import { fetchLeads, deleteLead, updateLead, bulkDeleteLeads, bulkImportLeads } from '../services/leadService';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 import LeadsTable from '../components/LeadsTable';
 import Topbar from '../components/Topbar';
@@ -16,6 +16,7 @@ const Leads = () => {
     const [deleteId, setDeleteId] = useState(null);
     const [open, setOpen] = useState(false);
     const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
+    const fileInputRef = useRef(null);
     const hasLoadedOnceRef = useRef(false);
 
     const showNotification = useCallback((message, severity = 'success') => {
@@ -150,6 +151,31 @@ const Leads = () => {
         }
     };
 
+    const triggerBulkImport = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleBulkFileChange = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        e.target.value = '';
+
+        try {
+            const result = await bulkImportLeads(file);
+            await getLeads();
+
+            if (result?.failed > 0) {
+                showNotification(`⚠️ Imported ${result.success}/${result.total} leads. ${result.failed} failed.`, 'warning');
+                console.table(result.errors || []);
+            } else {
+                showNotification(`✅ Successfully imported ${result.success} leads`, 'success');
+            }
+        } catch (err) {
+            console.error('Bulk import failed', err);
+            showNotification('❌ Bulk import failed', 'error');
+        }
+    };
+
     const handleUpdateLead = async (updatedLead) => {
         try {
             await updateLead(updatedLead.id, updatedLead);
@@ -164,6 +190,16 @@ const Leads = () => {
             <Topbar />
 
             <div className="leads-container leads-page">
+                {/* Hidden file input for bulk import */}
+                <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept=".xlsx,.csv"
+                    style={{ display: 'none' }}
+                    onChange={handleBulkFileChange}
+                />
+
+                {/* Import is triggered from the UtilsBar inside LeadsTable via onImportBulk prop */}
                 {loading ? (
                     <PageLoader message="Loading leads..." minHeight={260} />
                 ) : (
@@ -183,6 +219,7 @@ const Leads = () => {
                         setSortValue={setSortValue}
                         dateFilter={dateFilter}
                         setDateFilter={setDateFilter}
+                        onImportBulk={triggerBulkImport}
                     />
                 )}
 

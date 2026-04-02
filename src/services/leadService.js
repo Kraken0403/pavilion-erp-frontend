@@ -93,6 +93,30 @@ export const bulkDeleteLeads = async (ids = []) => {
 };
 
 /* ---------------------------------------
+   BULK IMPORT LEADS
+--------------------------------------- */
+export const bulkImportLeads = async (file) => {
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await api.post(
+      '/leads/bulk-import',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
+
+    return res.data; // { total, success, failed, errors }
+  } catch (error) {
+    handleError(error, 'Failed to bulk import leads');
+  }
+};
+
+/* ---------------------------------------
    FETCH FILTERED LEADS
 --------------------------------------- */
 export const fetchFilteredLeads = async (filters = {}) => {

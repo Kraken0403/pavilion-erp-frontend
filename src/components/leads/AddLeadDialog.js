@@ -101,7 +101,13 @@ function AddLeadDialog({ open, onClose, onLeadCreated, showNotification, prefill
 
         if (isCancelled) return;
 
-        setUsers(Array.isArray(userList) ? userList : []);
+        // Only show users who have the 'salesman' role.
+        const salesUsers = (Array.isArray(userList) ? userList : []).filter((u) => {
+          const roleText = String(u.role_name || u.role || '').toLowerCase();
+          return roleText.includes('salesman');
+        });
+
+        setUsers(salesUsers);
         setCustomFields(Array.isArray(fields) ? fields : []);
         hasLoadedMasterDataRef.current = true;
       } catch (error) {
