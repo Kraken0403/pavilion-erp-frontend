@@ -19,8 +19,10 @@ export const fetchDeliveryById = async (id) => {
   return res.data;
 };
 
-export const updateDeliveryStatus = async (id, status) => {
-  const res = await api.patch(`/deliveries/${id}/status`, { status });
+export const updateDeliveryStatus = async (id, payload) => {
+  // payload can be a string status or an object { status, delivery_man_name, delivery_man_phone, delivery_man_vehicle }
+  const body = typeof payload === 'string' ? { status: payload } : (payload || {});
+  const res = await api.patch(`/deliveries/${id}/status`, body);
   return res.data;
 };
 

@@ -73,12 +73,14 @@ const UtilsBar = ({
           <p>{buttonLabel}</p>
         </button>
 
-        <Button
-          className="secondary-btn"
-          onClick={onImportBulk}
-        >
-          Import
-        </Button>
+        {onImportBulk && (
+          <Button
+            className="secondary-btn"
+            onClick={onImportBulk}
+          >
+            Import
+          </Button>
+        )}
 
         <Button
           className="secondary-btn"

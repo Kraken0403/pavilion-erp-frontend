@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Box, Drawer, List, ListItemIcon, ListItemText, Toolbar, Collapse } from '@mui/material';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ListItemButton from '@mui/material/ListItemButton';
-import ProductionQuantityLimitsIcon from '@mui/icons-material/ProductionQuantityLimits';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 // import SettingsIcon from '@mui/icons-material/Settings';
 import PeopleIcon from '@mui/icons-material/People';
 import ArticleIcon from '@mui/icons-material/Article';
@@ -13,12 +14,14 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 import AssessmentIcon from '@mui/icons-material/Assessment';
-import CampaignIcon from '@mui/icons-material/Campaign';
+import AlarmIcon from '@mui/icons-material/Alarm';
+import FeedbackIcon from '@mui/icons-material/Feedback';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
 import HistoryIcon from '@mui/icons-material/History';
 import CategoryIcon from '@mui/icons-material/Category';
 import StyleIcon from '@mui/icons-material/Style';
+import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
 
 import ExpandMore from '@mui/icons-material/ExpandMore';
 import { useAuth } from '../context/AuthContext';
@@ -193,7 +196,7 @@ const Sidebar = () => {
           {canAccessModule('products') && (
             <>
               <ListItemButton onClick={() => toggleModule('products')}>
-                <ListItemIcon><ProductionQuantityLimitsIcon /></ListItemIcon>
+                <ListItemIcon><StorefrontIcon /></ListItemIcon>
                 <ListItemText primary="Products" />
                 {isExpanded('products') ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
@@ -246,7 +249,7 @@ const Sidebar = () => {
           {canAccessModule('work_orders') && (
             <>
               <ListItemButton onClick={() => toggleModule('work_orders')}>
-                <ListItemIcon><ProductionQuantityLimitsIcon /></ListItemIcon>
+                <ListItemIcon><AssignmentIcon /></ListItemIcon>
                 <ListItemText primary={withModuleBadge('Work Orders', bubbleCounts.workOrderCount)} />
                 {isExpanded('work_orders') ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
@@ -358,10 +361,17 @@ const Sidebar = () => {
             </>
           )}
 
+          {canAccessModule('settings') && (
+            <ListItemButton onClick={() => go('/coupons')}>
+              <ListItemIcon><ConfirmationNumberIcon /></ListItemIcon>
+              <ListItemText primary="Coupons" />
+            </ListItemButton>
+          )}
+
           {canAccessModule('payment_reminders') && (
             <>
               <ListItemButton onClick={() => toggleModule('payment_reminders')}>
-                <ListItemIcon><CampaignIcon /></ListItemIcon>
+                <ListItemIcon><AlarmIcon /></ListItemIcon>
                 <ListItemText primary="Payment Reminders" />
                 {isExpanded('payment_reminders') ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>
@@ -399,7 +409,7 @@ const Sidebar = () => {
           {canAccessModule('reports') && (
             <>
               <ListItemButton onClick={() => toggleModule('feedback')}>
-                <ListItemIcon><CampaignIcon /></ListItemIcon>
+                <ListItemIcon><FeedbackIcon /></ListItemIcon>
                 <ListItemText primary={withModuleBadge('Feedback', bubbleCounts.feedbackCount)} />
                 {isExpanded('feedback') ? <ExpandLess /> : <ExpandMore />}
               </ListItemButton>

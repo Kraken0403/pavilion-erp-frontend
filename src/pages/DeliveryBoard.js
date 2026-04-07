@@ -105,6 +105,7 @@ function DeliveryBoard() {
   const [notif, setNotif] = useState({ open: false, message: '', severity: 'success' });
   const [sliderIndex, setSliderIndex] = useState(0);
   const [notesModal, setNotesModal] = useState({ open: false, deliveryId: null, value: '', title: '' });
+  const [deliveryManModal, setDeliveryManModal] = useState({ open: false, deliveryId: null, status: null, name: '', phone: '', vehicle: '' });
 
   // Search and filter states
   const [searchQuery, setSearchQuery] = useState('');
@@ -226,9 +227,37 @@ function DeliveryBoard() {
   }, [deliveries, searchQuery, statusFilter, sortBy]);
 
   const handleStatusChange = async (deliveryId, status) => {
+    // If setting to out_for_delivery, open modal to capture delivery man details
+    if (status === 'out_for_delivery') {
+      setDeliveryManModal({ open: true, deliveryId, status, name: '', phone: '', vehicle: '' });
+      return;
+    }
+
     try {
       await updateDeliveryStatus(deliveryId, status);
       showNotification('Delivery status updated');
+      loadDeliveries();
+    } catch (error) {
+      showNotification(
+        error?.response?.data?.error || 'Failed to update status',
+        'error'
+      );
+    }
+  };
+
+  const closeDeliveryManModal = () => setDeliveryManModal({ open: false, deliveryId: null, status: null, name: '', phone: '', vehicle: '' });
+
+  const confirmDeliveryManAndUpdate = async () => {
+    const { deliveryId, status, name, phone, vehicle } = deliveryManModal;
+    if (!name || !phone) {
+      showNotification('Please provide delivery man name and phone', 'error');
+      return;
+    }
+
+    try {
+      await updateDeliveryStatus(deliveryId, { status, delivery_man_name: name, delivery_man_phone: phone, delivery_man_vehicle: vehicle });
+      showNotification('Delivery status updated');
+      closeDeliveryManModal();
       loadDeliveries();
     } catch (error) {
       showNotification(
@@ -449,30 +478,43 @@ function DeliveryBoard() {
                         <strong>PAX:</strong> {delivery.pax || '—'}
                       </Typography>
 
-                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                        Items ({delivery.items?.length || 0}) • Total Qty: {formatQty(totalQty)}
-                      </Typography>
+                      {delivery.status === 'out_for_delivery' ? (
+                        <Box sx={{ mb: 2, p: 2, bgcolor: '#f7fbff', borderRadius: 1 }}>
+                          <Typography variant="subtitle2" sx={{ mb: 1 }}>Delivery Person</Typography>
+                          <Typography variant="body2"><strong>Name:</strong> {delivery.delivery_man_name || '—'}</Typography>
+                          <Typography variant="body2"><strong>Phone:</strong> {delivery.delivery_man_phone || '—'}</Typography>
+                          {delivery.delivery_man_vehicle ? (
+                            <Typography variant="body2"><strong>Vehicle:</strong> {delivery.delivery_man_vehicle}</Typography>
+                          ) : null}
+                        </Box>
+                      ) : (
+                        <>
+                          <Typography variant="subtitle2" sx={{ mb: 1 }}>
+                            Items ({delivery.items?.length || 0}) • Total Qty: {formatQty(totalQty)}
+                          </Typography>
 
-                      <Box sx={{ flex: 1, overflow: 'auto', pr: 1, mb: 1 }}>
-                        {(delivery.items || []).map((item) => (
-                          <Box
-                            key={item.id}
-                            sx={{ py: 0.75, borderBottom: '1px solid #eee' }}
-                          >
-                            <Stack direction="row" alignItems="center" justifyContent="space-between">
-                              <Typography variant="body2" fontWeight={600}>{item.product_name}</Typography>
-                              <Stack direction="column" alignItems="flex-end">
-                                <Typography variant="body2" fontWeight={700}>{formatQty(item.quantity)}</Typography>
-                                {item.unit_price && (
-                                  <Typography variant="caption" color="text.secondary">
-                                    {formatPrice(item.unit_price)}
-                                  </Typography>
-                                )}
-                              </Stack>
-                            </Stack>
+                          <Box sx={{ flex: 1, overflow: 'auto', pr: 1, mb: 1 }}>
+                            {(delivery.items || []).map((item) => (
+                              <Box
+                                key={item.id}
+                                sx={{ py: 0.75, borderBottom: '1px solid #eee' }}
+                              >
+                                <Stack direction="row" alignItems="center" justifyContent="space-between">
+                                  <Typography variant="body2" fontWeight={600}>{item.product_name}</Typography>
+                                  <Stack direction="column" alignItems="flex-end">
+                                    <Typography variant="body2" fontWeight={700}>{formatQty(item.quantity)}</Typography>
+                                    {item.unit_price && (
+                                      <Typography variant="caption" color="text.secondary">
+                                        {formatPrice(item.unit_price)}
+                                      </Typography>
+                                    )}
+                                  </Stack>
+                                </Stack>
+                              </Box>
+                            ))}
                           </Box>
-                        ))}
-                      </Box>
+                        </>
+                      )}
 
                       {calculateTotalPrice(delivery.items) > 0 && (
                         <Box sx={{ mb: 2, p: 1, bgcolor: '#f5f5f5', borderRadius: 1 }}>
@@ -556,6 +598,41 @@ function DeliveryBoard() {
         <DialogActions sx={{ px: 3, pb: 2 }}>
           <Button onClick={closeNotesModal}>Cancel</Button>
           <Button variant="contained" onClick={saveNotesFromModal}>Save Notes</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={deliveryManModal.open} onClose={closeDeliveryManModal} fullWidth maxWidth="sm">
+        <DialogTitle sx={{ pb: 1 }}>Delivery Man Details</DialogTitle>
+        <DialogContent>
+          <TextField
+            autoFocus
+            fullWidth
+            label="Name"
+            placeholder="Delivery person name"
+            value={deliveryManModal.name}
+            onChange={(e) => setDeliveryManModal((prev) => ({ ...prev, name: e.target.value }))}
+            sx={{ mt: 1 }}
+          />
+          <TextField
+            fullWidth
+            label="Phone"
+            placeholder="Phone number"
+            value={deliveryManModal.phone}
+            onChange={(e) => setDeliveryManModal((prev) => ({ ...prev, phone: e.target.value }))}
+            sx={{ mt: 2 }}
+          />
+          <TextField
+            fullWidth
+            label="Vehicle (optional)"
+            placeholder="Vehicle/identifier"
+            value={deliveryManModal.vehicle}
+            onChange={(e) => setDeliveryManModal((prev) => ({ ...prev, vehicle: e.target.value }))}
+            sx={{ mt: 2 }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2 }}>
+          <Button onClick={closeDeliveryManModal}>Cancel</Button>
+          <Button variant="contained" onClick={confirmDeliveryManAndUpdate}>Confirm & Set Out For Delivery</Button>
         </DialogActions>
       </Dialog>
     </>

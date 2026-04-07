@@ -38,6 +38,7 @@ import CreateProformaInvoice from './pages/CreateProformaInvoice';
 import KOTBoard from './pages/KOTBoard';
 import KOTSettings from './pages/KOTSettings';
 import DeliveryBoard from './pages/DeliveryBoard';
+import CouponsPage from './pages/Coupons';
 import Reports from './pages/Reports';
 import PaymentReminders from './pages/PaymentReminders';
 import PaymentReminderSettings from './pages/PaymentReminderSettings';
@@ -326,6 +327,15 @@ const App = () => {
                                     element={
                                         <PrivateRoute requiredModule="settings">
                                             <Settings />
+                                        </PrivateRoute>
+                                    }
+                                />
+
+                                <Route
+                                    path="/coupons"
+                                    element={
+                                        <PrivateRoute requiredModule="settings">
+                                            <CouponsPage />
                                         </PrivateRoute>
                                     }
                                 />
