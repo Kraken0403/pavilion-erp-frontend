@@ -515,6 +515,8 @@ const Dashboard = () => {
     0
   )
 
+  const pendingWorkOrdersCount = workOrders.filter((wo) => String(wo?.status || '').toLowerCase() === 'pending').length
+
   const topPendingInvoicesByAmount = [...pendingInvoices]
     .sort((a, b) => Number(b?.grand_total || 0) - Number(a?.grand_total || 0))
     .slice(0, 4)
@@ -574,7 +576,7 @@ const Dashboard = () => {
       path: '/quotations',
       accent: 'linear-gradient(120deg, #f5e8ff 0%, #fcf6ff 100%)',
       icon: <ReceiptLong fontSize="small" />,
-      meta: `${leadConvertedCount} converted leads`,
+      meta: `${leadConvertedCount} converted`,
     },
     {
       key: 'workorders',
@@ -584,17 +586,17 @@ const Dashboard = () => {
       path: '/workorders',
       accent: 'linear-gradient(120deg, #ffedd8 0%, #fff8ef 100%)',
       icon: <PendingActions fontSize="small" />,
-      meta: `${pendingInvoices.length} pending invoices`,
+      meta: `${pendingWorkOrdersCount} pending`,
     },
     {
       key: 'products',
       title: 'Products',
       value: products.length,
       color: '#00897b',
-      path: '/products',
+      path: '/products/list',
       accent: 'linear-gradient(120deg, #dffaf5 0%, #f2fffc 100%)',
       icon: <ArrowOutward fontSize="small" />,
-      meta: 'Inventory and pricing',
+      meta: `${products.length} items`,
     },
   ]
 
@@ -607,7 +609,7 @@ const Dashboard = () => {
       path: '/kots',
       accent: 'linear-gradient(120deg, #f7e8ff 0%, #fdf7ff 100%)',
       icon: <LocalDining fontSize="small" />,
-      meta: 'Kitchen ticket queue',
+      meta: `${pendingKotsCount} open`,
     })
   }
 

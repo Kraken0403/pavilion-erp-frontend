@@ -682,6 +682,7 @@ function CreateQuotation() {
             total={Number((totals.grandTotal || 0) + (Number(roundingAmount) || 0))}
             handleSubmit={handleSubmit}
             currency={currency}
+            disabled={!leadId}
           />
         </div>
 
