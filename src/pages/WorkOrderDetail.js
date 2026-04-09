@@ -288,8 +288,8 @@ function WorkOrderDetail() {
         </div>
         <div className="quotation-card">
           <WorkOrderFooterSection
-            subtotal={Number(workOrder.subtotal || 0)}
-            discount={Number((workOrder.items || []).reduce((s, it) => s + Number(it.discount || 0), 0))}
+            subtotal={Number(workOrder.display_taxable_subtotal || workOrder.subtotal || 0)}
+            discount={Number(workOrder._computed_discount || 0)}
             taxes={Number((workOrder.items || []).reduce((s, it) => s + Number(it.tax || it.tax_amount || it.gst_amount || 0), 0))}
             total={Number(workOrder.total_amount || 0)}
             currency={currency}
