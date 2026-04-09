@@ -6,7 +6,8 @@ import * as XLSX from 'xlsx'
 import {
   getCategories,
   deleteCategory,
-  updateCategory
+  updateCategory,
+  getCategoryById
 } from '../../services/productServices'
 
 import AddCategoryDialog from './AddCategoryDialog'
@@ -180,12 +181,29 @@ function CategoryList() {
   const toggleVisibility = async (cat) => {
     try {
       const newVal = !cat.shop_visible
-      await updateCategory(cat.id, { shop_visible: newVal })
+
+      // Some backends require the full payload (including name). Fetch full category then update.
+      let full = null
+      try {
+        full = await getCategoryById(cat.id)
+      } catch (e) {
+        // fallback to using flattened info
+        full = { name: cat.rawName || cat.name || '', parent_id: cat.parent_id || null }
+      }
+
+      const payload = {
+        name: full.name || cat.rawName || cat.name || '',
+        parent_id: full.parent_id != null ? full.parent_id : (cat.parent_id || null),
+        shop_visible: newVal
+      }
+
+      await updateCategory(cat.id, payload)
       showSnackbar('Category visibility updated', 'success')
       fetchCategories()
     } catch (err) {
       const msg = err.response?.data?.error || 'Failed to update category'
       showSnackbar(msg, 'error')
+      console.error('Failed to update category', err)
     }
   }
 
