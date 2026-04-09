@@ -283,8 +283,14 @@ function InvoiceView() {
             <Box sx={{ maxWidth: 360, ml: "auto" }}>
               <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
                 <Typography variant="body2" color="text.secondary">Subtotal</Typography>
-                <Typography variant="body2">{formatMoney(invoice.subtotal)}</Typography>
+                <Typography variant="body2">{formatMoney(invoice.display_taxable_subtotal ?? invoice.subtotal)}</Typography>
               </Box>
+              {Number(invoice._computed_discount || 0) > 0 && (
+                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary">Discount{invoice.discount_percent ? ` (${invoice.discount_percent}%)` : ''}</Typography>
+                  <Typography variant="body2">-{formatMoney(invoice._computed_discount)}</Typography>
+                </Box>
+              )}
               {Number(invoice.cgst_total || 0) > 0 && (
                 <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
                   <Typography variant="body2" color="text.secondary">CGST</Typography>
