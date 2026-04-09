@@ -112,6 +112,28 @@ function WorkOrderDetail() {
       data.total_amount = Number(data.total_amount || 0)
       data.items = normalizeItems(data)
 
+      // Aggregate and remove negative discount rows (coupons) so WO details
+      // display items like the Invoice: keep only non-negative line items
+      try {
+        const mapped = Array.isArray(data.items) ? data.items : []
+        // compute discount as sum of negative line_total values
+        const discountSum = mapped.reduce((s, it) => {
+          const lt = Number(it.line_total || 0)
+          return s + (lt < 0 ? lt : 0)
+        }, 0)
+
+        // remove negative rows from displayed items
+        data.items = mapped.filter((it) => Number(it.line_total || 0) >= 0)
+
+        // expose display_taxable_subtotal (pre-discount subtotal)
+        data.display_taxable_subtotal = Number(data.subtotal || 0) + Math.abs(Number(discountSum || 0))
+        // also expose discount value for footer
+        data._computed_discount = Math.abs(Number(discountSum || 0))
+      } catch (e) {
+        // ignore
+        console.warn('WorkOrderDetail: failed to normalize coupon discount rows', e && e.message ? e.message : e)
+      }
+
       setWorkOrder(data)
 
       // Check if KOT already exists
