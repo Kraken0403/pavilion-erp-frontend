@@ -27,6 +27,7 @@ function AddCategoryDialog({ open, onClose, category = null }) {
   const [name, setName] = useState("");
   const [parentOptions, setParentOptions] = useState([]);
   const [selectedParent, setSelectedParent] = useState(null);
+  const [shopVisible, setShopVisible] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   const [notif, setNotif] = useState({
@@ -48,6 +49,7 @@ function AddCategoryDialog({ open, onClose, category = null }) {
   const resetForm = () => {
     setName("");
     setSelectedParent(null);
+    setShopVisible(true);
   };
 
   const handleClose = () => {
@@ -83,12 +85,26 @@ function AddCategoryDialog({ open, onClose, category = null }) {
         setParentOptions(flat);
 
         if (category) {
-          setName(category.rawName || category.name || "");
-          if (category.parent_id) {
-            const match = flat.find(p => p.id === category.parent_id);
-            setSelectedParent(match || null);
-          } else {
-            setSelectedParent(null);
+          // fetch full category details so we can populate shop_visible
+          try {
+            const full = await getCategoryById(category.id);
+            setName(full.name || category.rawName || category.name || "");
+            if (full.parent_id) {
+              const match = flat.find(p => p.id === full.parent_id);
+              setSelectedParent(match || null);
+            } else {
+              setSelectedParent(null);
+            }
+            setShopVisible(typeof full.shop_visible !== 'undefined' ? Boolean(full.shop_visible) : true);
+          } catch (e) {
+            setName(category.rawName || category.name || "");
+            if (category.parent_id) {
+              const match = flat.find(p => p.id === category.parent_id);
+              setSelectedParent(match || null);
+            } else {
+              setSelectedParent(null);
+            }
+            setShopVisible(true);
           }
         } else {
           resetForm();
@@ -118,14 +134,16 @@ function AddCategoryDialog({ open, onClose, category = null }) {
         // EDIT
         await updateCategory(category.id, {
           name: name.trim(),
-          parent_id: selectedParent?.id || null
+          parent_id: selectedParent?.id || null,
+          shop_visible: shopVisible
         });
         showNotification("Category updated successfully");
       } else {
         // CREATE
         await createCategory({
           category: name.trim(),
-          parent_id: selectedParent?.id || null
+          parent_id: selectedParent?.id || null,
+          shop_visible: shopVisible
         });
         showNotification("Category created successfully");
       }
@@ -191,6 +209,14 @@ function AddCategoryDialog({ open, onClose, category = null }) {
               />
             )}
           />
+
+          <Typography className="field-label" sx={{ mt: 2 }}>Show in Shop</Typography>
+          <div style={{ marginTop: 8, marginBottom: 8 }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <input type="checkbox" checked={shopVisible} onChange={(e) => setShopVisible(e.target.checked)} />
+              <span style={{ color: '#666' }}>If checked, this category will appear on the public shop</span>
+            </label>
+          </div>
         </DialogContent>
 
         <DialogActions className="dialog-actions">

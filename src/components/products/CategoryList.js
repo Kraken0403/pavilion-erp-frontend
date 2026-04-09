@@ -67,7 +67,8 @@ function CategoryList() {
             name: label,
             rawName: cat.name,
             parent_id: cat.parent_id,
-            product_count: cat.product_count,
+                product_count: cat.product_count,
+                shop_visible: typeof cat.shop_visible !== 'undefined' ? Boolean(cat.shop_visible) : true,
             isParent: !!cat.children?.length
           })
 
@@ -246,6 +247,7 @@ function CategoryList() {
                 />
               </th>
               <th>CATEGORY</th>
+              <th style={{ width: 120 }}>VISIBLE</th>
               <th style={{ width: 140 }}>PRODUCTS</th>
               <th style={{ width: 120 }}>ACTIONS</th>
             </tr>
@@ -269,6 +271,10 @@ function CategoryList() {
                   </td>
 
                   <td>{cat.name}</td>
+
+                  <td>
+                    <strong>{cat.shop_visible ? 'Yes' : 'No'}</strong>
+                  </td>
 
                   <td>
                     <strong>{cat.product_count}</strong>
