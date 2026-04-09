@@ -6,6 +6,8 @@ import {
   DialogActions,
   TextField,
   Typography,
+  Switch,
+  FormControlLabel,
 } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import IconButton from "@mui/material/IconButton";
@@ -213,10 +215,16 @@ function AddCategoryDialog({ open, onClose, category = null }) {
 
           <Typography className="field-label" sx={{ mt: 2 }}>Show in Shop</Typography>
           <div style={{ marginTop: 8, marginBottom: 8 }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <input type="checkbox" checked={shopVisible} onChange={(e) => setShopVisible(e.target.checked)} />
-              <span style={{ color: '#666' }}>If checked, this category will appear on the public shop</span>
-            </label>
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={shopVisible}
+                  onChange={(e) => setShopVisible(e.target.checked)}
+                  color="primary"
+                />
+              }
+              label={<span style={{ color: '#666' }}>If enabled, this category will appear on the public shop</span>}
+            />
           </div>
         </DialogContent>
 

@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Checkbox, IconButton } from '@mui/material'
+import { Checkbox, IconButton, Switch } from '@mui/material'
 import { Edit, Delete } from '@mui/icons-material'
 import * as XLSX from 'xlsx'
 
 import {
   getCategories,
-  deleteCategory
+  deleteCategory,
+  updateCategory
 } from '../../services/productServices'
 
 import AddCategoryDialog from './AddCategoryDialog'
@@ -176,6 +177,18 @@ function CategoryList() {
     setConfirmOpen(true)
   }
 
+  const toggleVisibility = async (cat) => {
+    try {
+      const newVal = !cat.shop_visible
+      await updateCategory(cat.id, { shop_visible: newVal })
+      showSnackbar('Category visibility updated', 'success')
+      fetchCategories()
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Failed to update category'
+      showSnackbar(msg, 'error')
+    }
+  }
+
   const handleDeleteSelected = () => {
     if (!selected.length) {
       showSnackbar('Please select at least one category', 'warning')
@@ -273,7 +286,12 @@ function CategoryList() {
                   <td>{cat.name}</td>
 
                   <td>
-                    <strong>{cat.shop_visible ? 'Yes' : 'No'}</strong>
+                    <Switch
+                      checked={Boolean(cat.shop_visible)}
+                      onChange={() => toggleVisibility(cat)}
+                      color="primary"
+                      inputProps={{ 'aria-label': `visible-${cat.id}` }}
+                    />
                   </td>
 
                   <td>
