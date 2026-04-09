@@ -13,6 +13,7 @@ import CloseIcon from "@mui/icons-material/Close";
 
 import {
   getCategories,
+  getCategoryById,
   createCategory,
   updateCategory
 } from "../../services/productServices";
