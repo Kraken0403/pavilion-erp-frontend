@@ -9,11 +9,14 @@ import {
   Typography,
   Box,
   Grid,
-  Button
+  Button,
+  Chip,
+  Paper
 } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
+import DeleteIcon from "@mui/icons-material/Delete";
 import ReactQuill from 'react-quill'
 
 import {
@@ -21,7 +24,11 @@ import {
   getCategories,
   getAllAttributes,
   getAttributeOptions,
-  uploadProductImage
+  uploadProductImage,
+  getIngredients,
+  getProductImages,
+  getProductIngredients,
+  getProductBundleItems
 } from "../../services/productServices";
 
 import { useConfirm } from "../../context/ConfirmContext";
@@ -91,6 +98,18 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
   const [previewUrl, setPreviewUrl] = useState("")
   const previewObjectUrlRef = useRef("")
 
+  /* ---- NEW: BUNDLE ITEMS, IMAGES, INGREDIENTS ---- */
+  const [ingredients, setIngredientsState] = useState([]);
+  const [selectedIngredients, setSelectedIngredients] = useState([]);
+  const [bundleItems, setBundleItems] = useState([]);
+  const [productImages, setProductImages] = useState([]);
+  const [newBundleItem, setNewBundleItem] = useState({
+    component_product_id: null,
+    quantity: 1,
+    unit: "piece",
+    description: ""
+  });
+
   const [uploadingImage, setUploadingImage] = useState(false)
   const clearLocalPreviewObjectUrl = () => {
     if (previewObjectUrlRef.current) {
@@ -118,6 +137,9 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
 
       const products = await fetchAllProducts();
       setAllProducts(Array.isArray(products) ? products : []);
+
+      const ings = await getIngredients();
+      setIngredientsState(Array.isArray(ings) ? ings : []);
     })();
   }, [open]);
 
@@ -166,6 +188,20 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
     setHsnSac(productToEdit.hsn_sac || "");
     setIsActive(Number(productToEdit.is_active ?? 1));
     setSelectedAddOnProducts(productToEdit.add_on_products || []);
+
+    // Load bundle items, images, ingredients for edit mode
+    (async () => {
+      if (productToEdit.id) {
+        const bundleData = await getProductBundleItems(productToEdit.id);
+        setBundleItems(Array.isArray(bundleData) ? bundleData : []);
+
+        const imagesData = await getProductImages(productToEdit.id);
+        setProductImages(Array.isArray(imagesData) ? imagesData : []);
+
+        const ingredientsData = await getProductIngredients(productToEdit.id);
+        setSelectedIngredients(Array.isArray(ingredientsData) ? ingredientsData.map(i => i.id) : []);
+      }
+    })();
 
     // If backend returns variants inside productToEdit (it should from getProductById)
     if (productToEdit.type === "variable" && Array.isArray(productToEdit.variants)) {
@@ -297,6 +333,10 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
     setSelectedOptions({});
     setVariants([]);
     setSelectedAddOnProducts([]);
+    setSelectedIngredients([]);
+    setBundleItems([]);
+    setProductImages([]);
+    setNewBundleItem({ component_product_id: null, quantity: 1, unit: "piece", description: "" });
     clearLocalPreviewObjectUrl()
     setPreviewUrl("")
 
@@ -385,7 +425,10 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
           }))
           : [],
 
-      add_on_product_ids: selectedAddOnProducts.map(p => p.id)
+      add_on_product_ids: selectedAddOnProducts.map(p => p.id),
+      bundle_items: bundleItems,
+      ingredient_ids: selectedIngredients,
+      product_images: productImages
     };
 
     try {
@@ -448,6 +491,212 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
             />
           )}
         />
+
+        {/* BUNDLE ITEMS SECTION (for Fusion Boxes & Food Packages) */}
+        {category && (category.name.toLowerCase().includes('fusion') || category.name.toLowerCase().includes('food') || category.name.toLowerCase().includes('package')) && (
+          <>
+            <Typography className="field-label" sx={{ mt: 3, mb: 2 }}>
+              📦 Bundle Items (Component Products)
+            </Typography>
+            
+            <Paper sx={{ p: 2, mb: 2, bgcolor: '#f5f5f5', border: '1px solid #e0e0e0' }}>
+              <Typography className="field-label" sx={{ mb: 2 }}>Add Bundle Item</Typography>
+              
+              <Grid container spacing={2}>
+                <Grid item xs={12} md={5}>
+                  <Autocomplete
+                    options={allProducts.filter(p => p.id !== productToEdit?.id)}
+                    getOptionLabel={o => `${o?.name || ''} (₹${o?.selling_price || 0})`}
+                    value={allProducts.find(p => p.id === newBundleItem.component_product_id) || null}
+                    onChange={(e, val) => {
+                      setNewBundleItem(prev => ({ ...prev, component_product_id: val?.id || null }));
+                    }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        className="form-input"
+                        fullWidth
+                        placeholder="Select product"
+                      />
+                    )}
+                  />
+                </Grid>
+
+                <Grid item xs={6} md={2}>
+                  <TextField
+                    className="form-input"
+                    fullWidth
+                    type="number"
+                    label="Qty"
+                    value={newBundleItem.quantity}
+                    onChange={(e) => setNewBundleItem(prev => ({ ...prev, quantity: e.target.value }))}
+                    inputProps={{ step: "0.1", min: "0.1" }}
+                  />
+                </Grid>
+
+                <Grid item xs={6} md={2}>
+                  <TextField
+                    className="form-input"
+                    fullWidth
+                    select
+                    label="Unit"
+                    value={newBundleItem.unit}
+                    onChange={(e) => setNewBundleItem(prev => ({ ...prev, unit: e.target.value }))}
+                  >
+                    {UNITS.map(u => (
+                      <MenuItem key={u} value={u}>{u}</MenuItem>
+                    ))}
+                  </TextField>
+                </Grid>
+
+                <Grid item xs={12} md={3}>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    sx={{ bgcolor: '#4CAF50', color: 'white' }}
+                    onClick={() => {
+                      if (newBundleItem.component_product_id) {
+                        const product = allProducts.find(p => p.id === newBundleItem.component_product_id);
+                        setBundleItems(prev => [
+                          ...prev,
+                          {
+                            ...newBundleItem,
+                            product_id: product?.id,
+                            name: product?.name,
+                            selling_price: product?.selling_price,
+                            image_url: product?.image_url,
+                            display_order: prev.length + 1
+                          }
+                        ]);
+                        setNewBundleItem({ component_product_id: null, quantity: 1, unit: "piece", description: "" });
+                      }
+                    }}
+                  >
+                    Add Item
+                  </Button>
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    className="form-input"
+                    fullWidth
+                    multiline
+                    rows={2}
+                    label="Description (optional)"
+                    value={newBundleItem.description}
+                    onChange={(e) => setNewBundleItem(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="e.g., Traditional yogurt drink"
+                  />
+                </Grid>
+              </Grid>
+            </Paper>
+
+            {bundleItems.length > 0 && (
+              <Box sx={{ mb: 3 }}>
+                <Typography className="field-label" sx={{ mb: 1 }}>Selected Bundle Items:</Typography>
+                {bundleItems.map((item, idx) => (
+                  <Chip
+                    key={idx}
+                    label={`${item.name} (${item.quantity} ${item.unit})`}
+                    onDelete={() => setBundleItems(prev => prev.filter((_, i) => i !== idx))}
+                    sx={{ mr: 1, mb: 1 }}
+                    avatar={
+                      item.image_url ? (
+                        <img
+                          src={item.image_url.startsWith('http') ? item.image_url : `${BACKEND_URL}${item.image_url}`}
+                          alt={item.name}
+                          style={{ width: 24, height: 24, objectFit: 'cover' }}
+                        />
+                      ) : undefined
+                    }
+                  />
+                ))}
+              </Box>
+            )}
+          </>
+        )}
+
+        {/* INGREDIENTS SECTION (for Fusion Boxes & Food Packages) */}
+        {category && (category.name.toLowerCase().includes('fusion') || category.name.toLowerCase().includes('food') || category.name.toLowerCase().includes('package')) && ingredients.length > 0 && (
+          <>
+            <Typography className="field-label" sx={{ mt: 3 }}>
+              🌿 Ingredients
+            </Typography>
+            <Autocomplete
+              multiple
+              options={ingredients}
+              value={ingredients.filter(i => selectedIngredients.includes(i.id))}
+              getOptionLabel={o => o?.ingredient_name || ""}
+              onChange={(e, val) => setSelectedIngredients(val ? val.map(v => v.id) : [])}
+              renderInput={(params) => (
+                <TextField
+                  {...params}
+                  className="form-input"
+                  fullWidth
+                  placeholder="Select ingredients used in this product"
+                />
+              )}
+            />
+          </>
+        )}
+
+        {/* PRODUCT IMAGES SECTION */}
+        <Typography className="field-label" sx={{ mt: 3 }}>
+          📸 Additional Product Images
+        </Typography>
+        <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
+          (The main image field above will be used as the primary image)
+        </Typography>
+
+        {productImages.length > 0 && (
+          <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {productImages.map((img, idx) => (
+              <Paper key={idx} sx={{ position: 'relative', width: 100, height: 100, overflow: 'hidden' }}>
+                <img
+                  src={img.image_url?.startsWith('http') ? img.image_url : `${BACKEND_URL}${img.image_url}`}
+                  alt={`Product ${idx}`}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                <IconButton
+                  size="small"
+                  sx={{ position: 'absolute', top: 0, right: 0, bgcolor: 'rgba(0,0,0,0.5)' }}
+                  onClick={() => setProductImages(prev => prev.filter((_, i) => i !== idx))}
+                >
+                  <DeleteIcon sx={{ color: 'white', fontSize: 16 }} />
+                </IconButton>
+              </Paper>
+            ))}
+          </Box>
+        )}
+
+        <Box>
+          <Button variant="outlined" component="label" sx={{ mb: 2 }}>
+            Add More Images
+            <input
+              type="file"
+              hidden
+              accept="image/*"
+              multiple
+              onChange={async (e) => {
+                const files = e.target.files;
+                if (!files) return;
+
+                for (const file of files) {
+                  try {
+                    setUploadingImage(true);
+                    const res = await uploadProductImage(file);
+                    setProductImages(prev => [...prev, { image_url: res.url, alt_text: '', display_order: prev.length + 1 }]);
+                  } catch (err) {
+                    console.error(err);
+                  } finally {
+                    setUploadingImage(false);
+                  }
+                }
+              }}
+            />
+          </Button>
+          {uploadingImage && <Typography variant="body2">Uploading images...</Typography>}
+        </Box>
 
         {/* DESCRIPTION */}
         {/* <Typography className="field-label" sx={{ mt: 2 }}>
