@@ -464,6 +464,70 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
           onChange={e => setName(e.target.value)}
         />
 
+        {/* PRODUCT IMAGES SECTION (placed earlier in flow) */}
+        <Typography className="field-label" sx={{ mt: 3 }}>
+          Additional Product Images
+        </Typography>
+        <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
+          The main image field below will be used as the primary image. You can set any uploaded image as main.
+        </Typography>
+
+        {productImages.length > 0 && (
+          <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+            {productImages.map((img, idx) => (
+              <Paper key={idx} sx={{ position: 'relative', width: 100, height: 100, overflow: 'hidden' }}>
+                <img
+                  src={img.image_url?.startsWith('http') ? img.image_url : `${BACKEND_URL}${img.image_url}`}
+                  alt={`Product ${idx}`}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+                <Box sx={{ position: 'absolute', bottom: 4, left: 4, right: 4, display: 'flex', justifyContent: 'space-between', gap: 1 }}>
+                  <Button size="small" variant="contained" onClick={() => {
+                    const url = img.image_url?.startsWith('http') ? img.image_url : img.image_url;
+                    setImageUrl(img.image_url || url);
+                    setPreviewUrl('');
+                  }} sx={{ bgcolor: '#E11D2E', '&:hover': { bgcolor: '#b50f1a' }, fontSize: 11 }}>
+                    Use as main
+                  </Button>
+                  <IconButton size="small" sx={{ bgcolor: 'rgba(0,0,0,0.5)' }} onClick={() => setProductImages(prev => prev.filter((_, i) => i !== idx))}>
+                    <DeleteIcon sx={{ color: 'white', fontSize: 16 }} />
+                  </IconButton>
+                </Box>
+              </Paper>
+            ))}
+          </Box>
+        )}
+
+        <Box>
+          <Button variant="outlined" component="label" sx={{ mb: 2 }}>
+            Add More Images
+            <input
+              type="file"
+              hidden
+              accept="image/*"
+              multiple
+              onChange={async (e) => {
+                const files = e.target.files;
+                if (!files) return;
+
+                for (const file of files) {
+                  try {
+                    setUploadingImage(true);
+                    const res = await uploadProductImage(file);
+                    setProductImages(prev => [...prev, { image_url: res.url, alt_text: '', display_order: prev.length + 1 }]);
+                  } catch (err) {
+                    console.error(err);
+                  } finally {
+                    setUploadingImage(false);
+                  }
+                }
+              }}
+            />
+          </Button>
+          {uploadingImage && <Typography variant="body2">Uploading images...</Typography>}
+        </Box>
+
+
         <Typography className="field-label" sx={{ mt: 2 }}>Brand Name</Typography>
         <TextField
           className="form-input"
@@ -496,7 +560,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
         {category && (category.name.toLowerCase().includes('fusion') || category.name.toLowerCase().includes('food') || category.name.toLowerCase().includes('package')) && (
           <>
             <Typography className="field-label" sx={{ mt: 3, mb: 2 }}>
-              📦 Bundle Items (Component Products)
+              Bundle Items (Component Products)
             </Typography>
             
             <Paper sx={{ p: 2, mb: 2, bgcolor: '#f5f5f5', border: '1px solid #e0e0e0' }}>
@@ -620,7 +684,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
         {category && (category.name.toLowerCase().includes('fusion') || category.name.toLowerCase().includes('food') || category.name.toLowerCase().includes('package')) && ingredients.length > 0 && (
           <>
             <Typography className="field-label" sx={{ mt: 3 }}>
-              🌿 Ingredients
+              Ingredients
             </Typography>
             <Autocomplete
               multiple
@@ -640,64 +704,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
           </>
         )}
 
-        {/* PRODUCT IMAGES SECTION */}
-        <Typography className="field-label" sx={{ mt: 3 }}>
-          📸 Additional Product Images
-        </Typography>
-        <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
-          (The main image field above will be used as the primary image)
-        </Typography>
-
-        {productImages.length > 0 && (
-          <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-            {productImages.map((img, idx) => (
-              <Paper key={idx} sx={{ position: 'relative', width: 100, height: 100, overflow: 'hidden' }}>
-                <img
-                  src={img.image_url?.startsWith('http') ? img.image_url : `${BACKEND_URL}${img.image_url}`}
-                  alt={`Product ${idx}`}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-                <IconButton
-                  size="small"
-                  sx={{ position: 'absolute', top: 0, right: 0, bgcolor: 'rgba(0,0,0,0.5)' }}
-                  onClick={() => setProductImages(prev => prev.filter((_, i) => i !== idx))}
-                >
-                  <DeleteIcon sx={{ color: 'white', fontSize: 16 }} />
-                </IconButton>
-              </Paper>
-            ))}
-          </Box>
-        )}
-
-        <Box>
-          <Button variant="outlined" component="label" sx={{ mb: 2 }}>
-            Add More Images
-            <input
-              type="file"
-              hidden
-              accept="image/*"
-              multiple
-              onChange={async (e) => {
-                const files = e.target.files;
-                if (!files) return;
-
-                for (const file of files) {
-                  try {
-                    setUploadingImage(true);
-                    const res = await uploadProductImage(file);
-                    setProductImages(prev => [...prev, { image_url: res.url, alt_text: '', display_order: prev.length + 1 }]);
-                  } catch (err) {
-                    console.error(err);
-                  } finally {
-                    setUploadingImage(false);
-                  }
-                }
-              }}
-            />
-          </Button>
-          {uploadingImage && <Typography variant="body2">Uploading images...</Typography>}
-        </Box>
-
+        
         {/* DESCRIPTION */}
         {/* <Typography className="field-label" sx={{ mt: 2 }}>
           Description
