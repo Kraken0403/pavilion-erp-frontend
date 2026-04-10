@@ -197,6 +197,9 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
 
         const imagesData = await getProductImages(productToEdit.id);
         setProductImages(Array.isArray(imagesData) ? imagesData : []);
+        if ((!productToEdit.image_url || productToEdit.image_url === '') && Array.isArray(imagesData) && imagesData.length) {
+          setImageUrl(imagesData[0].image_url);
+        }
 
         const ingredientsData = await getProductIngredients(productToEdit.id);
         setSelectedIngredients(Array.isArray(ingredientsData) ? ingredientsData.map(i => i.id) : []);
@@ -500,7 +503,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
 
         <Box>
           <Button variant="outlined" component="label" sx={{ mb: 2 }}>
-            Add More Images
+            Add Images
             <input
               type="file"
               hidden
@@ -514,7 +517,14 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                   try {
                     setUploadingImage(true);
                     const res = await uploadProductImage(file);
-                    setProductImages(prev => [...prev, { image_url: res.url, alt_text: '', display_order: prev.length + 1 }]);
+                    setProductImages(prev => {
+                      const next = [...prev, { image_url: res.url, alt_text: '', display_order: prev.length + 1 }];
+                      return next;
+                    });
+                    // If no main image set yet, use the first uploaded image as main
+                    if (!imageUrl) {
+                      setImageUrl(res.url);
+                    }
                   } catch (err) {
                     console.error(err);
                   } finally {
