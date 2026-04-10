@@ -442,7 +442,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
   };
 
   return (
-    <Dialog className="add-product-dialog" open={open} maxWidth="md" fullWidth>
+    <Dialog className="add-product-dialog" open={open} maxWidth="lg" fullWidth>
       <DialogTitle className="dialog-title">
         {mode === "edit"
           ? "Edit Product"
