@@ -34,6 +34,7 @@ import {
 } from "../../services/productServices";
 
 import { useConfirm } from "../../context/ConfirmContext";
+import { useSettings } from "../../context/SettingsContext";
 
 import "../../assets/styles/AddProductDialog.scss";
 import { BACKEND_URL } from '../../config/env'
@@ -121,6 +122,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
   /* ---------------- SUBMIT ---------------- */
   const [submitting, setSubmitting] = useState(false);
   const showConfirm = useConfirm();
+  const { settings } = useSettings();
 
   /* ---------------- LOAD MASTER DATA ---------------- */
   useEffect(() => {
@@ -895,6 +897,13 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
               type="number"
               value={sellingPrice}
               onChange={e => setSellingPrice(e.target.value)}
+              helperText={
+                settings && settings.gst_pricing_mode
+                  ? (settings.gst_pricing_mode === 'EXCLUSIVE'
+                      ? 'Selling Price is treated as the base price when site GST mode = EXCLUSIVE.'
+                      : 'Selling Price is the displayed (inclusive) price when site GST mode = INCLUSIVE.')
+                  : 'Selling price interpretation depends on site GST mode.'
+              }
             />
           </Grid>
 
