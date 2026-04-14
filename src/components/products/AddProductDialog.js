@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -95,8 +95,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
   const [categories, setCategoriesState] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [selectedAddOnProducts, setSelectedAddOnProducts] = useState([]);
-  const [previewUrl, setPreviewUrl] = useState("")
-  const previewObjectUrlRef = useRef("")
+  // preview/local preview removed — we use `productImages` + `imageUrl` for main image
 
   /* ---- NEW: BUNDLE ITEMS, IMAGES, INGREDIENTS ---- */
   const [ingredients, setIngredientsState] = useState([]);
@@ -111,12 +110,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
   });
 
   const [uploadingImage, setUploadingImage] = useState(false)
-  const clearLocalPreviewObjectUrl = () => {
-    if (previewObjectUrlRef.current) {
-      URL.revokeObjectURL(previewObjectUrlRef.current)
-      previewObjectUrlRef.current = ""
-    }
-  }
+  // no local preview handling; images handled via `productImages` and `imageUrl`
 
 
 
@@ -163,8 +157,6 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
     setName(productToEdit.name || "");
     setDescription(productToEdit.description || "");
     setImageUrl(productToEdit.image_url || "");
-    clearLocalPreviewObjectUrl()
-    setPreviewUrl("") // ensure clean state
     setBrand(productToEdit.brand || "");
 
 
@@ -256,7 +248,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
 
   useEffect(() => {
     return () => {
-      clearLocalPreviewObjectUrl()
+      // no local preview cleanup required
     }
   }, [])
 
@@ -267,23 +259,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
     setAttributeOptionsState(prev => ({ ...prev, [attrId]: opts }));
   };
 
-  const handleImageUpload = async (file) => {
-    if (!file) return
-
-    setUploadingImage(true)
-
-    try {
-      const res = await uploadProductImage(file)
-      setImageUrl(res.url)
-      clearLocalPreviewObjectUrl()
-      setPreviewUrl("")
-    } catch (err) {
-      console.error(err)
-      await showConfirm({ message: "Image upload failed", confirmText: "OK" });
-    } finally {
-      setUploadingImage(false)
-    }
-  }
+  // single-file upload helper removed; multi-image uploader uses uploadProductImage inline
 
 
 
@@ -340,8 +316,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
     setBundleItems([]);
     setProductImages([]);
     setNewBundleItem({ component_product_id: null, quantity: 1, unit: "piece", description: "" });
-    clearLocalPreviewObjectUrl()
-    setPreviewUrl("")
+    // preview state not used
 
   };
 
@@ -469,7 +444,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
 
         {/* PRODUCT IMAGES SECTION (placed earlier in flow) */}
         <Typography className="field-label" sx={{ mt: 3 }}>
-          Additional Product Images
+          Product Images
         </Typography>
         <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
           The main image field below will be used as the primary image. You can set any uploaded image as main.
@@ -488,7 +463,6 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                   <Button size="small" variant="contained" onClick={() => {
                     const url = img.image_url?.startsWith('http') ? img.image_url : img.image_url;
                     setImageUrl(img.image_url || url);
-                    setPreviewUrl('');
                   }} sx={{ bgcolor: '#E11D2E', '&:hover': { bgcolor: '#b50f1a' }, fontSize: 11 }}>
                     Use as main
                   </Button>
@@ -742,63 +716,8 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
         </div>
 
 
-        {/* IMAGE URL */}
-        <Typography className="field-label" sx={{ mt: 2 }}>
-          Product Image
-        </Typography>
-
-        <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-          <Button variant="outlined" component="label">
-            Browse Image
-            <input
-              type="file"
-              hidden
-              accept="image/*"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (!file) return
-
-                // 🔥 INSTANT local preview
-                clearLocalPreviewObjectUrl()
-                const localPreview = URL.createObjectURL(file)
-                previewObjectUrlRef.current = localPreview
-                setPreviewUrl(localPreview)
-
-                handleImageUpload(file)
-              }}
-
-
-            />
-          </Button>
-
-          {uploadingImage && (
-            <Typography variant="body2">Uploading...</Typography>
-          )}
-        </Box>
-
-        {/* Preview */}
-        {(previewUrl || imageUrl) && (
-          <Box sx={{ mt: 2 }}>
-            <img
-              src={
-                previewUrl ||
-                (imageUrl?.startsWith("http")
-                  ? imageUrl
-                  : `${BACKEND_URL}${imageUrl}`)
-              }
-              alt="Product preview"
-              style={{
-                width: 120,
-                height: 120,
-                objectFit: "cover",
-                borderRadius: 6,
-                border: "1px solid #ddd",
-                display: "block"
-              }}
-            />
-
-          </Box>
-        )}
+        {/* NOTE: Single unified image upload handled above in "Additional Product Images" section.
+            Uploaded images are shown in upload order and you can mark any image as the primary image using "Use as main". */}
 
 
 
