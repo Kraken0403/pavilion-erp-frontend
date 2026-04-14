@@ -17,6 +17,8 @@ import Autocomplete from "@mui/material/Autocomplete";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import DeleteIcon from "@mui/icons-material/Delete";
+import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
+import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import ReactQuill from 'react-quill'
 
 import {
@@ -110,6 +112,8 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
   });
 
   const [uploadingImage, setUploadingImage] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const [previewIndex, setPreviewIndex] = useState(0)
   // no local preview handling; images handled via `productImages` and `imageUrl`
 
 
@@ -457,7 +461,8 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                 <img
                   src={img.image_url?.startsWith('http') ? img.image_url : `${BACKEND_URL}${img.image_url}`}
                   alt={`Product ${idx}`}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
+                  onClick={() => { setPreviewIndex(idx); setPreviewOpen(true); }}
                 />
                 <Box sx={{ position: 'absolute', bottom: 4, left: 4, right: 4, display: 'flex', justifyContent: 'space-between', gap: 1 }}>
                   <Button size="small" variant="contained" onClick={() => {
@@ -474,6 +479,30 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
             ))}
           </Box>
         )}
+
+          {/* Image preview dialog */}
+          <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} maxWidth="md">
+            <Box sx={{ position: 'relative', bgcolor: '#000' }}>
+              <IconButton onClick={() => setPreviewOpen(false)} sx={{ position: 'absolute', right: 8, top: 8, color: '#fff', zIndex: 10 }}>
+                <CloseIcon />
+              </IconButton>
+              <IconButton onClick={() => setPreviewIndex(i => (i - 1 + productImages.length) % productImages.length)} sx={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#fff', zIndex: 10 }}>
+                <ArrowBackIosNewIcon />
+              </IconButton>
+              <IconButton onClick={() => setPreviewIndex(i => (i + 1) % productImages.length)} sx={{ position: 'absolute', right: 48, top: '50%', transform: 'translateY(-50%)', color: '#fff', zIndex: 10 }}>
+                <ArrowForwardIosIcon />
+              </IconButton>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
+                {productImages[previewIndex] && (
+                  <img
+                    src={productImages[previewIndex].image_url?.startsWith('http') ? productImages[previewIndex].image_url : `${BACKEND_URL}${productImages[previewIndex].image_url}`}
+                    alt={`Preview ${previewIndex}`}
+                    style={{ maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain' }}
+                  />
+                )}
+              </Box>
+            </Box>
+          </Dialog>
 
         <Box>
           <Button variant="outlined" component="label" sx={{ mb: 2 }}>
