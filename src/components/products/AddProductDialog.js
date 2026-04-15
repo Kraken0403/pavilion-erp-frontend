@@ -29,6 +29,8 @@ import {
   uploadProductImage,
   getIngredients,
   getProductImages,
+  addProductImage,
+  deleteProductImage,
   getProductIngredients,
   getProductBundleItems
 } from "../../services/productServices";
@@ -467,13 +469,34 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                   onClick={() => { setPreviewIndex(idx); setPreviewOpen(true); }}
                 />
                 <Box sx={{ position: 'absolute', bottom: 4, left: 4, right: 4, display: 'flex', justifyContent: 'space-between', gap: 1 }}>
-                  <Button size="small" variant="contained" onClick={() => {
+                  <Button size="small" variant="contained" onClick={async () => {
                     const url = img.image_url?.startsWith('http') ? img.image_url : img.image_url;
                     setImageUrl(img.image_url || url);
+                    // mark locally as primary for UI highlight
+                    setProductImages(prev => prev.map((p, pi) => ({ ...p, is_primary: pi === idx ? 1 : 0 })));
                   }} sx={{ bgcolor: '#E11D2E', '&:hover': { bgcolor: '#b50f1a' }, fontSize: 11 }}>
                     Use as main
                   </Button>
-                  <IconButton size="small" sx={{ bgcolor: 'rgba(0,0,0,0.5)' }} onClick={() => setProductImages(prev => prev.filter((_, i) => i !== idx))}>
+                  <IconButton size="small" sx={{ bgcolor: 'rgba(0,0,0,0.5)' }} onClick={async () => {
+                    // If image has an id (persisted), request server delete
+                    if (img && img.id && productToEdit && productToEdit.id) {
+                      try {
+                        await deleteProductImage(productToEdit.id, img.id);
+                        const refreshed = await getProductImages(productToEdit.id);
+                        setProductImages(Array.isArray(refreshed) ? refreshed : []);
+                        // if deleted image was main, clear imageUrl
+                        if ((imageUrl || '').includes(String(img.image_url || ''))) {
+                          setImageUrl('');
+                        }
+                        return;
+                      } catch (err) {
+                        console.error('Failed to delete persisted image', err);
+                      }
+                    }
+
+                    // fallback: remove locally
+                    setProductImages(prev => prev.filter((_, i) => i !== idx));
+                  }}>
                     <DeleteIcon sx={{ color: 'white', fontSize: 16 }} />
                   </IconButton>
                 </Box>
@@ -522,10 +545,27 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                   try {
                     setUploadingImage(true);
                     const res = await uploadProductImage(file);
-                    setProductImages(prev => {
-                      const next = [...prev, { image_url: res.url, alt_text: '', display_order: prev.length + 1 }];
-                      return next;
-                    });
+                    // If editing existing product, persist the image record via API
+                    if (productToEdit && productToEdit.id) {
+                      try {
+                        await addProductImage(productToEdit.id, res.url, '', (productImages.length || 0) + 1, false);
+                        // Refresh images from server to get ids and flags
+                        const refreshed = await getProductImages(productToEdit.id);
+                        setProductImages(Array.isArray(refreshed) ? refreshed : []);
+                      } catch (err) {
+                        console.error('Failed to persist uploaded image', err);
+                        // Fallback to local add
+                        setProductImages(prev => {
+                          const next = [...prev, { image_url: res.url, alt_text: '', display_order: prev.length + 1 }];
+                          return next;
+                        });
+                      }
+                    } else {
+                      setProductImages(prev => {
+                        const next = [...prev, { image_url: res.url, alt_text: '', display_order: prev.length + 1 }];
+                        return next;
+                      });
+                    }
                     // If no main image set yet, use the first uploaded image as main
                     if (!imageUrl) {
                       setImageUrl(res.url);
