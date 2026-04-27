@@ -31,6 +31,27 @@ const BUSINESS_TYPES = [
 ];
 
 const SAFE_BACKEND_URL = (BACKEND_URL || "").replace(/\/$/, "");
+const normalizeUploadedUrl = (url) => {
+  if (!url) return null;
+  if (!/^https?:\/\//i.test(url)) return `${SAFE_BACKEND_URL}${url}`;
+
+  try {
+    const parsed = new URL(url);
+    const backendParsed = SAFE_BACKEND_URL ? new URL(SAFE_BACKEND_URL) : null;
+    // Backward compatibility for old absolute upload URLs missing /backend.
+    if (
+      backendParsed &&
+      parsed.hostname === backendParsed.hostname &&
+      parsed.pathname.startsWith("/uploads/")
+    ) {
+      return `${SAFE_BACKEND_URL}${parsed.pathname}${parsed.search || ""}${parsed.hash || ""}`;
+    }
+  } catch {
+    // If parsing fails, keep original URL
+  }
+
+  return url;
+};
 
 export default function SettingsForm({ settings, onSubmit }) {
   const [form, setForm] = useState({
@@ -90,8 +111,7 @@ export default function SettingsForm({ settings, onSubmit }) {
 
     setLocalLogoObjectUrl(null);
     if (settings.company_logo) {
-      const isAbsoluteUrl = /^https?:\/\//i.test(settings.company_logo);
-      setLogoPreview(isAbsoluteUrl ? settings.company_logo : `${SAFE_BACKEND_URL}${settings.company_logo}`);
+      setLogoPreview(normalizeUploadedUrl(settings.company_logo));
     } else {
       setLogoPreview(null);
     }

@@ -7,6 +7,7 @@ import * as XLSX from 'xlsx';
 
 const CustomersTable = ({
   customers = [],
+  onAddCustomer,
   onExportSelected,
 }) => {
   const customersPerPage = 20;
@@ -103,8 +104,8 @@ const CustomersTable = ({
   return (
     <div className="leads-table-container">
       <UtilsBar
-        buttonLabel=""
-        onButtonClick={() => {}}
+        buttonLabel="Add Customer"
+        onButtonClick={onAddCustomer}
         selectedCount={selectedRows.length}
         onExportSelected={exportSelected}
         searchValue={searchQuery}

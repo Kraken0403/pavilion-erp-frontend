@@ -11,12 +11,36 @@ function FileUploader({ label = "Upload File", fileUrl, onFileUploaded }) {
 
   const safeBackendUrl = useMemo(() => (BACKEND_URL || '').replace(/\/$/, ''), []);
 
+  const normalizeUploadedUrl = useMemo(() => {
+    return (url) => {
+      if (!url) return '';
+      if (!/^https?:\/\//i.test(url)) return `${safeBackendUrl}${url}`;
+
+      try {
+        const parsed = new URL(url);
+        const backendParsed = safeBackendUrl ? new URL(safeBackendUrl) : null;
+        // Backward compatibility: previously stored absolute URLs like
+        // https://host/uploads/x.png (missing /backend) on proxied deployments.
+        if (
+          backendParsed &&
+          parsed.hostname === backendParsed.hostname &&
+          parsed.pathname.startsWith('/uploads/')
+        ) {
+          return `${safeBackendUrl}${parsed.pathname}${parsed.search || ''}${parsed.hash || ''}`;
+        }
+      } catch {
+        // Fallback to raw URL if parsing fails
+      }
+
+      return url;
+    };
+  }, [safeBackendUrl]);
+
   const resolvedPreviewUrl = useMemo(() => {
     if (localPreview) return localPreview;
     if (!fileUrl) return '';
-    if (/^https?:\/\//i.test(fileUrl)) return fileUrl;
-    return `${safeBackendUrl}${fileUrl}`;
-  }, [fileUrl, localPreview, safeBackendUrl]);
+    return normalizeUploadedUrl(fileUrl);
+  }, [fileUrl, localPreview, normalizeUploadedUrl]);
 
   useEffect(() => {
     return () => {
