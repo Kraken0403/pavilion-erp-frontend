@@ -11,15 +11,15 @@ import {
   Grid,
   Button,
   Chip,
-  Paper
+  Paper,
 } from "@mui/material";
 import Autocomplete from "@mui/material/Autocomplete";
 import IconButton from "@mui/material/IconButton";
 import CloseIcon from "@mui/icons-material/Close";
 import DeleteIcon from "@mui/icons-material/Delete";
-import ArrowBackIosNewIcon from '@mui/icons-material/ArrowBackIosNew';
-import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
-import ReactQuill from 'react-quill'
+import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
+import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
+import ReactQuill from "react-quill";
 
 import {
   fetchAllProducts,
@@ -32,36 +32,47 @@ import {
   addProductImage,
   deleteProductImage,
   getProductIngredients,
-  getProductBundleItems
+  getProductBundleItems,
 } from "../../services/productServices";
 
 import { useConfirm } from "../../context/ConfirmContext";
 import { useSettings } from "../../context/SettingsContext";
 
 import "../../assets/styles/AddProductDialog.scss";
-import { BACKEND_URL } from '../../config/env'
-
+import { BACKEND_URL } from "../../config/env";
 
 const UNITS = [
-  'ml',
-  'ltr',
-  'l',
-  'kg',
-  'g',
-  'pcs',
-  'piece',
-  'bottle',
-  'can',
-  'cup',
-  'tsp',
-  'tbsp',
-  'box',
-  'pack',
-  'pouch',
-  'dozen'
+  // Most commonly used (90% cases)
+  "piece",
+  "pcs",
+  "unit",
+  "item",
+
+  // Combo / grouped products
+  "set",
+  "pair",
+
+  // Packaging / bulk sales
+  "box",
+  "pack",
+  "carton",
+
+  // Accessories & cables (sold by length sometimes)
+  "meter",
+  "ft",
+
+  // Optional (rare but useful)
+  "kit", // installation kits
+  "bundle", // combo offers (TV + soundbar)
 ];
 
-function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "create" }) {
+function AddProductDialog({
+  open,
+  onClose,
+  onAddProduct,
+  productToEdit,
+  mode = "create",
+}) {
   /* ---------------- CORE PRODUCT ---------------- */
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
@@ -111,15 +122,13 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
     component_product_id: null,
     quantity: 1,
     unit: "piece",
-    description: ""
+    description: "",
   });
 
-  const [uploadingImage, setUploadingImage] = useState(false)
-  const [previewOpen, setPreviewOpen] = useState(false)
-  const [previewIndex, setPreviewIndex] = useState(0)
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewIndex, setPreviewIndex] = useState(0);
   // no local preview handling; images handled via `productImages` and `imageUrl`
-
-
 
   /* ---------------- SUBMIT ---------------- */
   const [submitting, setSubmitting] = useState(false);
@@ -148,7 +157,8 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
   /* ---------------- POPULATE CATEGORY ON EDIT WHEN CATS READY ---------------- */
   useEffect(() => {
     if (!open || !productToEdit || !categories.length) return;
-    const matched = categories.find(c => c.id === productToEdit.category_id) || null;
+    const matched =
+      categories.find((c) => c.id === productToEdit.category_id) || null;
     setCategory(matched);
   }, [open, productToEdit, categories]);
 
@@ -166,8 +176,6 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
     setDescription(productToEdit.description || "");
     setImageUrl(productToEdit.image_url || "");
     setBrand(productToEdit.brand || "");
-
-
 
     setSku(productToEdit.sku || "");
     setStock(productToEdit.stock || 0);
@@ -197,25 +205,36 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
 
         const imagesData = await getProductImages(productToEdit.id);
         setProductImages(Array.isArray(imagesData) ? imagesData : []);
-        if ((!productToEdit.image_url || productToEdit.image_url === '') && Array.isArray(imagesData) && imagesData.length) {
+        if (
+          (!productToEdit.image_url || productToEdit.image_url === "") &&
+          Array.isArray(imagesData) &&
+          imagesData.length
+        ) {
           setImageUrl(imagesData[0].image_url);
         }
 
         const ingredientsData = await getProductIngredients(productToEdit.id);
-        setSelectedIngredients(Array.isArray(ingredientsData) ? ingredientsData.map(i => i.id) : []);
+        setSelectedIngredients(
+          Array.isArray(ingredientsData)
+            ? ingredientsData.map((i) => i.id)
+            : [],
+        );
       }
     })();
 
     // If backend returns variants inside productToEdit (it should from getProductById)
-    if (productToEdit.type === "variable" && Array.isArray(productToEdit.variants)) {
+    if (
+      productToEdit.type === "variable" &&
+      Array.isArray(productToEdit.variants)
+    ) {
       // Build selected attributes + selected options from existing variants
       const attrIds = new Set();
       const optMap = {}; // attrId -> options[]
-      productToEdit.variants.forEach(v => {
-        (v.attributes || []).forEach(a => {
+      productToEdit.variants.forEach((v) => {
+        (v.attributes || []).forEach((a) => {
           attrIds.add(a.attribute_id);
           if (!optMap[a.attribute_id]) optMap[a.attribute_id] = [];
-          if (!optMap[a.attribute_id].some(x => x.id === a.id)) {
+          if (!optMap[a.attribute_id].some((x) => x.id === a.id)) {
             optMap[a.attribute_id].push({ id: a.id, value: a.value });
           }
         });
@@ -230,21 +249,21 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
         for (const attrId of attrIdArr) {
           if (!attributeOptions[attrId]) {
             const opts = await getAttributeOptions(attrId);
-            setAttributeOptionsState(prev => ({ ...prev, [attrId]: opts }));
+            setAttributeOptionsState((prev) => ({ ...prev, [attrId]: opts }));
           }
         }
       })();
 
       // set variants from backend
       setVariants(
-        productToEdit.variants.map(v => ({
+        productToEdit.variants.map((v) => ({
           id: v.id,
           sku: v.sku || "",
           stock: v.stock || 0,
           cost_price: v.cost_price ?? "",
           cost_price_unit: v.cost_price_unit || "piece",
-          attributes: v.attributes || []
-        }))
+          attributes: v.attributes || [],
+        })),
       );
     } else {
       setSelectedAttributes([]);
@@ -257,37 +276,37 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
   useEffect(() => {
     return () => {
       // no local preview cleanup required
-    }
-  }, [])
+    };
+  }, []);
 
   /* ---------------- HELPERS ---------------- */
   const fetchAttributeOptionsData = async (attrId) => {
     if (attributeOptions[attrId]) return;
     const opts = await getAttributeOptions(attrId);
-    setAttributeOptionsState(prev => ({ ...prev, [attrId]: opts }));
+    setAttributeOptionsState((prev) => ({ ...prev, [attrId]: opts }));
   };
 
   // single-file upload helper removed; multi-image uploader uses uploadProductImage inline
 
-
-
   const generateVariants = () => {
-    const optionGroups = Object.values(selectedOptions).filter(arr => arr && arr.length);
+    const optionGroups = Object.values(selectedOptions).filter(
+      (arr) => arr && arr.length,
+    );
     if (!optionGroups.length) return;
 
     const cartesian = optionGroups.reduce(
-      (a, b) => a.flatMap(d => b.map(e => [...d, e])),
-      [[]]
+      (a, b) => a.flatMap((d) => b.map((e) => [...d, e])),
+      [[]],
     );
 
     setVariants(
-      cartesian.map(combo => ({
+      cartesian.map((combo) => ({
         sku: "",
         stock: 0,
         cost_price: "", // allow override, otherwise backend will fallback
         cost_price_unit: costPriceUnit, // ✅ FIXED: use state var
-        attributes: combo
-      }))
+        attributes: combo,
+      })),
     );
   };
 
@@ -314,7 +333,6 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
     setHsnSac("");
     setIsActive(1);
 
-
     setSelectedAttributes([]);
     setAttributeOptionsState({});
     setSelectedOptions({});
@@ -323,9 +341,13 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
     setSelectedIngredients([]);
     setBundleItems([]);
     setProductImages([]);
-    setNewBundleItem({ component_product_id: null, quantity: 1, unit: "piece", description: "" });
+    setNewBundleItem({
+      component_product_id: null,
+      quantity: 1,
+      unit: "piece",
+      description: "",
+    });
     // preview state not used
-
   };
 
   const handleClose = () => {
@@ -353,13 +375,19 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
 
     if (sellingPrice === "" || Number(sellingPrice) <= 0) {
       setSubmitting(false);
-      await showConfirm({ message: "Selling price is required and must be > 0", confirmText: "OK" });
+      await showConfirm({
+        message: "Selling price is required and must be > 0",
+        confirmText: "OK",
+      });
       return;
     }
 
     if (Number(gstRate) < 0 || Number(gstRate) > 28) {
       setSubmitting(false);
-      await showConfirm({ message: "GST rate must be between 0 and 28%", confirmText: "OK" });
+      await showConfirm({
+        message: "GST rate must be between 0 and 28%",
+        confirmText: "OK",
+      });
       return;
     }
 
@@ -372,7 +400,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
       type,
 
       // product sku/stock only for simple
-      sku: type === "simple" ? (sku || "") : "",
+      sku: type === "simple" ? sku || "" : "",
       stock: type === "simple" ? Number(stock || 0) : 0,
 
       // pricing mode
@@ -395,31 +423,31 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
       gst_rate: Number(gstRate || 0),
       hsn_sac: hsnSac || null,
 
-
       is_active: Number(isActive) === 0 ? 0 : 1,
 
       // variants
       variants:
         type === "variable"
-          ? variants.map(v => ({
-            id: v.id && String(v.id).startsWith("tmp_") ? undefined : v.id, // safety
-            sku: v.sku || "",
-            stock: Number(v.stock || 0),
-            cost_price: v.cost_price === "" ? undefined : Number(v.cost_price || 0),
-            cost_price_unit: v.cost_price_unit || costPriceUnit,
-            attribute_option_ids: (v.attributes || []).map(a => a.id)
-          }))
+          ? variants.map((v) => ({
+              id: v.id && String(v.id).startsWith("tmp_") ? undefined : v.id, // safety
+              sku: v.sku || "",
+              stock: Number(v.stock || 0),
+              cost_price:
+                v.cost_price === "" ? undefined : Number(v.cost_price || 0),
+              cost_price_unit: v.cost_price_unit || costPriceUnit,
+              attribute_option_ids: (v.attributes || []).map((a) => a.id),
+            }))
           : [],
 
-      add_on_product_ids: selectedAddOnProducts.map(p => p.id),
+      add_on_product_ids: selectedAddOnProducts.map((p) => p.id),
       bundle_items: bundleItems,
       ingredient_ids: selectedIngredients,
-      product_images: productImages
+      product_images: productImages,
     };
 
     try {
-      await onAddProduct(payload)
-      setSubmitting(false)
+      await onAddProduct(payload);
+      setSubmitting(false);
     } catch (e) {
       setSubmitting(false);
       // You already show snackbar in parent; just keep this silent
@@ -447,57 +475,121 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
           className="form-input"
           fullWidth
           value={name}
-          onChange={e => setName(e.target.value)}
+          onChange={(e) => setName(e.target.value)}
         />
 
         {/* PRODUCT IMAGES SECTION (placed earlier in flow) */}
         <Typography className="field-label" sx={{ mt: 3 }}>
           Product Images
         </Typography>
-        <Typography variant="body2" sx={{ color: '#666', mb: 1 }}>
-          The main image field below will be used as the primary image. You can set any uploaded image as main.
+        <Typography variant="body2" sx={{ color: "#666", mb: 1 }}>
+          The main image field below will be used as the primary image. You can
+          set any uploaded image as main.
         </Typography>
 
         {productImages.length > 0 && (
-          <Box sx={{ mb: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          <Box sx={{ mb: 2, display: "flex", flexWrap: "wrap", gap: 1 }}>
             {productImages.map((img, idx) => (
-              <Paper key={idx} sx={{ position: 'relative', width: 100, height: 100, overflow: 'hidden' }}>
+              <Paper
+                key={idx}
+                sx={{
+                  position: "relative",
+                  width: 100,
+                  height: 100,
+                  overflow: "hidden",
+                }}
+              >
                 <img
-                  src={img.image_url?.startsWith('http') ? img.image_url : `${BACKEND_URL}${img.image_url}`}
+                  src={
+                    img.image_url?.startsWith("http")
+                      ? img.image_url
+                      : `${BACKEND_URL}${img.image_url}`
+                  }
                   alt={`Product ${idx}`}
-                  style={{ width: '100%', height: '100%', objectFit: 'cover', cursor: 'pointer' }}
-                  onClick={() => { setPreviewIndex(idx); setPreviewOpen(true); }}
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => {
+                    setPreviewIndex(idx);
+                    setPreviewOpen(true);
+                  }}
                 />
-                <Box sx={{ position: 'absolute', bottom: 4, left: 4, right: 4, display: 'flex', justifyContent: 'space-between', gap: 1 }}>
-                  <Button size="small" variant="contained" onClick={async () => {
-                    const url = img.image_url?.startsWith('http') ? img.image_url : img.image_url;
-                    setImageUrl(img.image_url || url);
-                    // mark locally as primary for UI highlight
-                    setProductImages(prev => prev.map((p, pi) => ({ ...p, is_primary: pi === idx ? 1 : 0 })));
-                  }} sx={{ bgcolor: '#E11D2E', '&:hover': { bgcolor: '#b50f1a' }, fontSize: 11 }}>
+                <Box
+                  sx={{
+                    position: "absolute",
+                    bottom: 4,
+                    left: 4,
+                    right: 4,
+                    display: "flex",
+                    justifyContent: "space-between",
+                    gap: 1,
+                  }}
+                >
+                  <Button
+                    size="small"
+                    variant="contained"
+                    onClick={async () => {
+                      const url = img.image_url?.startsWith("http")
+                        ? img.image_url
+                        : img.image_url;
+                      setImageUrl(img.image_url || url);
+                      // mark locally as primary for UI highlight
+                      setProductImages((prev) =>
+                        prev.map((p, pi) => ({
+                          ...p,
+                          is_primary: pi === idx ? 1 : 0,
+                        })),
+                      );
+                    }}
+                    sx={{
+                      bgcolor: "#E11D2E",
+                      "&:hover": { bgcolor: "#b50f1a" },
+                      fontSize: 11,
+                    }}
+                  >
                     Use as main
                   </Button>
-                  <IconButton size="small" sx={{ bgcolor: 'rgba(0,0,0,0.5)' }} onClick={async () => {
-                    // If image has an id (persisted), request server delete
-                    if (img && img.id && productToEdit && productToEdit.id) {
-                      try {
-                        await deleteProductImage(productToEdit.id, img.id);
-                        const refreshed = await getProductImages(productToEdit.id);
-                        setProductImages(Array.isArray(refreshed) ? refreshed : []);
-                        // if deleted image was main, clear imageUrl
-                        if ((imageUrl || '').includes(String(img.image_url || ''))) {
-                          setImageUrl('');
+                  <IconButton
+                    size="small"
+                    sx={{ bgcolor: "rgba(0,0,0,0.5)" }}
+                    onClick={async () => {
+                      // If image has an id (persisted), request server delete
+                      if (img && img.id && productToEdit && productToEdit.id) {
+                        try {
+                          await deleteProductImage(productToEdit.id, img.id);
+                          const refreshed = await getProductImages(
+                            productToEdit.id,
+                          );
+                          setProductImages(
+                            Array.isArray(refreshed) ? refreshed : [],
+                          );
+                          // if deleted image was main, clear imageUrl
+                          if (
+                            (imageUrl || "").includes(
+                              String(img.image_url || ""),
+                            )
+                          ) {
+                            setImageUrl("");
+                          }
+                          return;
+                        } catch (err) {
+                          console.error(
+                            "Failed to delete persisted image",
+                            err,
+                          );
                         }
-                        return;
-                      } catch (err) {
-                        console.error('Failed to delete persisted image', err);
                       }
-                    }
 
-                    // fallback: remove locally
-                    setProductImages(prev => prev.filter((_, i) => i !== idx));
-                  }}>
-                    <DeleteIcon sx={{ color: 'white', fontSize: 16 }} />
+                      // fallback: remove locally
+                      setProductImages((prev) =>
+                        prev.filter((_, i) => i !== idx),
+                      );
+                    }}
+                  >
+                    <DeleteIcon sx={{ color: "white", fontSize: 16 }} />
                   </IconButton>
                 </Box>
               </Paper>
@@ -505,29 +597,83 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
           </Box>
         )}
 
-          {/* Image preview dialog */}
-          <Dialog open={previewOpen} onClose={() => setPreviewOpen(false)} maxWidth="md">
-            <Box sx={{ position: 'relative', bgcolor: '#000' }}>
-              <IconButton onClick={() => setPreviewOpen(false)} sx={{ position: 'absolute', right: 8, top: 8, color: '#fff', zIndex: 10 }}>
-                <CloseIcon />
-              </IconButton>
-              <IconButton onClick={() => setPreviewIndex(i => (i - 1 + productImages.length) % productImages.length)} sx={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', color: '#fff', zIndex: 10 }}>
-                <ArrowBackIosNewIcon />
-              </IconButton>
-              <IconButton onClick={() => setPreviewIndex(i => (i + 1) % productImages.length)} sx={{ position: 'absolute', right: 48, top: '50%', transform: 'translateY(-50%)', color: '#fff', zIndex: 10 }}>
-                <ArrowForwardIosIcon />
-              </IconButton>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', p: 2 }}>
-                {productImages[previewIndex] && (
-                  <img
-                    src={productImages[previewIndex].image_url?.startsWith('http') ? productImages[previewIndex].image_url : `${BACKEND_URL}${productImages[previewIndex].image_url}`}
-                    alt={`Preview ${previewIndex}`}
-                    style={{ maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain' }}
-                  />
-                )}
-              </Box>
+        {/* Image preview dialog */}
+        <Dialog
+          open={previewOpen}
+          onClose={() => setPreviewOpen(false)}
+          maxWidth="md"
+        >
+          <Box sx={{ position: "relative", bgcolor: "#000" }}>
+            <IconButton
+              onClick={() => setPreviewOpen(false)}
+              sx={{
+                position: "absolute",
+                right: 8,
+                top: 8,
+                color: "#fff",
+                zIndex: 10,
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+            <IconButton
+              onClick={() =>
+                setPreviewIndex(
+                  (i) => (i - 1 + productImages.length) % productImages.length,
+                )
+              }
+              sx={{
+                position: "absolute",
+                left: 8,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#fff",
+                zIndex: 10,
+              }}
+            >
+              <ArrowBackIosNewIcon />
+            </IconButton>
+            <IconButton
+              onClick={() =>
+                setPreviewIndex((i) => (i + 1) % productImages.length)
+              }
+              sx={{
+                position: "absolute",
+                right: 48,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "#fff",
+                zIndex: 10,
+              }}
+            >
+              <ArrowForwardIosIcon />
+            </IconButton>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                p: 2,
+              }}
+            >
+              {productImages[previewIndex] && (
+                <img
+                  src={
+                    productImages[previewIndex].image_url?.startsWith("http")
+                      ? productImages[previewIndex].image_url
+                      : `${BACKEND_URL}${productImages[previewIndex].image_url}`
+                  }
+                  alt={`Preview ${previewIndex}`}
+                  style={{
+                    maxWidth: "90vw",
+                    maxHeight: "80vh",
+                    objectFit: "contain",
+                  }}
+                />
+              )}
             </Box>
-          </Dialog>
+          </Box>
+        </Dialog>
 
         <Box>
           <Button variant="outlined" component="label" sx={{ mb: 2 }}>
@@ -548,21 +694,45 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                     // If editing existing product, persist the image record via API
                     if (productToEdit && productToEdit.id) {
                       try {
-                        await addProductImage(productToEdit.id, res.url, '', (productImages.length || 0) + 1, false);
+                        await addProductImage(
+                          productToEdit.id,
+                          res.url,
+                          "",
+                          (productImages.length || 0) + 1,
+                          false,
+                        );
                         // Refresh images from server to get ids and flags
-                        const refreshed = await getProductImages(productToEdit.id);
-                        setProductImages(Array.isArray(refreshed) ? refreshed : []);
+                        const refreshed = await getProductImages(
+                          productToEdit.id,
+                        );
+                        setProductImages(
+                          Array.isArray(refreshed) ? refreshed : [],
+                        );
                       } catch (err) {
-                        console.error('Failed to persist uploaded image', err);
+                        console.error("Failed to persist uploaded image", err);
                         // Fallback to local add
-                        setProductImages(prev => {
-                          const next = [...prev, { image_url: res.url, alt_text: '', display_order: prev.length + 1 }];
+                        setProductImages((prev) => {
+                          const next = [
+                            ...prev,
+                            {
+                              image_url: res.url,
+                              alt_text: "",
+                              display_order: prev.length + 1,
+                            },
+                          ];
                           return next;
                         });
                       }
                     } else {
-                      setProductImages(prev => {
-                        const next = [...prev, { image_url: res.url, alt_text: '', display_order: prev.length + 1 }];
+                      setProductImages((prev) => {
+                        const next = [
+                          ...prev,
+                          {
+                            image_url: res.url,
+                            alt_text: "",
+                            display_order: prev.length + 1,
+                          },
+                        ];
                         return next;
                       });
                     }
@@ -579,16 +749,19 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
               }}
             />
           </Button>
-          {uploadingImage && <Typography variant="body2">Uploading images...</Typography>}
+          {uploadingImage && (
+            <Typography variant="body2">Uploading images...</Typography>
+          )}
         </Box>
 
-
-        <Typography className="field-label" sx={{ mt: 2 }}>Brand Name</Typography>
+        <Typography className="field-label" sx={{ mt: 2 }}>
+          Brand Name
+        </Typography>
         <TextField
           className="form-input"
           fullWidth
           value={brand}
-          onChange={e => setBrand(e.target.value)}
+          onChange={(e) => setBrand(e.target.value)}
         />
 
         <Typography className="field-label" sx={{ mt: 2 }}>
@@ -596,10 +769,12 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
         </Typography>
         <Autocomplete
           multiple
-          options={allProducts.filter(p => p.id !== productToEdit?.id)}
+          options={allProducts.filter((p) => p.id !== productToEdit?.id)}
           value={selectedAddOnProducts}
           isOptionEqualToValue={(option, value) => option.id === value.id}
-          getOptionLabel={o => `${o?.name || ''}${o?.selling_price != null ? ` (₹ ${o.selling_price})` : ''}`}
+          getOptionLabel={(o) =>
+            `${o?.name || ""}${o?.selling_price != null ? ` (₹ ${o.selling_price})` : ""}`
+          }
           onChange={(e, value) => setSelectedAddOnProducts(value || [])}
           renderInput={(params) => (
             <TextField
@@ -612,154 +787,222 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
         />
 
         {/* BUNDLE ITEMS SECTION (for Fusion Boxes & Food Packages) */}
-        {category && (category.name.toLowerCase().includes('fusion') || category.name.toLowerCase().includes('food') || category.name.toLowerCase().includes('package')) && (
-          <>
-            <Typography className="field-label" sx={{ mt: 3, mb: 2 }}>
-              Bundle Items (Component Products)
-            </Typography>
-            
-            <Paper sx={{ p: 2, mb: 2, bgcolor: '#f5f5f5', border: '1px solid #e0e0e0' }}>
-              <Typography className="field-label" sx={{ mb: 2 }}>Add Bundle Item</Typography>
-              
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={5}>
-                  <Autocomplete
-                    options={allProducts.filter(p => p.id !== productToEdit?.id)}
-                    getOptionLabel={o => `${o?.name || ''} (₹${o?.selling_price || 0})`}
-                    value={allProducts.find(p => p.id === newBundleItem.component_product_id) || null}
-                    onChange={(e, val) => {
-                      setNewBundleItem(prev => ({ ...prev, component_product_id: val?.id || null }));
-                    }}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        className="form-input"
-                        fullWidth
-                        placeholder="Select product"
-                      />
-                    )}
-                  />
-                </Grid>
+        {category &&
+          (category.name.toLowerCase().includes("fusion") ||
+            category.name.toLowerCase().includes("food") ||
+            category.name.toLowerCase().includes("package")) && (
+            <>
+              <Typography className="field-label" sx={{ mt: 3, mb: 2 }}>
+                Bundle Items (Component Products)
+              </Typography>
 
-                <Grid item xs={6} md={2}>
-                  <TextField
-                    className="form-input"
-                    fullWidth
-                    type="number"
-                    label="Qty"
-                    value={newBundleItem.quantity}
-                    onChange={(e) => setNewBundleItem(prev => ({ ...prev, quantity: e.target.value }))}
-                    inputProps={{ step: "0.1", min: "0.1" }}
-                  />
-                </Grid>
+              <Paper
+                sx={{
+                  p: 2,
+                  mb: 2,
+                  bgcolor: "#f5f5f5",
+                  border: "1px solid #e0e0e0",
+                }}
+              >
+                <Typography className="field-label" sx={{ mb: 2 }}>
+                  Add Bundle Item
+                </Typography>
 
-                <Grid item xs={6} md={2}>
-                  <TextField
-                    className="form-input"
-                    fullWidth
-                    select
-                    label="Unit"
-                    value={newBundleItem.unit}
-                    onChange={(e) => setNewBundleItem(prev => ({ ...prev, unit: e.target.value }))}
-                  >
-                    {UNITS.map(u => (
-                      <MenuItem key={u} value={u}>{u}</MenuItem>
-                    ))}
-                  </TextField>
-                </Grid>
-
-                <Grid item xs={12} md={3}>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    sx={{ bgcolor: '#4CAF50', color: 'white' }}
-                    onClick={() => {
-                      if (newBundleItem.component_product_id) {
-                        const product = allProducts.find(p => p.id === newBundleItem.component_product_id);
-                        setBundleItems(prev => [
-                          ...prev,
-                          {
-                            ...newBundleItem,
-                            product_id: product?.id,
-                            name: product?.name,
-                            selling_price: product?.selling_price,
-                            image_url: product?.image_url,
-                            display_order: prev.length + 1
-                          }
-                        ]);
-                        setNewBundleItem({ component_product_id: null, quantity: 1, unit: "piece", description: "" });
+                <Grid container spacing={2}>
+                  <Grid item xs={12} md={5}>
+                    <Autocomplete
+                      options={allProducts.filter(
+                        (p) => p.id !== productToEdit?.id,
+                      )}
+                      getOptionLabel={(o) =>
+                        `${o?.name || ""} (₹${o?.selling_price || 0})`
                       }
-                    }}
-                  >
-                    Add Item
-                  </Button>
-                </Grid>
-
-                <Grid item xs={12}>
-                  <TextField
-                    className="form-input"
-                    fullWidth
-                    multiline
-                    rows={2}
-                    label="Description (optional)"
-                    value={newBundleItem.description}
-                    onChange={(e) => setNewBundleItem(prev => ({ ...prev, description: e.target.value }))}
-                    placeholder="e.g., Traditional yogurt drink"
-                  />
-                </Grid>
-              </Grid>
-            </Paper>
-
-            {bundleItems.length > 0 && (
-              <Box sx={{ mb: 3 }}>
-                <Typography className="field-label" sx={{ mb: 1 }}>Selected Bundle Items:</Typography>
-                {bundleItems.map((item, idx) => (
-                  <Chip
-                    key={idx}
-                    label={`${item.name} (${item.quantity} ${item.unit})`}
-                    onDelete={() => setBundleItems(prev => prev.filter((_, i) => i !== idx))}
-                    sx={{ mr: 1, mb: 1 }}
-                    avatar={
-                      item.image_url ? (
-                        <img
-                          src={item.image_url.startsWith('http') ? item.image_url : `${BACKEND_URL}${item.image_url}`}
-                          alt={item.name}
-                          style={{ width: 24, height: 24, objectFit: 'cover' }}
+                      value={
+                        allProducts.find(
+                          (p) => p.id === newBundleItem.component_product_id,
+                        ) || null
+                      }
+                      onChange={(e, val) => {
+                        setNewBundleItem((prev) => ({
+                          ...prev,
+                          component_product_id: val?.id || null,
+                        }));
+                      }}
+                      renderInput={(params) => (
+                        <TextField
+                          {...params}
+                          className="form-input"
+                          fullWidth
+                          placeholder="Select product"
                         />
-                      ) : undefined
-                    }
-                  />
-                ))}
-              </Box>
-            )}
-          </>
-        )}
+                      )}
+                    />
+                  </Grid>
+
+                  <Grid item xs={6} md={2}>
+                    <TextField
+                      className="form-input"
+                      fullWidth
+                      type="number"
+                      label="Qty"
+                      value={newBundleItem.quantity}
+                      onChange={(e) =>
+                        setNewBundleItem((prev) => ({
+                          ...prev,
+                          quantity: e.target.value,
+                        }))
+                      }
+                      inputProps={{ step: "0.1", min: "0.1" }}
+                    />
+                  </Grid>
+
+                  <Grid item xs={6} md={2}>
+                    <TextField
+                      className="form-input"
+                      fullWidth
+                      select
+                      label="Unit"
+                      value={newBundleItem.unit}
+                      onChange={(e) =>
+                        setNewBundleItem((prev) => ({
+                          ...prev,
+                          unit: e.target.value,
+                        }))
+                      }
+                    >
+                      {UNITS.map((u) => (
+                        <MenuItem key={u} value={u}>
+                          {u}
+                        </MenuItem>
+                      ))}
+                    </TextField>
+                  </Grid>
+
+                  <Grid item xs={12} md={3}>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      sx={{ bgcolor: "#4CAF50", color: "white" }}
+                      onClick={() => {
+                        if (newBundleItem.component_product_id) {
+                          const product = allProducts.find(
+                            (p) => p.id === newBundleItem.component_product_id,
+                          );
+                          setBundleItems((prev) => [
+                            ...prev,
+                            {
+                              ...newBundleItem,
+                              product_id: product?.id,
+                              name: product?.name,
+                              selling_price: product?.selling_price,
+                              image_url: product?.image_url,
+                              display_order: prev.length + 1,
+                            },
+                          ]);
+                          setNewBundleItem({
+                            component_product_id: null,
+                            quantity: 1,
+                            unit: "piece",
+                            description: "",
+                          });
+                        }
+                      }}
+                    >
+                      Add Item
+                    </Button>
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <TextField
+                      className="form-input"
+                      fullWidth
+                      multiline
+                      rows={2}
+                      label="Description (optional)"
+                      value={newBundleItem.description}
+                      onChange={(e) =>
+                        setNewBundleItem((prev) => ({
+                          ...prev,
+                          description: e.target.value,
+                        }))
+                      }
+                      placeholder="e.g., Traditional yogurt drink"
+                    />
+                  </Grid>
+                </Grid>
+              </Paper>
+
+              {bundleItems.length > 0 && (
+                <Box sx={{ mb: 3 }}>
+                  <Typography className="field-label" sx={{ mb: 1 }}>
+                    Selected Bundle Items:
+                  </Typography>
+                  {bundleItems.map((item, idx) => (
+                    <Chip
+                      key={idx}
+                      label={`${item.name} (${item.quantity} ${item.unit})`}
+                      onDelete={() =>
+                        setBundleItems((prev) =>
+                          prev.filter((_, i) => i !== idx),
+                        )
+                      }
+                      sx={{ mr: 1, mb: 1 }}
+                      avatar={
+                        item.image_url ? (
+                          <img
+                            src={
+                              item.image_url.startsWith("http")
+                                ? item.image_url
+                                : `${BACKEND_URL}${item.image_url}`
+                            }
+                            alt={item.name}
+                            style={{
+                              width: 24,
+                              height: 24,
+                              objectFit: "cover",
+                            }}
+                          />
+                        ) : undefined
+                      }
+                    />
+                  ))}
+                </Box>
+              )}
+            </>
+          )}
 
         {/* INGREDIENTS SECTION (for Fusion Boxes & Food Packages) */}
-        {category && (category.name.toLowerCase().includes('fusion') || category.name.toLowerCase().includes('food') || category.name.toLowerCase().includes('package')) && ingredients.length > 0 && (
-          <>
-            <Typography className="field-label" sx={{ mt: 3 }}>
-              Ingredients
-            </Typography>
-            <Autocomplete
-              multiple
-              options={ingredients}
-              value={ingredients.filter(i => selectedIngredients.includes(i.id))}
-              getOptionLabel={o => o?.ingredient_name || ""}
-              onChange={(e, val) => setSelectedIngredients(val ? val.map(v => v.id) : [])}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  className="form-input"
-                  fullWidth
-                  placeholder="Select ingredients used in this product"
-                />
-              )}
-            />
-          </>
-        )}
+        {category &&
+          (category.name.toLowerCase().includes("fusion") ||
+            category.name.toLowerCase().includes("food") ||
+            category.name.toLowerCase().includes("package")) &&
+          ingredients.length > 0 && (
+            <>
+              <Typography className="field-label" sx={{ mt: 3 }}>
+                Ingredients
+              </Typography>
+              <Autocomplete
+                multiple
+                options={ingredients}
+                value={ingredients.filter((i) =>
+                  selectedIngredients.includes(i.id),
+                )}
+                getOptionLabel={(o) => o?.ingredient_name || ""}
+                onChange={(e, val) =>
+                  setSelectedIngredients(val ? val.map((v) => v.id) : [])
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    className="form-input"
+                    fullWidth
+                    placeholder="Select ingredients used in this product"
+                  />
+                )}
+              />
+            </>
+          )}
 
-        
         {/* DESCRIPTION */}
         {/* <Typography className="field-label" sx={{ mt: 2 }}>
           Description
@@ -777,20 +1020,17 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
           Description
         </Typography>
 
-        <div style={{ marginTop: '8px' }}>
+        <div style={{ marginTop: "8px" }}>
           <ReactQuill
             theme="snow"
-            value={description || ''}
+            value={description || ""}
             onChange={(value) => setDescription(value)}
-            style={{ height: '200px', marginBottom: '50px' }}
+            style={{ height: "200px", marginBottom: "50px" }}
           />
         </div>
 
-
         {/* NOTE: Single unified image upload handled above in "Additional Product Images" section.
             Uploaded images are shown in upload order and you can mark any image as the primary image using "Use as main". */}
-
-
 
         {/* TYPE */}
         <Typography className="field-label" sx={{ mt: 2 }}>
@@ -801,7 +1041,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
           fullWidth
           select
           value={type}
-          onChange={e => {
+          onChange={(e) => {
             const t = e.target.value;
             setType(t);
 
@@ -819,12 +1059,12 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
 
         {/* CATEGORY */}
         <Typography className="field-label" sx={{ mt: 2 }}>
-          Category <span style={{ color: 'red' }}>*</span>
+          Category <span style={{ color: "red" }}>*</span>
         </Typography>
         <Autocomplete
           options={categories}
           value={category}
-          getOptionLabel={o => o?.label || ""}
+          getOptionLabel={(o) => o?.label || ""}
           onChange={(e, val) => setCategory(val)}
           renderInput={(params) => (
             <TextField className="form-input" {...params} fullWidth required />
@@ -840,7 +1080,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                 className="form-input"
                 fullWidth
                 value={sku}
-                onChange={e => setSku(e.target.value)}
+                onChange={(e) => setSku(e.target.value)}
               />
             </Grid>
             <Grid item xs={6}>
@@ -850,7 +1090,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                 fullWidth
                 type="number"
                 value={stock}
-                onChange={e => setStock(e.target.value)}
+                onChange={(e) => setStock(e.target.value)}
               />
             </Grid>
           </Grid>
@@ -865,7 +1105,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
           fullWidth
           select
           value={costPricingMode}
-          onChange={e => setCostPricingMode(e.target.value)}
+          onChange={(e) => setCostPricingMode(e.target.value)}
         >
           <MenuItem value="absolute">Absolute</MenuItem>
           <MenuItem value="percentage">Percentage</MenuItem>
@@ -880,7 +1120,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
               fullWidth
               type="number"
               value={costDiscountPercent}
-              onChange={e => setCostDiscountPercent(e.target.value)}
+              onChange={(e) => setCostDiscountPercent(e.target.value)}
             />
           </Box>
         )}
@@ -895,7 +1135,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                 fullWidth
                 type="number"
                 value={costPrice}
-                onChange={e => setCostPrice(e.target.value)}
+                onChange={(e) => setCostPrice(e.target.value)}
               />
             </Grid>
 
@@ -906,10 +1146,12 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                 fullWidth
                 select
                 value={costPriceUnit}
-                onChange={e => setCostPriceUnit(e.target.value)}
+                onChange={(e) => setCostPriceUnit(e.target.value)}
               >
-                {UNITS.map(u => (
-                  <MenuItem key={u} value={u}>{u}</MenuItem>
+                {UNITS.map((u) => (
+                  <MenuItem key={u} value={u}>
+                    {u}
+                  </MenuItem>
                 ))}
               </TextField>
             </Grid>
@@ -921,7 +1163,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                 fullWidth
                 type="number"
                 value={costPriceQty}
-                onChange={e => setCostPriceQty(e.target.value)}
+                onChange={(e) => setCostPriceQty(e.target.value)}
               />
             </Grid>
           </Grid>
@@ -936,13 +1178,13 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
               fullWidth
               type="number"
               value={sellingPrice}
-              onChange={e => setSellingPrice(e.target.value)}
+              onChange={(e) => setSellingPrice(e.target.value)}
               helperText={
                 settings && settings.gst_pricing_mode
-                  ? (settings.gst_pricing_mode === 'EXCLUSIVE'
-                      ? 'Selling Price is treated as the base price when site GST mode = EXCLUSIVE.'
-                      : 'Selling Price is the displayed (inclusive) price when site GST mode = INCLUSIVE.')
-                  : 'Selling price interpretation depends on site GST mode.'
+                  ? settings.gst_pricing_mode === "EXCLUSIVE"
+                    ? "Selling Price is treated as the base price when site GST mode = EXCLUSIVE."
+                    : "Selling Price is the displayed (inclusive) price when site GST mode = INCLUSIVE."
+                  : "Selling price interpretation depends on site GST mode."
               }
             />
           </Grid>
@@ -954,10 +1196,12 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
               fullWidth
               select
               value={sellingPriceUnit}
-              onChange={e => setSellingPriceUnit(e.target.value)}
+              onChange={(e) => setSellingPriceUnit(e.target.value)}
             >
-              {UNITS.map(u => (
-                <MenuItem key={u} value={u}>{u}</MenuItem>
+              {UNITS.map((u) => (
+                <MenuItem key={u} value={u}>
+                  {u}
+                </MenuItem>
               ))}
             </TextField>
           </Grid>
@@ -969,12 +1213,9 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
               fullWidth
               type="number"
               value={sellingPriceQty}
-              onChange={e => setSellingPriceQty(e.target.value)}
+              onChange={(e) => setSellingPriceQty(e.target.value)}
             />
           </Grid>
-
-
-
         </Grid>
 
         <Typography className="field-label" sx={{ mt: 2 }}>
@@ -985,7 +1226,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
           fullWidth
           select
           value={isActive}
-          onChange={e => {
+          onChange={(e) => {
             const v = parseInt(e.target.value, 10);
             setIsActive(Number.isFinite(v) ? v : 1);
           }}
@@ -994,32 +1235,27 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
           <MenuItem value={0}>Inactive</MenuItem>
         </TextField>
 
-
         <Grid container spacing={2} sx={{ mt: 2 }}>
           <Grid item xs={6}>
-            <Typography className="field-label">
-              GST Rate (%)
-            </Typography>
+            <Typography className="field-label">GST Rate (%)</Typography>
             <TextField
               className="form-input"
               fullWidth
               type="number"
               value={gstRate}
-              onChange={e => setGstRate(e.target.value)}
+              onChange={(e) => setGstRate(e.target.value)}
               inputProps={{ min: 0, max: 28, step: 0.01 }}
               helperText="GST is inclusive or exclusive is based on your settings"
             />
           </Grid>
 
           <Grid item xs={6}>
-            <Typography className="field-label">
-              HSN / SAC
-            </Typography>
+            <Typography className="field-label">HSN / SAC</Typography>
             <TextField
               className="form-input"
               fullWidth
               value={hsnSac}
-              onChange={e => setHsnSac(e.target.value)}
+              onChange={(e) => setHsnSac(e.target.value)}
               placeholder="e.g. 9403 / 998391"
             />
           </Grid>
@@ -1033,7 +1269,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
             </Typography>
 
             <Box sx={{ mt: 1 }}>
-              {attributes.map(attr => {
+              {attributes.map((attr) => {
                 const active = selectedAttributes.includes(attr.id);
                 return (
                   <Button
@@ -1043,7 +1279,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                     sx={{ mr: 1, mb: 1 }}
                     onClick={() => {
                       if (active) return;
-                      setSelectedAttributes(prev => [...prev, attr.id]);
+                      setSelectedAttributes((prev) => [...prev, attr.id]);
                       fetchAttributeOptionsData(attr.id);
                     }}
                   >
@@ -1053,17 +1289,26 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
               })}
             </Box>
 
-            {selectedAttributes.map(attrId => (
-              <Box key={attrId} sx={{ mt: 2, p: 2, border: "1px solid #ddd", borderRadius: 2 }}>
-                <Box display="flex" justifyContent="space-between" alignItems="center">
+            {selectedAttributes.map((attrId) => (
+              <Box
+                key={attrId}
+                sx={{ mt: 2, p: 2, border: "1px solid #ddd", borderRadius: 2 }}
+              >
+                <Box
+                  display="flex"
+                  justifyContent="space-between"
+                  alignItems="center"
+                >
                   <Typography className="field-label">
-                    {attributes.find(a => a.id === attrId)?.name}
+                    {attributes.find((a) => a.id === attrId)?.name}
                   </Typography>
                   <Button
                     size="small"
                     onClick={() => {
-                      setSelectedAttributes(prev => prev.filter(x => x !== attrId));
-                      setSelectedOptions(prev => {
+                      setSelectedAttributes((prev) =>
+                        prev.filter((x) => x !== attrId),
+                      );
+                      setSelectedOptions((prev) => {
                         const copy = { ...prev };
                         delete copy[attrId];
                         return copy;
@@ -1078,9 +1323,9 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                   multiple
                   options={attributeOptions[attrId] || []}
                   value={selectedOptions[attrId] || []}
-                  getOptionLabel={o => o?.value || ""}
+                  getOptionLabel={(o) => o?.value || ""}
                   onChange={(e, val) => {
-                    setSelectedOptions(prev => ({ ...prev, [attrId]: val }));
+                    setSelectedOptions((prev) => ({ ...prev, [attrId]: val }));
                   }}
                   renderInput={(params) => (
                     <TextField className="form-input" {...params} fullWidth />
@@ -1089,7 +1334,11 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
               </Box>
             ))}
 
-            <Button variant="outlined" sx={{ mt: 2 }} onClick={generateVariants}>
+            <Button
+              variant="outlined"
+              sx={{ mt: 2 }}
+              onClick={generateVariants}
+            >
               Generate Variants
             </Button>
 
@@ -1099,7 +1348,8 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                 sx={{ mt: 2, p: 2, border: "1px solid #ccc", borderRadius: 2 }}
               >
                 <Typography className="field-label">
-                  Variant: {(v.attributes || []).map(a => a.value).join(" / ")}
+                  Variant:{" "}
+                  {(v.attributes || []).map((a) => a.value).join(" / ")}
                 </Typography>
 
                 <Grid container spacing={2} sx={{ mt: 1 }}>
@@ -1109,7 +1359,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                       className="form-input"
                       fullWidth
                       value={v.sku}
-                      onChange={e => {
+                      onChange={(e) => {
                         const copy = [...variants];
                         copy[idx].sku = e.target.value;
                         setVariants(copy);
@@ -1124,7 +1374,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                       fullWidth
                       type="number"
                       value={v.stock}
-                      onChange={e => {
+                      onChange={(e) => {
                         const copy = [...variants];
                         copy[idx].stock = e.target.value;
                         setVariants(copy);
@@ -1139,14 +1389,16 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                       fullWidth
                       select
                       value={v.cost_price_unit}
-                      onChange={e => {
+                      onChange={(e) => {
                         const copy = [...variants];
                         copy[idx].cost_price_unit = e.target.value;
                         setVariants(copy);
                       }}
                     >
-                      {UNITS.map(u => (
-                        <MenuItem key={u} value={u}>{u}</MenuItem>
+                      {UNITS.map((u) => (
+                        <MenuItem key={u} value={u}>
+                          {u}
+                        </MenuItem>
                       ))}
                     </TextField>
                   </Grid>
@@ -1161,7 +1413,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
                     fullWidth
                     type="number"
                     value={v.cost_price}
-                    onChange={e => {
+                    onChange={(e) => {
                       const copy = [...variants];
                       copy[idx].cost_price = e.target.value;
                       setVariants(copy);
@@ -1179,7 +1431,11 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
         <button className="cancel-btn" onClick={handleClose}>
           Cancel
         </button>
-        <button className="save-btn-x" disabled={submitting} onClick={handleSave}>
+        <button
+          className="save-btn-x"
+          disabled={submitting}
+          onClick={handleSave}
+        >
           {mode === "duplicate" ? "Create Copy" : "Save"}
         </button>
       </DialogActions>
@@ -1191,7 +1447,7 @@ function AddProductDialog({ open, onClose, onAddProduct, productToEdit, mode = "
 function flattenCategories(list, parent = []) {
   const out = [];
   const walk = (items, p) => {
-    items.forEach(cat => {
+    items.forEach((cat) => {
       const path = [...p, cat.name];
       out.push({ id: cat.id, name: cat.name, label: path.join(" > ") });
       if (cat.children?.length) walk(cat.children, path);
