@@ -70,6 +70,10 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('token', token);
     setCurrentUser(user);
     loadUserPermissions(user?.id);
+
+    // 🔥 Notify SettingsContext that user is logged in
+    window.dispatchEvent(new CustomEvent('auth:login', { detail: { token } }));
+
     try {
       connectSocket();
       if (token) authenticateSocket(token);
@@ -84,6 +88,10 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem('token');
     setCurrentUser(null);
     setModulePermissions(getDefaultModulePermissions());
+
+    // 🔥 Notify SettingsContext that user is logged out
+    window.dispatchEvent(new CustomEvent('auth:logout-with-settings'));
+
     try { disconnectSocket(); } catch (e) { }
   };
 
