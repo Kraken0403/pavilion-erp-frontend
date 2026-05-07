@@ -123,10 +123,17 @@ export const generateQuotationPdf = async (quotationId) => {
       `/quotations/${quotationId}/pdf-puppet`,
       { responseType: 'blob' } // 👈 IMPORTANT
     );
+     // Extract filename from Content-Disposition header
+    const disposition = res.headers['content-disposition'];
+    let filename = `quotation-${quotationId}.pdf`; // fallback
+    if (disposition) {
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      if (match) filename = match[1];
+    }
 
     await downloadPdfFromResponse(
       res,
-      `quotation-${quotationId}.pdf`,
+      filename,  // ✅ uses server filename
       'Failed to download quotation PDF'
     );
 
