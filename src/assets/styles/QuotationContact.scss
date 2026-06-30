@@ -1,124 +1,60 @@
-@use './variables' as *;
-@use 'sass:color' as color;
+@import './variables.scss';
 
 .quotation-contact-section {
-  background-color: $white;
+  width: 100%;
+  background: #ffffff;
 
-
-  .section-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: $blue;  
-    font-weight: 600;
-    // background-color: $bg-color;
-    font-size: 16px;
-    margin-bottom: 1rem;
-
-    // padding: 5px;
-    span {
-        display: block;
-        height: 30px;
-        width: 3px;
-        border-radius: 15px;
-        background-color: $blue;
-    }
+  > .section-title {
+    margin-bottom: 12px;
   }
 
-  /* Field labels */
   .field-label {
-    font-size: 13px;
+    margin-bottom: 5px;
+    color: #374151;
+    font-size: 12px;
     font-weight: 600;
-    color: $text-color;
-    padding-bottom: 6px;
   }
 
-  /* Standard inputs (TextField) */
   .form-input {
-    font-family: 'Poppins', sans-serif;
-
     .MuiInputBase-root {
-      background-color: $white;
-      border-radius: 10px;
-      min-height: 40px;
+      background: #f9fafb;
+      border-radius: 8px;
     }
 
     .MuiOutlinedInput-notchedOutline {
-      border-color: $input-border-color;
+      border-color: #d1d5db;
     }
 
     &:hover .MuiOutlinedInput-notchedOutline {
-      border-color: color.adjust($input-border-color, $lightness: -5%);
+      border-color: #9ca3af;
     }
 
-    &.Mui-focused .MuiOutlinedInput-notchedOutline {
-      border-color: $input-border-color;
+    .Mui-focused .MuiOutlinedInput-notchedOutline {
+      border-color: #1c64f2;
       border-width: 1px;
     }
 
     input,
     textarea {
+      color: #111827;
       font-size: 14px;
-      padding: 10px 12px;
     }
   }
 
-  /* Read-only fields (still clean, not disabled-looking) */
   .MuiInputBase-root.Mui-disabled,
   .MuiInputBase-root[readonly] {
-    background-color: #fafafa;
-    color: $text-color;
+    background: #f3f4f6;
+    color: #6b7280;
   }
 
-  /* Lead autocomplete tweaks */
-  .lead-autocomplete {
-    .MuiInputBase-root {
-      background-color: $white;
-      border-radius: 6px;
-    }
-  }
-
-  /* Notes textarea */
-  textarea {
-    line-height: 1.5;
-    resize: vertical;
-  }
-
-  /* Grid spacing consistency */
   .MuiGrid-item {
     display: flex;
     flex-direction: column;
   }
 }
 
-
-/* Dropdown paper (NOT TRANSPARENT) */
-.lead-paper {
-  background: #fff !important;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
-  overflow: hidden;
-}
-
-/* Make sure option list isn't transparent */
-.lead-paper ul {
-  background: #fff !important;
-}
-
-/* "Add Lead" row */
-.lead-add-option {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  background: #f9fafb;
+.quotation-lead-extra {
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid #e5e7eb;
-  color: #2563eb;
-  font-weight: 600;
-  cursor: pointer;
-  user-select: none;
-}
-
-.lead-add-option:hover {
-  background: #eef2ff;
 }

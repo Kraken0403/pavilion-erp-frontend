@@ -70,24 +70,42 @@ const FieldSelection = ({ onUpdateTable }) => {
     <div className='field-selector settings-wrapper'>
       <div className="field-wrapper">
         <div className="field-checks">
-          <SettingsHeading heading="Select minimum 5 fields"/>
-          {error && <p style={{ color: 'red' }}>{error}</p>}
+          <div className="field-section-header">
+            <SettingsHeading heading="Select minimum 5 fields"/>
+            <span className="selected-count">{selectedFields.length}/{allFields.length}</span>
+          </div>
+          {error && <p className="field-error">{error}</p>}
           <div className='check-inputs'>
-            {allFields.map((field) => (
-              <label key={field}>
-                <input
-                  type="checkbox"
-                  checked={selectedFields.includes(field)}
-                  onChange={() => handleCheckboxChange(field)}
-                />
-                {formatFieldName(field)}
-              </label>
-            ))}
+            {allFields.map((field) => {
+              const isSelected = selectedFields.includes(field);
+
+              return (
+                <label
+                  key={field}
+                  className={`field-toggle-row${isSelected ? ' is-selected' : ''}`}
+                >
+                  <span className="field-label">{formatFieldName(field)}</span>
+                  <span className="ios-switch">
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleCheckboxChange(field)}
+                      aria-label={`${formatFieldName(field)} visible`}
+                    />
+                    <span className="ios-switch-track">
+                      <span className="ios-switch-thumb" />
+                    </span>
+                  </span>
+                </label>
+              );
+            })}
           </div>
         </div>
       
         <div className="field-order">
-          <SettingsHeading heading="Reorder Selected Fields"/>
+          <div className="field-section-header">
+            <SettingsHeading heading="Reorder Selected Fields"/>
+          </div>
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId="fields">
               {(provided) => (

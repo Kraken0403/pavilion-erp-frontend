@@ -1,307 +1,221 @@
-@use './variables' as *;
-@use 'sass:color' as color;
+@import './variables.scss';
 
-/* ---------------------------------------
-   WRAPPER
---------------------------------------- */
 .quotation-items-section {
-  background-color: $white;
+  background: #ffffff;
 
-  /* ---------------------------------------
-     SECTION TITLE
-  --------------------------------------- */
-  .section-title {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    color: $blue;
-    font-weight: 600;
-    font-size: 16px;
-    margin-bottom: 1rem;
-
-    .sep {
-      display: block;
-      height: 30px;
-      width: 3px;
-      border-radius: 15px;
-      background-color: $blue;
-    }
+  > .section-title {
+    margin-bottom: 12px;
   }
 
-  /* ---------------------------------------
-     FIELD LABELS (CONSISTENT WITH CONTACT)
-  --------------------------------------- */
+  .qi-section-heading {
+    margin: 0;
+    padding: 16px 18px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+
   .field-label {
-    font-size: 13px;
+    padding-bottom: 4px;
+    color: #374151;
+    font-size: 12px;
     font-weight: 600;
-    color: #253858;
-    padding-bottom: 6px;
   }
 
-  /* ---------------------------------------
-     STANDARD INPUTS (MATCH CONTACT SECTION)
-  --------------------------------------- */
   .form-input {
-    font-family: 'Poppins', sans-serif;
-
     .MuiInputBase-root {
-      background-color: $white;
-      border-radius: 10px;
-      min-height: 40px;
+      min-height: 36px;
+      background: #ffffff;
+      border-radius: 8px;
     }
 
     .MuiOutlinedInput-notchedOutline {
-      border-color: $input-border-color;
+      border-color: #d1d5db;
     }
 
     &:hover .MuiOutlinedInput-notchedOutline {
-      border-color: color.adjust($input-border-color, $lightness: -5%);
-    }
-
-    &.Mui-focused .MuiOutlinedInput-notchedOutline {
-      border-color: $input-border-color;
-      border-width: 1px;
+      border-color: #9ca3af;
     }
 
     input,
     textarea {
-      font-size: 14px;
-      padding: 10px 12px;
+      padding: 7px 9px;
+      color: #111827;
+      font-size: 13px !important;
     }
   }
 
-  /* Read-only fields should not look disabled */
   .MuiInputBase-root.Mui-disabled,
   .MuiInputBase-root[readonly] {
-    background-color: #fafafa;
-    color: $text-color;
-  }
-
-  /* ---------------------------------------
-     ADD ITEM BUTTON
-  --------------------------------------- */
-  .add-item-btn {
-    margin-top: 12px;
-    font-weight: 600;
-    color: $blue;
-    background: transparent;
-    border: none;
-    cursor: pointer;
-
-    &:hover {
-      text-decoration: underline;
-    }
+    background: #f9fafb;
+    color: #374151;
   }
 }
 
-/* ---------------------------------------
-   TABLE WRAPPER
---------------------------------------- */
 .qi-table-wrap {
   width: 100%;
   overflow-x: auto;
 }
 
-/* ---------------------------------------
-   TABLE BASE
---------------------------------------- */
 .qi-table {
   width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed; // 🔥 REQUIRED FOR WIDTH CONTROL
+  min-width: 1120px;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
 
   th {
-    text-align: left;
-    font-size: 12px;
-    font-weight: 700;
-    color: #253858;
-    padding: 10px 12px;
+    padding: 11px 10px;
     border-bottom: 1px solid #e5e7eb;
+    background: #f9fafb;
+    color: #6b7280;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: left;
+    text-transform: uppercase;
     white-space: nowrap;
   }
 
   td {
-    padding: 10px 12px;
-    border-bottom: 1px solid #f1f5f9;
+    padding: 9px 10px;
+    border-bottom: 1px solid #f3f4f6;
+    color: #374151;
+    font-size: 13px;
     vertical-align: middle;
+  }
+
+  tbody tr:hover {
+    background: #f9fafb;
   }
 }
 
-/* ---------------------------------------
-   COLUMN WIDTHS
---------------------------------------- */
 .col-drag {
-  width: 36px;
+  width: 34px;
+}
+
+.col-serial {
+  width: 46px;
+  text-align: center;
 }
 
 .col-product {
   width: 25%;
-  min-width: 100px;
+  min-width: 220px;
 }
 
 .col-qty {
-  width: 80px;
+  width: 76px;
 }
 
-.col-cost {
-  width: 120px;
-}
-
-.col-mode {
-  width: 120px;
-}
-
-.col-percent {
-  width: 70px;
-}
-
-.col-selling {
+.col-cost,
+.col-selling,
+.col-discount,
+.col-gst,
+.col-total {
   width: 120px;
 }
 
 .col-margin {
-  width: 160px;
+  width: 150px;
 }
 
-.col-actions {
-  width: 40px;
+.col-remove {
+  width: 42px;
+  text-align: center;
 }
 
-/* ---------------------------------------
-   DRAG HANDLE
---------------------------------------- */
 .qi-drag {
+  color: #9ca3af;
   text-align: center;
 }
 
 .qi-grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 28px;
+  color: #9ca3af;
   cursor: grab;
   user-select: none;
-  display: inline-block;
-  padding: 6px;
-  opacity: 0.6;
 
   &:active {
     cursor: grabbing;
   }
 }
 
-/* ---------------------------------------
-   ROW INTERACTION
---------------------------------------- */
-.qi-row.is-drag-over {
-  background-color: #f5f7fb;
+.qi-row-drag-over {
+  background: #eff6ff;
 }
 
-/* ---------------------------------------
-   INPUT DENSITY (TABLE-SPECIFIC)
---------------------------------------- */
-.qi-table .form-input {
-  .MuiInputBase-root {
-    height: 38px;
-  }
-
-  input, select, option {
-    padding: 8px 10px;
-    font-size: 13px!important;
-  }
-}
-
-/* Autocomplete input alignment */
 .qi-table .MuiAutocomplete-inputRoot {
   padding-top: 0 !important;
   padding-bottom: 0 !important;
 }
 
-/* ---------------------------------------
-   DROPDOWN (PRODUCT AUTOCOMPLETE)
---------------------------------------- */
 .qi-dropdown {
-  background-color: #fff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
   overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 22px rgba(17, 24, 39, 0.08);
 }
 
-/* Add Product option */
 .qi-add-option {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 14px;
-  cursor: pointer;
-  border-top: 1px solid #eee;
-  color: #2563eb;
+  padding: 11px 13px;
+  border-top: 1px solid #e5e7eb;
+  color: #1c64f2;
+  font-size: 13px;
   font-weight: 600;
+  cursor: pointer;
 
   &:hover {
-    background-color: #f5f7fb;
+    background: #f9fafb;
   }
 }
 
-/* ---------------------------------------
-   MARGIN FIELD (READ-ONLY EMPHASIS)
---------------------------------------- */
-.qi-table .MuiInputBase-input.Mui-disabled {
-  font-weight: 600;
-  color: #1f2937;
+.add-item-btn--bottom {
+  margin: 14px 18px 16px;
 }
 
-/* ---------------------------------------
-   COST MODE SELECT FONT
---------------------------------------- */
-.mode-select {
-    .MuiSelect-select {
-      font-family: 'Poppins', sans-serif;
-      font-size: 13px;
-      font-weight: 500;
-    }
+.qi-empty-state {
+  min-height: 152px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 26px 16px 32px;
+  border-top: 1px solid #e5e7eb;
+  color: #6b7280;
+  text-align: center;
+
+  strong {
+    color: #111827;
+    font-size: 15px;
+    font-weight: 700;
   }
-  
-  .mode-option {
-    font-family: 'Poppins', sans-serif;
+
+  span {
     font-size: 13px;
-    font-weight: 500;
   }
-  
-  .qi-row-drag-over {
-    background: #f5f7fa;
-  }
-  
-  .qi-drag {
-    cursor: grab;
-    text-align: center;
-    user-select: none;
-  }
-  
-  .qi-drag:active {
-    cursor: grabbing;
-  }
-  
-  .col-serial {
-    width: 50px;
-    text-align: center;
-    font-weight: 500;
-    color: #555;
-  }
-  
+}
 
-  .col-remove {
-    width: 40px;
-    text-align: center;
+.qi-remove {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #ef4444;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover {
+    background: #fef2f2;
+    color: #b91c1c;
   }
-  
-  .qi-remove {
-    cursor: pointer;
-    color: #d32f2f;
-    font-size: 18px;
-    font-weight: bold;
-    line-height: 1;
-    user-select: none;
-  
-    &:hover {
-      color: #b71c1c;
-      transform: scale(1.1);
-    }
-  }
-  
+}

@@ -5,8 +5,7 @@ import React, {
   useState
 } from "react";
 
-import { Checkbox, IconButton, Tooltip } from "@mui/material";
-import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined";
+import { Checkbox } from "@mui/material";
 import Topbar from "../Topbar";
 import UtilsBar from "../UtilsBar";
 import PaginationBar from "../ui/PaginationBar";
@@ -24,41 +23,15 @@ import {
 
 import AddProductDialog from "./AddProductDialog";
 import { useSettings } from "../../context/SettingsContext";
-import { displayCurrency } from '../../utils/currencyUtils'
-import useAutoRefresh from "../../hooks/useAutoRefresh";
 
 import "../../assets/styles/LeadsTable.scss"; // reuse Leads table styles
-import * as XLSX from 'xlsx';
 
 const PRODUCTS_PER_PAGE = 20;
-
-const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-const getDuplicateProductName = (sourceName, products) => {
-  const normalizedName = String(sourceName || "").trim();
-  const baseName = normalizedName.replace(/ Copy(?: \d+)?$/, "");
-  const duplicatePattern = new RegExp(`^${escapeRegex(baseName)} Copy(?: (\\d+))?$`);
-
-  const duplicateNumbers = products.reduce((acc, product) => {
-    const productName = String(product?.name || "").trim();
-    const match = productName.match(duplicatePattern);
-
-    if (!match) return acc;
-
-    acc.push(match[1] ? Number(match[1]) : 1);
-    return acc;
-  }, []);
-
-  if (!duplicateNumbers.length) {
-    return `${baseName} Copy`;
-  }
-
-  return `${baseName} Copy ${Math.max(...duplicateNumbers) + 1}`;
-};
 
 const visibleFields = [
   "name",
   "brand",
+  "vendor_name",
   "category_name",
   "type",
   "cost"
@@ -66,7 +39,7 @@ const visibleFields = [
 
 function ProductList() {
   const { settings } = useSettings();
-  const currency = displayCurrency(settings?.currency_code);
+  const currency = settings?.currency_code || "INR";
   const fileInputRef = useRef(null);
 
 
@@ -75,7 +48,6 @@ function ProductList() {
   /* ---------- ADD / EDIT ---------- */
   const [open, setOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-  const [dialogMode, setDialogMode] = useState("create");
 
   /* ---------- FILTERS ---------- */
   const [searchQuery, setSearchQuery] = useState("");
@@ -107,59 +79,26 @@ function ProductList() {
     fileInputRef.current?.click();
   };
 
-  /* ================= EXPORT ================= */
-  const exportToExcel = () => {
-    try {
-      if (!selectedProducts.length) {
-        setNotification({ open: true, message: 'Select products to export', severity: 'warning' });
-        return;
-      }
-
-      const selectedData = products
-        .filter((p) => selectedProducts.includes(p.id))
-        .map((p) => ({
-          id: p.id,
-          name: p.name || '',
-          brand: p.brand || '',
-          category: p.category_name || '',
-          type: p.type || '',
-          sku: p.sku || '',
-          cost: p.cost || 0,
-          selling_price: p.selling_price || 0,
-          selling_price_unit: p.selling_price_unit || '',
-          status: Number(p.is_active || 0) === 1 ? 'Active' : 'Inactive',
-        }));
-
-      const ws = XLSX.utils.json_to_sheet(selectedData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Products');
-      XLSX.writeFile(wb, `products-selected-${new Date().toISOString().substring(0,10)}.xlsx`);
-    } catch (err) {
-      console.error('Export failed', err);
-      setNotification({ open: true, message: 'Failed to export products', severity: 'error' });
-    }
-  };
-
 
   const handleBulkFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
+  
     // Reset input so same file can be re-uploaded
     e.target.value = '';
-
+  
     try {
       const result = await bulkImportProducts(file);
-
+  
       await loadProducts();
-
+  
       if (result.failed > 0) {
         setNotification({
           open: true,
           severity: 'warning',
           message: `⚠️ Imported ${result.success}/${result.total} products. ${result.failed} failed.`
         });
-
+  
         console.table(result.errors);
       } else {
         setNotification({
@@ -176,7 +115,7 @@ function ProductList() {
       });
     }
   };
-
+  
 
   /* ================= FETCH ================= */
 
@@ -193,26 +132,14 @@ function ProductList() {
     }
   };
 
-  useAutoRefresh(loadProducts, { intervalMs: 20000 });
+  useEffect(() => {
+    loadProducts();
+  }, []);
 
   /* ================= FILTER + SORT ================= */
 
   const processedProducts = useMemo(() => {
     let data = [...products];
-
-    if (dateFilter?.startDate) {
-      data = data.filter(
-        (p) => p.created_at && new Date(p.created_at) >= new Date(dateFilter.startDate)
-      );
-    }
-
-    if (dateFilter?.endDate) {
-      const end = new Date(dateFilter.endDate);
-      end.setHours(23, 59, 59, 999);
-      data = data.filter(
-        (p) => p.created_at && new Date(p.created_at) <= end
-      );
-    }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -245,7 +172,7 @@ function ProductList() {
     }
 
     return data;
-  }, [products, searchQuery, sortValue, dateFilter]);
+  }, [products, searchQuery, sortValue]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -265,7 +192,6 @@ function ProductList() {
     clickTimerRef.current = setTimeout(async () => {
       try {
         const fullProduct = await fetchProductById(product.id);
-        setDialogMode("edit");
         setEditingProduct(fullProduct);
         setOpen(true);
       } catch {
@@ -277,34 +203,6 @@ function ProductList() {
       }
       clickTimerRef.current = null;
     }, 220);
-  };
-
-  const handleDuplicateClick = async (event, product) => {
-    event.stopPropagation();
-
-    try {
-      const fullProduct = await fetchProductById(product.id);
-
-      setDialogMode("duplicate");
-      setEditingProduct({
-        ...fullProduct,
-        name: getDuplicateProductName(fullProduct.name, products),
-        sku: "",
-        variants: Array.isArray(fullProduct.variants)
-          ? fullProduct.variants.map((variant) => ({
-            ...variant,
-            sku: ""
-          }))
-          : []
-      });
-      setOpen(true);
-    } catch {
-      setNotification({
-        open: true,
-        message: "❌ Failed to prepare product duplicate.",
-        severity: "error"
-      });
-    }
   };
 
   /* ================= SELECTION ================= */
@@ -324,6 +222,11 @@ function ProductList() {
   };
 
   /* ================= DELETE ================= */
+
+  const askSingleDelete = (id) => {
+    setProductToDelete(id);
+    setConfirmOpen(true);
+  };
 
   const askBulkDelete = () => {
     if (!selectedProducts.length) return;
@@ -373,7 +276,7 @@ function ProductList() {
 
   const handleAddProduct = async (productData) => {
     try {
-      if (dialogMode === "edit" && editingProduct?.id) {
+      if (editingProduct) {
         await updateProduct(editingProduct.id, productData);
       } else {
         await createProduct(productData);
@@ -382,11 +285,10 @@ function ProductList() {
       await loadProducts();
       setOpen(false);
       setEditingProduct(null);
-      setDialogMode("create");
 
       setNotification({
         open: true,
-        message: dialogMode === "duplicate" ? "✅ Product duplicated!" : "✅ Product saved!",
+        message: "✅ Product saved!",
         severity: "success"
       });
     } catch {
@@ -415,13 +317,11 @@ function ProductList() {
       <UtilsBar
         buttonLabel="Add Product"
         onButtonClick={() => {
-          setDialogMode("create");
           setEditingProduct(null);
           setOpen(true);
         }}
         selectedCount={selectedProducts.length}
         onDeleteSelected={askBulkDelete}
-        onExportSelected={exportToExcel}
         searchValue={searchQuery}
         onSearchChange={setSearchQuery}
         sortValue={sortValue}
@@ -431,87 +331,49 @@ function ProductList() {
       />
 
       <div className="table-container">
-        {currentProducts.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#999' }}>
-            <p style={{ fontSize: '16px', fontWeight: '500' }}>No products found</p>
-            <p style={{ fontSize: '14px', marginTop: '8px' }}>Add a new product to get started</p>
-          </div>
-        ) : (
-          <table className="leads-table">
-            <thead>
-              <tr>
-                <th>
-                  <Checkbox checked={selectAll} onChange={toggleSelectAll} />
-                </th>
-                <th>NAME</th>
-                <th>BRAND</th>
-                <th>CATEGORY</th>
-                <th>TYPE</th>
-                <th>STATUS</th>
-                {/* <th>COST</th> */}
-                <th>SELLING PRICE</th>
-                <th>ACTIONS</th>
+        <table className="leads-table">
+          <thead>
+            <tr>
+              <th>
+                <Checkbox checked={selectAll} onChange={toggleSelectAll} />
+              </th>
+              <th>NAME</th>
+              <th>BRAND</th>
+              <th>VENDOR</th>
+              <th>CATEGORY</th>
+              <th>TYPE</th>
+              {/* <th>COST</th> */}
+              <th>SELLING PRICE</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {currentProducts.map((p) => (
+              <tr
+                key={p.id}
+                className="clickable-row"
+                onClick={() => handleRowClick(p)}
+              >
+                <td onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    checked={selectedProducts.includes(p.id)}
+                    onChange={() => toggleSelectProduct(p.id)}
+                  />
+                </td>
+
+                <td><span className="cell-text">{p.name}</span></td>
+                <td><span className="cell-text">{p.brand || "—"}</span></td>
+                <td><span className="cell-text">{p.vendor_name || "—"}</span></td>
+                <td><span className="cell-text">{p.category_name || "—"}</span></td>
+                <td>{p.type}</td>
+                <td>
+                  {currency} {p.selling_price}
+                  {p.selling_price_unit && <small> / {p.selling_price_unit}</small>}
+                </td>
               </tr>
-            </thead>
-
-            <tbody>
-              {currentProducts.map((p) => (
-                <tr
-                  key={p.id}
-                  className="clickable-row"
-                  onClick={() => handleRowClick(p)}
-                >
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <Checkbox
-                      checked={selectedProducts.includes(p.id)}
-                      onChange={() => toggleSelectProduct(p.id)}
-                    />
-                  </td>
-
-                  <td><span className="cell-text">{p.name}</span></td>
-                  <td><span className="cell-text">{p.brand || "—"}</span></td>
-                  <td><span className="cell-text">{p.category_name || "—"}</span></td>
-                  <td>{p.type}</td>
-                  <td>{Number(p.is_active || 0) === 1 ? 'Active' : 'Inactive'}</td>
-                  <td>
-                    {currency} {p.selling_price}
-                    {p.selling_price_unit && <small> / {p.selling_price_unit}</small>}
-                  </td>
-                  <td onClick={(e) => e.stopPropagation()}>
-                    <Tooltip title="Duplicate product">
-                      <button
-                        type="button"
-                        onClick={(e) => handleDuplicateClick(e, p)}
-                        aria-label="Create Duplicate"
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "6px",
-                          background: "transparent",
-                          border: "none",
-                          color: "#1976d2",
-                          cursor: "pointer",
-                          padding: 0,
-                          font: "inherit"
-                        }}
-                      >
-                        <IconButton
-                          size="small"
-                          component="span"
-                          disableRipple
-                          sx={{ p: 0, color: "inherit" }}
-                        >
-                          <ContentCopyOutlinedIcon fontSize="small" />
-                        </IconButton>
-                        <span>Create Duplicate</span>
-                      </button>
-                    </Tooltip>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
+            ))}
+          </tbody>
+        </table>
       </div>
 
       <PaginationBar
@@ -524,14 +386,9 @@ function ProductList() {
       {/* ADD / EDIT */}
       <AddProductDialog
         open={open}
-        onClose={() => {
-          setOpen(false);
-          setEditingProduct(null);
-          setDialogMode("create");
-        }}
+        onClose={() => { setOpen(false); setEditingProduct(null); }}
         onAddProduct={handleAddProduct}
         productToEdit={editingProduct}
-        mode={dialogMode}
       />
 
       {/* DELETE CONFIRM */}

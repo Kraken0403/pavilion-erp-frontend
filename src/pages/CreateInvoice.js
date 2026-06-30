@@ -20,6 +20,7 @@ import { getSettings } from '../services/settingsService'
 import { displayCurrency } from '../utils/currencyUtils'
 import Topbar from '../components/Topbar'
 import { toInputDateValue } from '../utils/dateFormatter'
+import '../assets/styles/QuotationDetail.scss'
 
 function CreateInvoice() {
   const navigate = useNavigate()

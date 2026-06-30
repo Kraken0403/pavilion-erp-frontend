@@ -1,11 +1,44 @@
 import axios from 'axios';
 
+const trimTrailingSlash = (value) => String(value || '').replace(/\/+$/, '');
+
+const getServerOrigin = () => {
+  const raw =
+    process.env.REACT_APP_BACKEND_URL ||
+    process.env.REACT_APP_API_BASE_URL ||
+    'http://localhost:5000';
+
+  const cleaned = trimTrailingSlash(raw);
+
+  try {
+    const url = new URL(cleaned);
+    return url.origin;
+  } catch (error) {
+    const apiIndex = cleaned.toLowerCase().indexOf('/api');
+    return apiIndex >= 0 ? cleaned.slice(0, apiIndex) : cleaned;
+  }
+};
+
+export const SERVER_ORIGIN = trimTrailingSlash(getServerOrigin());
+
+const getApiBaseUrl = () => {
+  const configuredApiUrl = trimTrailingSlash(process.env.REACT_APP_API_BASE_URL);
+
+  if (!configuredApiUrl) {
+    return `${SERVER_ORIGIN}/api`;
+  }
+
+  return configuredApiUrl.endsWith('/api')
+    ? configuredApiUrl
+    : `${configuredApiUrl}/api`;
+};
+
 /* ---------------------------------------
    AXIOS INSTANCE
 --------------------------------------- */
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL,
-  withCredentials: true, // 🔥 REQUIRED for refresh token cookies
+  baseURL: getApiBaseUrl(),
+  withCredentials: true,
   headers: {
     Accept: 'application/json',
   },
@@ -18,16 +51,6 @@ api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
 
-    // Debug logging (enabled in non-production or via REACT_APP_DEBUG_AXIOS=true)
-    if (process.env.NODE_ENV !== 'production' || process.env.REACT_APP_DEBUG_AXIOS === 'true') {
-      try {
-        const masked = token ? `${String(token).substring(0, 6)}...` : 'no-token';
-        console.debug('[AXIOS DEBUG] Request ->', (config.method || '').toUpperCase(), config.url, 'Auth:', masked);
-      } catch (e) {
-        /* ignore logging errors */
-      }
-    }
-
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -37,80 +60,76 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+const isAuthPublicRequest = (url = '') => {
+  const value = String(url || '');
+  return (
+    value.includes('/auth/login') ||
+    value.includes('/auth/signup') ||
+    value.includes('/auth/forgot-password') ||
+    value.includes('/auth/reset-password') ||
+    value.includes('/auth/refresh') ||
+    value.includes('/auth/logout')
+  );
+};
+
 /* ---------------------------------------
    RESPONSE INTERCEPTOR (REFRESH LOGIC)
 --------------------------------------- */
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
+    const originalRequest = error.config || {};
     const status = error.response?.status;
 
-    // 🚫 If no response (network error, server down)
+    // Network/server-down errors should not destroy the local session.
     if (!error.response) {
-      if (process.env.NODE_ENV !== 'production' || process.env.REACT_APP_DEBUG_AXIOS === 'true') {
-        console.debug('[AXIOS DEBUG] No response for request ->', originalRequest?.method?.toUpperCase(), originalRequest?.url);
-      }
       return Promise.reject(error);
     }
 
-    // 🔁 Handle expired access token
+    // 403 means forbidden/no permission. Do NOT logout.
+    // Several normal app calls can return 403, for example admin-only
+    // notification/user-permission endpoints. Logging out here causes the
+    // "login then immediately kicked out" issue.
+    if (status === 403) {
+      return Promise.reject(error);
+    }
+
+    // Try refreshing only for protected API calls with an expired access token.
     if (
       status === 401 &&
       !originalRequest._retry &&
-      !originalRequest.url.includes('/auth/login') &&
-      !originalRequest.url.includes('/auth/refresh')
+      !isAuthPublicRequest(originalRequest.url)
     ) {
       originalRequest._retry = true;
 
-      if (process.env.NODE_ENV !== 'production' || process.env.REACT_APP_DEBUG_AXIOS === 'true') {
-        console.debug('[AXIOS DEBUG] 401 received for', originalRequest?.method?.toUpperCase(), originalRequest?.url, 'attempting refresh');
-        console.debug('[AXIOS DEBUG] Response data:', error.response?.data);
-      }
       try {
         const refreshResponse = await axios.post(
-          `${process.env.REACT_APP_BACKEND_URL}/auth/refresh`,
+          `${SERVER_ORIGIN}/auth/refresh`,
           {},
           { withCredentials: true }
         );
 
-        const newAccessToken = refreshResponse.data.accessToken;
+        const newAccessToken =
+          refreshResponse.data?.accessToken ||
+          refreshResponse.data?.token;
 
         if (!newAccessToken) {
-          if (process.env.NODE_ENV !== 'production' || process.env.REACT_APP_DEBUG_AXIOS === 'true') {
-            console.debug('[AXIOS DEBUG] Refresh response did not include accessToken', refreshResponse.data);
-          }
           throw new Error('No access token returned');
         }
 
-        // 🔐 Store new token
         localStorage.setItem('token', newAccessToken);
 
-        if (process.env.NODE_ENV !== 'production' || process.env.REACT_APP_DEBUG_AXIOS === 'true') {
-          console.debug('[AXIOS DEBUG] Obtained new access token (masked):', `${String(newAccessToken).substring(0,6)}...`);
-        }
-
-        // 🔁 Retry original request
+        originalRequest.headers = originalRequest.headers || {};
         originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        // ❌ Refresh failed → hard logout
-        if (process.env.NODE_ENV !== 'production' || process.env.REACT_APP_DEBUG_AXIOS === 'true') {
-          console.debug('[AXIOS DEBUG] Token refresh failed', refreshError);
-        }
         window.dispatchEvent(new Event('auth:logout'));
         return Promise.reject(refreshError);
       }
     }
 
-    // ❌ Logout on 401. For 403 only logout for non-notification routes
-    if (
-      status === 401 ||
-      (status === 403 && !String(originalRequest?.url || '').includes('/notifications'))
-    ) {
-      if (process.env.NODE_ENV !== 'production' || process.env.REACT_APP_DEBUG_AXIOS === 'true') {
-        console.debug('[AXIOS DEBUG] Received', status, 'for', originalRequest?.url, 'dispatching logout');
-      }
+    // Only a real unrefreshable 401 should logout.
+    if (status === 401 && !isAuthPublicRequest(originalRequest.url)) {
       window.dispatchEvent(new Event('auth:logout'));
     }
 

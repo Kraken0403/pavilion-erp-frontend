@@ -1,6 +1,7 @@
 // src/pages/EditLead.js
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { getLeadById } from '../services/leadService';
 
 import Topbar from '../components/Topbar';
 import EditForm from '../components/EditForm';
@@ -14,7 +15,7 @@ const EditLead = () => {
   const handleSendQuotation = () => {
     navigate(`/quotation/create/${id}`);
   };
-
+  
   const initialLeadData = {
     first_name: '',
     last_name: '',
@@ -35,15 +36,46 @@ const EditLead = () => {
 
   const {
     leadData,
+    setLeadData,
     customFields,
+    notification,
     activeTab,
     handleChange,
     handleCustomFieldsUpdate,
     handleSubmit,
+    handleCloseNotification,
     setActiveTab,
-    sendEmailtoSp,
-    sendWhatsApptoSp
+    sendEmailtoSp
   } = useLeadForm(initialLeadData, true, id);
+
+  // Load Lead + Custom Fields
+  useEffect(() => {
+    const loadLeadData = async () => {
+      try {
+        const lead = await getLeadById(id);
+
+        setLeadData((prev) => ({
+          ...prev,
+          ...lead,
+          custom_fields: lead.custom_fields || []
+        }));
+
+        if (lead.custom_fields) {
+          handleCustomFieldsUpdate(
+            lead.custom_fields.map((cf) => ({
+              field_id: cf.field_id,
+              field_value: cf.field_value
+            }))
+          );
+        }
+
+      } catch (err) {
+        console.error("Failed to load lead data:", err);
+      }
+    };
+
+    loadLeadData();
+  }, [id]);
 
   const tabs = [
     { key: "leadDetails", label: "Details" },
@@ -72,7 +104,6 @@ const EditLead = () => {
         handleCustomFieldsUpdate={handleCustomFieldsUpdate}
         activeTab={activeTab}
         sendEmailtoSp={sendEmailtoSp}
-        sendWhatsApptoSp={sendWhatsApptoSp}
         onSendQuotation={handleSendQuotation}
       />
     </>

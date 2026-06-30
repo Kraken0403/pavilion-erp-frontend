@@ -1,136 +1,122 @@
-@use './variables' as *;
+@import './variables.scss';
 
 .leads-table-container {
-  width: 100%;
-  background-color: $bg-color;
+    width: 100%;
+    background-color: $bg-color;
 }
 
 .table-container {
-  width: 100%;
-  overflow-x: auto;
-  margin: 6px 0;
-  background-color: $white;
-  border: 1px solid $edit-tab-border;
-  border-radius: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-
-  .leads-table {
     width: 100%;
-    table-layout: auto;
-    border-collapse: collapse;
+    overflow-x: auto;
+    margin: 2px 0;
+    background-color: $white;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 
-    .edit-icon {
-      color: $green;
+    .leads-table {
+        width: 100%;
+        table-layout: auto;
+        padding: 20px;
+        border: 1px solid rgba(0, 0, 0, 0.12);
+
+        .edit-icon {
+            color: $green;
+        }
+
+        .delete-icon {
+            color: red;
+        }
+
+        .checkboxes svg {
+            font-size: 18px !important;
+        }
+
+        tr td {
+            border-top: 1px solid #ddd;
+        }
+
+        .css-1y5vrnu-MuiButtonBase-root-MuiCheckbox-root {
+            border: 1px solid #f6f6f6;
+        }
+
+        .MuiCheckbox-root .MuiSvgIcon-root {
+            font-size: 18px;
+
+            path {
+                color: $blue;
+                opacity: 0.8;
+            }
+        }
+
+        input,
+        select {
+            padding: 5px;
+            border-radius: 3px;
+            outline: $blue;
+            border: 1px solid $blue;
+            background-color: $white;
+        }
+
+        th {
+            font-size: 12px;
+            text-transform: uppercase;
+            font-weight: 600;
+            text-align: left;
+            color: $label-color;
+            line-height: 1.4;
+        }
+
+        td {
+            font-size: 14px;
+            color: $text-color;
+            line-height: 1.4;
+        }
+
+        th,
+        td {
+            padding: 3px 8px;
+            text-align: left;
+            white-space: nowrap;
+            min-width: 125px;
+            max-width: 200px;
+
+            &:first-child {
+                width: 50px;
+                text-align: left;
+                min-width: 50px;
+            }
+        }
+
+        /* 🔥 ELLIPSIS HANDLING */
+        .cell-text {
+            display: block;
+            max-width: 200px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
     }
 
-    .delete-icon {
-      color: red;
+    .clickable-row {
+        cursor: pointer;
     }
-
-    .checkboxes svg {
-      font-size: 18px !important;
-    }
-
-    tr td {
-      border-top: 1px solid $edit-tab-border;
-    }
-
-    // tbody tr:hover {
-    //   background-color: $bg-color;
-    // }
-
-    .css-1y5vrnu-MuiButtonBase-root-MuiCheckbox-root {
-      border: 1px solid #f6f6f6;
-    }
-
-    .MuiCheckbox-root .MuiSvgIcon-root {
-      font-size: 18px;
-
-      path {
-        color: $blue;
-        opacity: 0.8;
-      }
-    }
-
-    input,
-    select {
-      padding: 5px;
-      border-radius: 3px;
-      outline: $blue;
-      border: 1px solid $blue;
-      background-color: $white;
-    }
-
-    th {
-      font-size: 12px;
-      text-transform: uppercase;
-      font-weight: 700;
-      text-align: left;
-      color: $label-color;
-      line-height: 1.4;
-      background-color: $bg-color;
-    }
-
-    td {
-      font-size: 14px;
-      color: $text-color;
-      line-height: 1.4;
-    }
-
-    th,
-    td {
-      padding: 10px 12px;
-      text-align: left;
-      white-space: nowrap;
-      min-width: 125px;
-      max-width: 200px;
-
-      &:first-child {
-        width: 50px;
-        text-align: left;
-        min-width: 50px;
-      }
-    }
-
-    /* 🔥 ELLIPSIS HANDLING */
-    .cell-text {
-      display: block;
-      max-width: 200px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-  }
-
-  .clickable-row {
-    cursor: pointer;
-  }
-}
-
-.table-empty-message {
-  text-align: center;
-  padding: 40px 0;
-  color: $btn-text;
-  font-weight: 500;
-  font-size: 14px;
 }
 
 
 .quotation-version-row {
-  background: #fafafa;
-  font-size: 0.95em;
-}
-
-.quotation-version-row td:first-child {
-  padding-left: 12px;
-}
-
-.quotation-version-row td {
-  color: #666;
-}
-
+    background: #fafafa;
+    font-size: 0.95em;
+  }
+  
+  .quotation-version-row td:first-child {
+    padding-left: 24px;
+  }
+  
+  .quotation-version-row td {
+    color: #666;
+  }
+  
 .leads-table th:nth-child(6),
 .leads-table td:nth-child(6) {
   width: 80px;
@@ -138,134 +124,88 @@
   white-space: nowrap;
 }
 
-/* Versions dropdown styling */
-.versions-toggle {
-  margin-right: 8px;
-  background: transparent;
-  border: none;
-  padding: 2px 6px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
-}
-
-.versions-toggle .versions-icon {
-  display: inline-flex;
-  width: 18px;
-  height: 18px;
-  align-items: center;
-  justify-content: center;
-}
-
-.versions-dropdown-row td {
-  padding: 8px 12px 12px 12px;
-  background: transparent;
-}
-
-.versions-dropdown {
-  background: #f4f7ff;
-  border: 1px solid #e6eefb;
-  padding: 8px;
-  border-radius: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.version-item {
-  display: grid;
-  grid-template-columns: 1fr 140px 120px 60px 140px;
-  gap: 12px;
-  align-items: center;
-  padding: 8px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.version-item .vi-number { font-weight: 700; }
-.version-item .vi-date, .version-item .vi-total, .version-item .vi-version { color: #444; }
-.version-item .vi-status .status-pill { font-size: 11px; padding: 4px 8px; }
-
-/* Table-like subrows for expanded versions */
-.version-subrow {
-  background: #dde7f0;
-  color: #333;
-}
-
-.version-subrow td {
-  border-top: 1px solid #eef3fb;
-}
-
-.version-subrow .version-marker {
-  display: inline-block;
-  margin-right: 6px;
-  color: #6b7280;
-  font-weight: 700;
-}
-
-.version-lead { padding-left: 6px; }
-
-.version-quotation { color: #1f2937; font-weight: 600; }
-
 
 .status-pill {
-  display: inline-block;
-  padding: 5px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: capitalize;
-  cursor: pointer;
-  user-select: none;
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+    cursor: pointer;
+    user-select: none;
+  }
+  
+  .status-pending {
+    background: #fff3cd;
+    color: #856404;
+  }
+  
+  .status-approved {
+    background: #d4edda;
+    color: #155724;
+  }
+  
+  .status-rejected {
+    background: #f8d7da;
+    color: #721c24;
+  }
+  
+  .status-converted {
+    background: #d1ecf1;
+    color: #0c5460;
+  }
+  
+  .status-select-inline {
+    font-size: 12px;
+    padding: 2px 6px;
+  }
+  
+/* Flowbite-style tables */
+.leads-table-container {
+  background: var(--erp-bg, #f8fafc) !important;
 }
 
-.status-pending {
-  background: #fff3cd;
-  color: #856404;
+.table-container .leads-table {
+  border: 1px solid var(--erp-border, #e5e7eb) !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 0 !important;
+  background: #ffffff;
 }
 
-.status-preparing,
-.status-in_progress {
-  background: #dbeafe;
-  color: #1e40af;
+.table-container .leads-table th {
+  background: #f9fafb;
+  color: #6b7280 !important;
+  font-size: 12px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.04em;
+  padding: 11px 12px !important;
+  border-bottom: 1px solid var(--erp-border, #e5e7eb);
 }
 
-.status-ready {
-  background: #ede9fe;
-  color: #5b21b6;
+.table-container .leads-table td {
+  color: #374151 !important;
+  font-size: 14px !important;
+  padding: 11px 12px !important;
+  border-top: 1px solid var(--erp-border, #e5e7eb) !important;
+  vertical-align: middle;
 }
 
-.status-completed {
-  background: #dcfce7;
-  color: #166534;
+.table-container .leads-table tbody tr:hover {
+  background: #f9fafb;
 }
 
-.status-cancelled {
-  background: #fee2e2;
-  color: #991b1b;
+.table-container .leads-table th,
+.table-container .leads-table td {
+  min-width: 120px;
+  max-width: 260px;
 }
 
-.status-issued {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.status-approved {
-  background: #d4edda;
-  color: #155724;
-}
-
-.status-rejected {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-.status-converted {
-  background: #d1ecf1;
-  color: #0c5460;
-}
-
-.status-select-inline {
-  font-size: 12px;
-  padding: 2px 6px;
+.table-empty-message {
+  text-align: center !important;
+  color: #6b7280 !important;
+  padding: 24px !important;
 }

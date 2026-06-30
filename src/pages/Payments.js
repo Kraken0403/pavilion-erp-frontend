@@ -5,6 +5,7 @@ import Topbar from '../components/Topbar';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import PageLoader from '../components/ui/PageLoader';
 import StatusUpdateModal from '../components/invoices/StatusUpdateModal';
+import VendorPayablesPanel from '../components/vendors/VendorPayablesPanel';
 import ReceiptsModal from '../components/invoices/ReceiptsModal';
 import { useNavigate } from 'react-router-dom';
 import { formatDate } from '../utils/dateFormatter';
@@ -233,6 +234,8 @@ function Payments() {
                     </tbody>
                 </table>
             </div>
+
+            <VendorPayablesPanel />
 
             <div className="module-footer">
                 <PaginationBar

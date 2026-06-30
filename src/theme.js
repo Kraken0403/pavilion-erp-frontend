@@ -1,49 +1,49 @@
 // theme.js
 import { createTheme } from '@mui/material/styles';
 
-const FONT_STACK = 'Poppins, Inter, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
+const flowbiteBorder = '#d1d5db';
+const flowbiteFocus = '#1c64f2';
 
 const theme = createTheme({
-  spacing: 8, // default is 8px; can change to 4 or anything
+  spacing: 8,
 
   palette: {
     primary: {
-      main: '#2c3e50'
+      main: flowbiteFocus
     },
     secondary: {
-      main: '#e67e22'
+      main: '#057a55'
     },
     background: {
-      default: '#f5f5f5'
+      default: '#f9fafb',
+      paper: '#ffffff'
+    },
+    text: {
+      primary: '#111827',
+      secondary: '#6b7280'
     }
   },
 
   typography: {
-    fontFamily: FONT_STACK,
-    h1: { fontWeight: 700 },
-    h2: { fontWeight: 700 },
-    h3: { fontWeight: 700 },
-    h4: { fontWeight: 700 },
-    h5: { fontWeight: 600 },
-    h6: { fontWeight: 600 },
+    fontFamily: 'Inter, sans-serif',
     button: {
       textTransform: 'none',
-      fontWeight: 600,
-    },
+      fontWeight: 600
+    }
   },
 
   shape: {
-    borderRadius: 10
+    borderRadius: 8
   },
 
   components: {
     MuiCssBaseline: {
       styleOverrides: {
-        'html, body, #root': {
-          fontFamily: FONT_STACK,
-          backgroundColor: '#f7f8fa',
-        },
-      },
+        body: {
+          backgroundColor: '#f9fafb',
+          color: '#111827'
+        }
+      }
     },
     MuiContainer: {
       defaultProps: {
@@ -54,50 +54,105 @@ const theme = createTheme({
         root: {
           maxWidth: '100% !important',
           paddingLeft: 0,
-          paddingRight: 0,
+          paddingRight: 0
         }
       }
     },
     MuiPaper: {
       styleOverrides: {
         root: {
-          borderRadius: 12,
-        },
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-        },
-      },
+          borderRadius: 8,
+          border: '1px solid #e5e7eb',
+          boxShadow: 'none'
+        }
+      }
     },
     MuiButton: {
+      defaultProps: {
+        disableElevation: true
+      },
       styleOverrides: {
         root: {
-          borderRadius: 10,
-        },
-      },
+          borderRadius: 8,
+          minHeight: 38,
+          padding: '8px 14px',
+          textTransform: 'none',
+          fontWeight: 600
+        }
+      }
+    },
+    MuiTextField: {
+      defaultProps: {
+        size: 'small'
+      }
     },
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          borderRadius: 10,
-          backgroundColor: '#fff',
+          borderRadius: 8,
+          backgroundColor: '#f9fafb',
+          fontSize: 14,
+          color: '#111827',
+          '& .MuiOutlinedInput-notchedOutline': {
+            borderColor: flowbiteBorder
+          },
+          '&:hover .MuiOutlinedInput-notchedOutline': {
+            borderColor: '#9ca3af'
+          },
+          '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+            borderColor: flowbiteFocus,
+            borderWidth: 1
+          },
+          '&.Mui-focused': {
+            boxShadow: '0 0 0 1px rgba(28, 100, 242, 0.18)'
+          },
+          '&.Mui-disabled': {
+            backgroundColor: '#f3f4f6',
+            color: '#6b7280'
+          }
         },
-      },
+        input: {
+          padding: '9px 12px',
+          fontSize: 14
+        },
+        multiline: {
+          padding: '9px 12px'
+        }
+      }
     },
-    MuiTableHead: {
+    MuiInputLabel: {
       styleOverrides: {
         root: {
-          '& .MuiTableCell-root': {
-            fontWeight: 700,
-          },
+          color: '#6b7280',
+          fontSize: 14,
+          '&.Mui-focused': {
+            color: flowbiteFocus
+          }
+        }
+      }
+    },
+    MuiMenuItem: {
+      styleOverrides: {
+        root: {
+          fontSize: 14
+        }
+      }
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        head: {
+          backgroundColor: '#f9fafb',
+          color: '#6b7280',
+          fontSize: 12,
+          fontWeight: 700
         },
-      },
+        body: {
+          color: '#374151',
+          fontSize: 14
+        }
+      }
     }
   }
-  
 });
 
 export default theme;

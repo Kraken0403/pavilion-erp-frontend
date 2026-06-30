@@ -1,7 +1,7 @@
-@use './variables' as *;
+@import './variables.scss';
 
 .add-product-dialog {
-    max-width: 960px;
+    max-width: 520px;
     max-height: 100vh;
     width: 100%;
     margin: 0 auto;
@@ -19,17 +19,14 @@
     }
   
     .dialog-content {
-      padding: 1.5rem;
+      padding: 3rem 1.5rem;
       background-color: $white;
-      max-height: 72vh;
-      overflow: auto;
     }
 
     .field-label {
-      padding-bottom: 6px;
-      color: $text-color;
-      font-weight: 600;
-      display: block;
+        // margin-top: 10px;
+        padding-bottom: 3px;
+        color: $text-color;
     }
   
     .product-input {

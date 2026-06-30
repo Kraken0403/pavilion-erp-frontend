@@ -1,10 +1,8 @@
 import axios from "axios";
 import { getAuthHeaders } from "./authService";
-import { API_BASE_URL } from "../config/env";
 
 // Define the API base URL
-const API_URL = `${API_BASE_URL}/send-email`;
-const WHATSAPP_API_URL = `${API_BASE_URL}/send-whatsapp`;
+const API_URL = "http://localhost:5000/api/send-email";
 
 export const sendEmail = async (leadData) => {
     try {
@@ -14,17 +12,6 @@ export const sendEmail = async (leadData) => {
     }
     catch (error) {
         console.error("Error Sending the mail:", error);
-        throw error.response?.data || error.message;
-    }
-}
-
-export const sendWhatsApp = async (leadData) => {
-    try {
-        const response = await axios.post(`${WHATSAPP_API_URL}`, leadData, getAuthHeaders());
-        return response.data;
-    }
-    catch (error) {
-        console.error("Error Sending WhatsApp notification:", error);
         throw error.response?.data || error.message;
     }
 }

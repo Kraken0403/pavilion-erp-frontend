@@ -1,436 +1,190 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
+import { RouteHistoryProvider } from './context/RouteHistoryContext';
+import { getFirstAccessibleModuleRoute } from './config/modulePermissions';
+import { useSettings } from './context/SettingsContext';
 import PrivateRoute from './routes/PrivateRoute';
+import Layout from './components/Layout';
 import Login from './components/Login';
+
 import Dashboard from './pages/Dashboard';
 import Leads from './pages/Leads';
+import NewLead from './pages/NewLead';
 import EditLead from './pages/EditLead';
-import NewLead from './pages/NewLead'; // Import NewLead page
-import Customers from './pages/Customers';
-import CreateQuotation from './components/CreateQuotation'; // Import CreateQuotation page
-import Layout from './components/Layout';
-import './assets/styles/global.scss';
 import LeadSettings from './pages/LeadSettings';
-import Users from './pages/Users';
-import Workorders from './pages/Workorders';
+import Customers from './pages/Customers';
+import CustomerDetail from './pages/CustomerDetail';
 import Quotations from './pages/Quotations';
-// import AddOrderForm from './components/AddOrderForm';
-// import WorkOrderDetail from './pages/workOrderDetails';
+import QuotationView from './pages/QuotationView';
+import NewQuotation from './pages/NewQuotation';
+import CreateQuotation from './components/CreateQuotation';
 import QuotationSettings from './pages/QuotationSettings';
-// import ProductList from './pages/ProductList';
+import Workorders from './pages/Workorders';
+import CreateWorkOrder from './pages/CreateWorkOrder';
+import WorkOrderDetail from './pages/WorkOrderDetail';
 import ProductPage from './pages/ProductPage';
+import ProductDetail from './pages/ProductDetails';
 import CategoriesPage from './pages/CategoriesPage';
 import AttributesPage from './pages/AttributesPage';
-import NewQuotation from './pages/NewQuotation';
-import QuotationView from './pages/QuotationView';
-import WorkOrderDetail from './pages/WorkOrderDetail';
-import CreateWorkOrder from './pages/CreateWorkOrder';
-import Settings from './pages/Settings';
+import Coupons from './pages/Coupons';
 import Invoices from './pages/Invoices';
 import InvoiceView from './pages/InvoiceView';
-import InvoiceSettings from './pages/InvoiceSettings';
-import 'react-quill/dist/quill.snow.css'
 import CreateInvoice from './pages/CreateInvoice';
 import ProformaInvoices from './pages/ProformaInvoices';
 import ProformaInvoiceView from './pages/ProformaInvoiceView';
 import CreateProformaInvoice from './pages/CreateProformaInvoice';
+import InvoiceSettings from './pages/InvoiceSettings';
+import Payments from './pages/Payments';
+import PaymentHistory from './pages/PaymentHistory';
+import PaymentReminders from './pages/PaymentReminders';
+import PaymentReminderSettings from './pages/PaymentReminderSettings';
+import Reports from './pages/Reports';
 import KOTBoard from './pages/KOTBoard';
 import KOTSettings from './pages/KOTSettings';
 import DeliveryBoard from './pages/DeliveryBoard';
-import CouponsPage from './pages/Coupons';
-import Reports from './pages/Reports';
-import PaymentReminders from './pages/PaymentReminders';
-import PaymentReminderSettings from './pages/PaymentReminderSettings';
-import Payments from './pages/Payments';
-import PaymentHistory from './pages/PaymentHistory';
 import OrderFeedbacks from './pages/OrderFeedbacks';
 import OrderFeedbackSettings from './pages/OrderFeedbackSettings';
-import { getFirstAccessibleModuleRoute } from './config/modulePermissions';
-import { NotificationProvider } from './context/NotificationContext';
-import { RouteHistoryProvider } from './context/RouteHistoryContext';
+import Users from './pages/Users';
+import Settings from './pages/Settings';
+import Vendors from './pages/Vendors';
+import Passbook from './pages/Passbook';
 
+import 'react-quill/dist/quill.snow.css';
+import './assets/styles/global.scss';
 
 const HomeRoute = () => {
-    const { currentUser, modulePermissions } = useAuth();
-    return currentUser
-        ? <Navigate to={getFirstAccessibleModuleRoute(modulePermissions)} />
-        : <Login />;
+  const { currentUser, modulePermissions } = useAuth();
+  return currentUser
+    ? <Navigate to={getFirstAccessibleModuleRoute(modulePermissions)} replace />
+    : <Login />;
 };
 
 const QuotationsTypoRedirect = () => {
-    const location = useLocation();
-    const normalizedPath = location.pathname
-        .replace(/^\/qoutations(\/|$)/, '/quotations$1')
-        .replace(/^\/qoutation(\/|$)/, '/quotation$1');
+  const location = useLocation();
+  const normalizedPath = location.pathname
+    .replace(/^\/qoutations(\/|$)/, '/quotations$1')
+    .replace(/^\/qoutation(\/|$)/, '/quotation$1');
 
-    return <Navigate to={`${normalizedPath}${location.search}${location.hash}`} replace />;
+  return <Navigate to={`${normalizedPath}${location.search}${location.hash}`} replace />;
 };
 
 const LegacyPathNormalizer = () => {
-    const location = useLocation();
-    const navigate = useNavigate();
+  const location = useLocation();
+  const navigate = useNavigate();
 
-    React.useEffect(() => {
-        const { pathname, search, hash } = location;
-        let normalizedPath = pathname;
+  React.useEffect(() => {
+    const { pathname, search, hash } = location;
+    let normalizedPath = pathname;
 
-        normalizedPath = normalizedPath.replace(/^\/qoutations(\/|$)/, '/quotations$1');
-        normalizedPath = normalizedPath.replace(/^\/qoutation(\/|$)/, '/quotation$1');
+    normalizedPath = normalizedPath.replace(/^\/qoutations(\/|$)/, '/quotations$1');
+    normalizedPath = normalizedPath.replace(/^\/qoutation(\/|$)/, '/quotation$1');
 
-        if (normalizedPath !== pathname) {
-            navigate(`${normalizedPath}${search}${hash}`, { replace: true });
-        }
-    }, [location, navigate]);
+    if (normalizedPath !== pathname) {
+      navigate(`${normalizedPath}${search}${hash}`, { replace: true });
+    }
+  }, [location, navigate]);
 
-    return null;
+  return null;
 };
 
+const Protected = ({ requiredModule, children }) => (
+  <PrivateRoute requiredModule={requiredModule}>{children}</PrivateRoute>
+);
+
+const CateringProtected = ({ requiredModule, children }) => {
+  const { settings } = useSettings() || {};
+  const businessType = String(settings?.business_type || 'GENERAL').toUpperCase();
+  if (businessType !== 'CATERING' && businessType !== 'HYBRID') {
+    return <Navigate to="/dashboard" replace />;
+  }
+  return <Protected requiredModule={requiredModule}>{children}</Protected>;
+};
+
+const AppRoutes = () => (
+  <Routes>
+    <Route path="/" element={<HomeRoute />} />
+    <Route element={<Layout />}>
+      <Route path="/dashboard" element={<Protected requiredModule="dashboard"><Dashboard /></Protected>} />
+
+      <Route path="/leads" element={<Protected requiredModule="leads"><Leads /></Protected>} />
+      <Route path="/leads/new" element={<Protected requiredModule="leads"><NewLead /></Protected>} />
+      <Route path="/leads/:id/edit" element={<Protected requiredModule="leads"><EditLead /></Protected>} />
+      <Route path="/leads/settings" element={<Protected requiredModule="leads"><LeadSettings /></Protected>} />
+
+      <Route path="/customers" element={<Protected requiredModule="customers"><Customers /></Protected>} />
+      <Route path="/customers/:id" element={<Protected requiredModule="customers"><CustomerDetail /></Protected>} />
+
+      <Route path="/quotation-create" element={<Protected requiredModule="quotations"><NewQuotation /></Protected>} />
+      <Route path="/quotation/create/:leadId" element={<Protected requiredModule="quotations"><CreateQuotation /></Protected>} />
+      <Route path="/quotations" element={<Protected requiredModule="quotations"><Quotations /></Protected>} />
+      <Route path="/quotations/:id" element={<Protected requiredModule="quotations"><QuotationView /></Protected>} />
+      <Route path="/quotations-settings" element={<Protected requiredModule="quotations"><QuotationSettings /></Protected>} />
+
+      <Route path="/proforma-invoices" element={<Protected requiredModule="invoices"><ProformaInvoices /></Protected>} />
+      <Route path="/proforma-invoices/create" element={<Protected requiredModule="invoices"><CreateProformaInvoice /></Protected>} />
+      <Route path="/proforma-invoices/:id" element={<Protected requiredModule="invoices"><ProformaInvoiceView /></Protected>} />
+      <Route path="/invoices" element={<Protected requiredModule="invoices"><Invoices /></Protected>} />
+      <Route path="/invoices/create" element={<Protected requiredModule="invoices"><CreateInvoice /></Protected>} />
+      <Route path="/invoices/:id" element={<Protected requiredModule="invoices"><InvoiceView /></Protected>} />
+      <Route path="/invoice-settings" element={<Protected requiredModule="invoices"><InvoiceSettings /></Protected>} />
+
+      <Route path="/payments" element={<Protected requiredModule="payments"><Payments /></Protected>} />
+      <Route path="/payments/history" element={<Protected requiredModule="payments"><PaymentHistory /></Protected>} />
+      <Route path="/payment-history" element={<Navigate to="/payments/history" replace />} />
+
+      <Route path="/payment-reminders" element={<Protected requiredModule="payment_reminders"><PaymentReminders /></Protected>} />
+      <Route path="/payment-reminders/settings" element={<Protected requiredModule="payment_reminders"><PaymentReminderSettings /></Protected>} />
+
+      <Route path="/reports" element={<Protected requiredModule="reports"><Reports /></Protected>} />
+
+      <Route path="/workorders" element={<Protected requiredModule="work_orders"><Workorders /></Protected>} />
+      <Route path="/workorders/create" element={<Protected requiredModule="work_orders"><CreateWorkOrder /></Protected>} />
+      <Route path="/workorders/:id" element={<Protected requiredModule="work_orders"><WorkOrderDetail /></Protected>} />
+
+      <Route path="/products" element={<Navigate to="/products/list" replace />} />
+      <Route path="/products/list" element={<Protected requiredModule="products"><ProductPage /></Protected>} />
+      <Route path="/products/categories" element={<Protected requiredModule="products"><CategoriesPage /></Protected>} />
+      <Route path="/products/attributes" element={<Protected requiredModule="products"><AttributesPage /></Protected>} />
+      <Route path="/vendors" element={<Protected requiredModule="vendors"><Vendors /></Protected>} />
+      <Route path="/passbook" element={<Protected requiredModule="passbook"><Passbook /></Protected>} />
+      <Route path="/products/:id" element={<Protected requiredModule="products"><ProductDetail /></Protected>} />
+      <Route path="/categories" element={<Navigate to="/products/categories" replace />} />
+      <Route path="/attributes" element={<Navigate to="/products/attributes" replace />} />
+
+      <Route path="/kots" element={<CateringProtected requiredModule="kots"><KOTBoard /></CateringProtected>} />
+      <Route path="/kots/settings" element={<CateringProtected requiredModule="kots"><KOTSettings /></CateringProtected>} />
+      <Route path="/deliveries" element={<CateringProtected requiredModule="deliveries"><DeliveryBoard /></CateringProtected>} />
+      <Route path="/order-feedbacks" element={<CateringProtected requiredModule="reports"><OrderFeedbacks /></CateringProtected>} />
+      <Route path="/order-feedbacks/settings" element={<CateringProtected requiredModule="reports"><OrderFeedbackSettings /></CateringProtected>} />
+      <Route path="/feedbacks" element={<Navigate to="/order-feedbacks" replace />} />
+      <Route path="/feedbacks/settings" element={<Navigate to="/order-feedbacks/settings" replace />} />
+
+      <Route path="/coupons" element={<CateringProtected requiredModule="settings"><Coupons /></CateringProtected>} />
+      <Route path="/users" element={<Protected requiredModule="users"><Users /></Protected>} />
+      <Route path="/settings" element={<Protected requiredModule="settings"><Settings /></Protected>} />
+    </Route>
+
+    <Route path="/qoutations/*" element={<QuotationsTypoRedirect />} />
+    <Route path="/qoutation/*" element={<QuotationsTypoRedirect />} />
+    <Route path="*" element={<Navigate to="/dashboard" replace />} />
+  </Routes>
+);
+
 const App = () => {
-    console.log("🚀 App rendered");
-    return (
-        <AuthProvider>
-            <NotificationProvider>
-                <Router>
-                    <RouteHistoryProvider>
-                        <LegacyPathNormalizer />
-                        <Routes>
-                            <Route path="/" element={<HomeRoute />} />
-                            <Route element={<Layout />}>
-                                <Route
-                                    path="/dashboard"
-                                    element={
-                                        <PrivateRoute requiredModule="dashboard">
-                                            <Dashboard />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/invoices"
-                                    element={
-                                        <PrivateRoute requiredModule="invoices">
-                                            <Invoices />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/invoices/:id"
-                                    element={
-                                        <PrivateRoute requiredModule="invoices">
-                                            <InvoiceView />
-                                        </PrivateRoute>
-                                    }
-                                />
-                                <Route
-                                    path="/invoices/create"
-                                    element={
-                                        <PrivateRoute requiredModule="invoices">
-                                            <CreateInvoice />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/proforma-invoices"
-                                    element={
-                                        <PrivateRoute requiredModule="invoices">
-                                            <ProformaInvoices />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/proforma-invoices/:id"
-                                    element={
-                                        <PrivateRoute requiredModule="invoices">
-                                            <ProformaInvoiceView />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/proforma-invoices/create"
-                                    element={
-                                        <PrivateRoute requiredModule="invoices">
-                                            <CreateProformaInvoice />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/invoice-settings"
-                                    element={
-                                        <PrivateRoute requiredModule="invoices">
-                                            <InvoiceSettings />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/payment-reminders"
-                                    element={
-                                        <PrivateRoute requiredModule="payment_reminders">
-                                            <PaymentReminders />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/payment-reminders/settings"
-                                    element={
-                                        <PrivateRoute requiredModule="payment_reminders">
-                                            <PaymentReminderSettings />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/payments"
-                                    element={
-                                        <PrivateRoute requiredModule="payments">
-                                            <Payments />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/payments/history"
-                                    element={
-                                        <PrivateRoute requiredModule="payments">
-                                            <PaymentHistory />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/leads"
-                                    element={
-                                        <PrivateRoute requiredModule="leads">
-                                            <Leads />
-                                        </PrivateRoute>
-                                    }
-                                />
-                                <Route
-                                    path="/customers"
-                                    element={
-                                        <PrivateRoute requiredModule="customers">
-                                            <Customers />
-                                        </PrivateRoute>
-                                    }
-                                />
-                                
-                                <Route
-                                    path="/leads/new"  // New route for creating a lead
-                                    element={
-                                        <PrivateRoute requiredModule="leads">
-                                            <NewLead />
-                                        </PrivateRoute>
-                                    }
-                                />
-                                <Route
-                                    path="/leads/:id/edit"
-                                    element={
-                                        <PrivateRoute requiredModule="leads">
-                                            <EditLead />
-                                        </PrivateRoute>
-                                    }
-                                />
-                                <Route
-                                    path="/quotation/create/:leadId"  // New route for creating a quotation
-                                    element={
-                                        <PrivateRoute requiredModule="quotations">
-                                            <CreateQuotation />
-                                        </PrivateRoute>
-                                    }
-                                />
-                                <Route
-                                    path="/quotation-create"  // New route for creating a quotation
-                                    element={
-                                        <PrivateRoute requiredModule="quotations">
-                                            <NewQuotation />
-                                        </PrivateRoute>
-                                    }
-                                />
-                                <Route
-                                    path="/leads/settings"  // New route for creating a quotation
-                                    element={
-                                        <PrivateRoute requiredModule="leads">
-                                            <LeadSettings />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/users"  // New route for creating a quotation
-                                    element={
-                                        <PrivateRoute requiredModule="users">
-                                            <Users />
-                                        </PrivateRoute>
-                                    }
-                                />
-                                <Route
-                                    path="/workorders"  // New route for creating a quotation
-                                    element={
-                                        <PrivateRoute requiredModule="work_orders">
-                                            <Workorders />
-                                        </PrivateRoute>
-                                    }
-                                />
-                                <Route
-                                    path="/workorders/create"
-                                    element={
-                                        <PrivateRoute requiredModule="work_orders">
-                                            <CreateWorkOrder />
-                                        </PrivateRoute>
-                                    }
-                                />
-                                <Route
-                                    path="/workorders/:id"
-                                    element={
-                                        <PrivateRoute requiredModule="work_orders">
-                                            <WorkOrderDetail />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/kots"
-                                    element={
-                                        <PrivateRoute requiredModule="kots">
-                                            <KOTBoard />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/kots/settings"
-                                    element={
-                                        <PrivateRoute requiredModule="kots">
-                                            <KOTSettings />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/deliveries"
-                                    element={
-                                        <PrivateRoute requiredModule="deliveries">
-                                            <DeliveryBoard />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/settings"  // New route for creating a quotation
-                                    element={
-                                        <PrivateRoute requiredModule="settings">
-                                            <Settings />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/coupons"
-                                    element={
-                                        <PrivateRoute requiredModule="settings">
-                                            <CouponsPage />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/reports"  // Reports module
-                                    element={
-                                        <PrivateRoute requiredModule="reports">
-                                            <Reports />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/feedbacks"
-                                    element={
-                                        <PrivateRoute requiredModule="reports">
-                                            <OrderFeedbacks />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/feedbacks/settings"
-                                    element={
-                                        <PrivateRoute requiredModule="reports">
-                                            <OrderFeedbackSettings />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/quotations"  // New route for creating a quotation
-                                    element={
-                                        <PrivateRoute requiredModule="quotations">
-                                            <Quotations />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/quotations/:id"
-                                    element={
-                                        <PrivateRoute requiredModule="quotations">
-                                            <QuotationView />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/quotations-settings"  // New route for creating a quotation
-                                    element={
-                                        <PrivateRoute requiredModule="quotations">
-                                            <QuotationSettings />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/products/list"
-                                    element={
-                                        <PrivateRoute requiredModule="products">
-                                            <ProductPage />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/categories"
-                                    element={
-                                        <PrivateRoute requiredModule="products">
-                                            <CategoriesPage />
-                                        </PrivateRoute>
-                                    }
-                                />
-
-                                <Route
-                                    path="/attributes"
-                                    element={
-                                        <PrivateRoute requiredModule="products">
-                                            <AttributesPage />
-                                        </PrivateRoute>
-                                    }
-                                />
-                            </Route>
-
-                            <Route path="/qoutations/*" element={<QuotationsTypoRedirect />} />
-                            <Route path="/qoutation/*" element={<QuotationsTypoRedirect />} />
-
-                        </Routes>
-                    </RouteHistoryProvider>
-                </Router>
-            </NotificationProvider>
-        </AuthProvider>
-    );
+  return (
+    <AuthProvider>
+      <NotificationProvider>
+        <Router>
+          <RouteHistoryProvider>
+            <LegacyPathNormalizer />
+            <AppRoutes />
+          </RouteHistoryProvider>
+        </Router>
+      </NotificationProvider>
+    </AuthProvider>
+  );
 };
 
 export default App;

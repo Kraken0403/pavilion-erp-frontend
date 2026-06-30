@@ -5,13 +5,13 @@ import { getFirstAccessibleModuleRoute } from '../config/modulePermissions';
 const PrivateRoute = ({ children, requiredModule }) => {
   const { isAuthenticated, loading, canAccessModule, modulePermissions } = useAuth();
 
-  if (loading) return null; // or spinner
+  if (loading) return null;
 
   if (!isAuthenticated) {
     return <Navigate to="/" replace />;
   }
 
-  if (requiredModule && !canAccessModule(requiredModule)) {
+  if (requiredModule && typeof canAccessModule === 'function' && !canAccessModule(requiredModule)) {
     return <Navigate to={getFirstAccessibleModuleRoute(modulePermissions)} replace />;
   }
 

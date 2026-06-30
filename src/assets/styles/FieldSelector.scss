@@ -1,48 +1,203 @@
-@use './variables' as *;
+@import './variables.scss';
 
 .field-selector {
     width: 100%;
 
     .field-wrapper {
         display: flex;
+        align-items: flex-start;
+        gap: 24px;
+    }
+
+    .field-checks,
+    .field-order {
+        width: 50%;
+        min-width: 0;
+        border: 1px solid #e5ebef;
+        border-radius: 8px;
+        background: $white;
+        padding: 20px;
+        box-shadow: 0 8px 24px rgba(37, 58, 67, 0.06);
+    }
+
+    .field-section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        margin-bottom: 16px;
+
+        .settings-heading h4 {
+            margin: 0;
+            color: $label-title-color;
+            font-size: 18px;
+            font-weight: 700;
+        }
+    }
+
+    .selected-count {
+        flex: 0 0 auto;
+        min-width: 56px;
+        border-radius: 999px;
+        background: #eef7f7;
+        color: $accent;
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1;
+        padding: 8px 10px;
+        text-align: center;
+    }
+
+    .field-error {
+        margin: -6px 0 12px;
+        color: #b42318;
+        font-size: 13px;
+        font-weight: 600;
     }
 
     .field-checks {
-        width: 50%;
         .check-inputs {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .field-toggle-row {
             display: flex;
-            // flex-direction: column;
-            // flex: 0.5;
-            flex-wrap: wrap;
-            margin-top: 15px;
-            // border: 1px solid $black;
-            gap: 10px;
-            label {
-                width: 30%;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            min-height: 52px;
+            border: 1px solid #dfe7eb;
+            border-radius: 8px;
+            background: #fbfcfd;
+            padding: 10px 12px 10px 14px;
+            color: $text-color;
+            cursor: pointer;
+            transition: border-color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+
+            &:hover {
+                border-color: #cbd9df;
+                background: $white;
+                box-shadow: 0 5px 16px rgba(37, 58, 67, 0.08);
+            }
+
+            &.is-selected {
+                border-color: rgba(0, 102, 102, 0.35);
+                background: #f4fbfb;
+            }
+
+            .field-label {
+                min-width: 0;
                 font-size: 14px;
-                color: $text-color;
-                font-weight: 400;
-                input {
-                    margin-right: 5px;
-                }
+                font-weight: 600;
+                line-height: 1.3;
+                overflow-wrap: anywhere;
+            }
+        }
+
+        .ios-switch {
+            position: relative;
+            flex: 0 0 auto;
+            display: inline-flex;
+            align-items: center;
+            width: 48px;
+            height: 28px;
+
+            input {
+                position: absolute;
+                inset: 0;
+                margin: 0;
+                opacity: 0;
+                cursor: pointer;
+                z-index: 1;
+            }
+
+            .ios-switch-track {
+                position: relative;
+                display: block;
+                width: 48px;
+                height: 28px;
+                border-radius: 999px;
+                background: #cfd8de;
+                box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.16);
+                transition: background 0.2s ease;
+            }
+
+            .ios-switch-thumb {
+                position: absolute;
+                top: 3px;
+                left: 3px;
+                width: 22px;
+                height: 22px;
+                border-radius: 50%;
+                background: $white;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
+                transition: transform 0.2s ease;
+            }
+
+            input:checked + .ios-switch-track {
+                background: #34c759;
+            }
+
+            input:checked + .ios-switch-track .ios-switch-thumb {
+                transform: translateX(20px);
+            }
+
+            input:focus-visible + .ios-switch-track {
+                outline: 3px solid rgba(13, 104, 197, 0.25);
+                outline-offset: 3px;
             }
         }
     }
 
     .field-order{
-        width: 50%;
         ul {
             margin: 0;
             padding: 0;
             list-style: none;
             width: 100%;
             li{
-                padding: 10px 15px;
+                padding: 12px 14px;
                 width: 100%;
-                border: 1px solid $btn-secondary-border;
-                margin-bottom: 5px;
-                background-color: $bg-color;
+                min-height: 46px;
+                border: 1px solid #dfe7eb;
+                border-radius: 8px;
+                margin-bottom: 8px;
+                background-color: #fbfcfd;
+                color: $text-color;
+                font-size: 14px;
+                font-weight: 600;
+                line-height: 1.35;
+                box-shadow: 0 3px 10px rgba(37, 58, 67, 0.04);
             }
+        }
+
+        .submit-button {
+            margin-top: 14px;
+        }
+    }
+
+    @media (max-width: 1100px) {
+        .field-wrapper {
+            flex-direction: column;
+        }
+
+        .field-checks,
+        .field-order {
+            width: 100%;
+        }
+    }
+
+    @media (max-width: 700px) {
+        .field-checks .check-inputs {
+            grid-template-columns: 1fr;
+        }
+
+        .field-section-header {
+            align-items: flex-start;
+            flex-direction: column;
+            gap: 8px;
         }
     }
 }

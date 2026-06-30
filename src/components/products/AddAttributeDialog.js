@@ -12,23 +12,21 @@ import {
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import CloseIcon from '@mui/icons-material/Close'
-import DeleteIcon from '@mui/icons-material/Delete'
+import DeleteIcon from '@mui/icons-material/Close' // ❌ remove option
 
 import {
   createAttribute,
   createAttributeOption
 } from '../../services/productServices'
-import { updateAttribute } from '../../services/productServices'
 
 import NotificationSnackbar from '../ui/NotificationSnackbar'
 import '../../assets/styles/AddProductDialog.scss'
 
-function AddAttributeDialog({ open, onClose, attribute = null }) {
+function AddAttributeDialog({ open, onClose }) {
   /* ---------------- STATE ---------------- */
 
   const [attributeName, setAttributeName] = useState('')
   const [options, setOptions] = useState([''])
-  const [existingOptionValues, setExistingOptionValues] = useState(new Set())
 
   const [notif, setNotif] = useState({
     open: false,
@@ -50,19 +48,6 @@ function AddAttributeDialog({ open, onClose, attribute = null }) {
     setAttributeName('')
     setOptions([''])
   }
-
-  // Populate when editing
-  React.useEffect(() => {
-    if (attribute) {
-      setAttributeName(attribute.name || '')
-      const opts = (attribute.options || []).map(o => String(o.value || ''))
-      setOptions(opts.length ? opts : [''])
-      setExistingOptionValues(new Set(opts.filter(Boolean)))
-    } else {
-      resetForm()
-      setExistingOptionValues(new Set())
-    }
-  }, [attribute, open])
 
   const handleClose = () => {
     resetForm()
@@ -100,33 +85,18 @@ function AddAttributeDialog({ open, onClose, attribute = null }) {
     }
 
     try {
-      if (attribute && attribute.id) {
-        // Update existing attribute name
-        await updateAttribute(attribute.id, { name: attributeName })
+      const created = await createAttribute({ name: attributeName })
+      const attributeId = created.attributeId
 
-        // Create any new options that didn't previously exist
-        for (const opt of validOptions) {
-          if (!existingOptionValues.has(opt)) {
-            await createAttributeOption({ attribute_id: attribute.id, value: opt })
-          }
-        }
-
-        showNotification('Attribute updated successfully')
-        handleClose()
-      } else {
-        const created = await createAttribute({ name: attributeName })
-        const attributeId = created.attributeId
-
-        for (const opt of validOptions) {
-          await createAttributeOption({
-            attribute_id: attributeId,
-            value: opt
-          })
-        }
-
-        showNotification('Attribute created successfully')
-        handleClose()
+      for (const opt of validOptions) {
+        await createAttributeOption({
+          attribute_id: attributeId,
+          value: opt
+        })
       }
+
+      showNotification('Attribute created successfully')
+      handleClose()
     } catch (err) {
       console.error(err)
       const msg =
@@ -148,7 +118,7 @@ function AddAttributeDialog({ open, onClose, attribute = null }) {
       >
         {/* HEADER */}
         <DialogTitle className="dialog-title">
-          {attribute && attribute.id ? 'Edit Attribute' : 'Add Attribute'}
+          Add Attribute
           <IconButton onClick={handleClose} size="small">
             <CloseIcon />
           </IconButton>
@@ -220,7 +190,7 @@ function AddAttributeDialog({ open, onClose, attribute = null }) {
             Cancel
           </button>
           <button className="save-btn-x" onClick={handleSave}>
-            {attribute && attribute.id ? 'Update' : 'Save'}
+            Save
           </button>
         </DialogActions>
       </Dialog>

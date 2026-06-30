@@ -25,6 +25,24 @@ export const getSettings = async () => {
   }
 };
 
+export const getPublicSettings = async () => {
+  try {
+    const res = await api.get('/public/settings');
+    return res.data;
+  } catch (error) {
+    handleError(error, 'Failed to fetch public settings');
+  }
+};
+
+export const getNotificationChannelFlags = async () => {
+  try {
+    const res = await api.get('/settings/notification-channels');
+    return res.data;
+  } catch (error) {
+    handleError(error, 'Failed to fetch notification channel flags');
+  }
+};
+
 export const updateSettings = async (formData) => {
   try {
     const res = await api.put(
@@ -40,17 +58,5 @@ export const updateSettings = async (formData) => {
     return res.data;
   } catch (error) {
     handleError(error, 'Failed to update settings');
-  }
-};
-
-export const getNotificationChannelFlags = async () => {
-  try {
-    const res = await api.get('/settings/notification-channels');
-    return {
-      allow_email: Boolean(res?.data?.allow_email),
-      allow_whatsapp: Boolean(res?.data?.allow_whatsapp),
-    };
-  } catch (error) {
-    handleError(error, 'Failed to fetch notification channel flags');
   }
 };

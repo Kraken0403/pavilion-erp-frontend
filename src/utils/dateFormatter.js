@@ -1,64 +1,53 @@
 // src/utils/dateFormatter.js
 
+const isValidDate = (date) => date instanceof Date && !Number.isNaN(date.getTime());
+
 export const parseDateInput = (dateInput) => {
   if (!dateInput && dateInput !== 0) return null;
 
   if (dateInput instanceof Date) {
-    return Number.isNaN(dateInput.getTime()) ? null : dateInput;
+    return isValidDate(dateInput) ? dateInput : null;
   }
 
   if (typeof dateInput === 'number') {
-    const date = new Date(dateInput);
-    return Number.isNaN(date.getTime()) ? null : date;
+    const fromNumber = new Date(dateInput);
+    return isValidDate(fromNumber) ? fromNumber : null;
   }
 
-  if (typeof dateInput === 'string') {
-    const value = dateInput.trim();
-    if (!value) return null;
+  const raw = String(dateInput || '').trim();
+  if (!raw) return null;
 
-    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-      const [year, month, day] = value.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-      return Number.isNaN(date.getTime()) ? null : date;
-    }
+  // Native parser handles ISO dates/datetimes well.
+  const nativeParsed = new Date(raw);
+  if (isValidDate(nativeParsed)) return nativeParsed;
 
-    if (/^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}(:\d{2})?$/.test(value)) {
-      const normalized = value.replace(' ', 'T');
-      const [datePart, timePart] = normalized.split('T');
-      const [year, month, day] = datePart.split('-').map(Number);
-      const [hours = 0, minutes = 0, seconds = 0] = timePart.split(':').map(Number);
-      const date = new Date(year, month - 1, day, hours, minutes, seconds);
-      return Number.isNaN(date.getTime()) ? null : date;
-    }
-
-    const date = new Date(value);
-    return Number.isNaN(date.getTime()) ? null : date;
+  // Handle app display dates such as 23/06/2026 or 23-06-2026.
+  const dmyMatch = raw.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (dmyMatch) {
+    const [, dd, mm, yyyy, hh = '0', min = '0', ss = '0'] = dmyMatch;
+    const parsed = new Date(
+      Number(yyyy),
+      Number(mm) - 1,
+      Number(dd),
+      Number(hh),
+      Number(min),
+      Number(ss)
+    );
+    return isValidDate(parsed) ? parsed : null;
   }
 
   return null;
 };
 
-export const toInputDateValue = (dateInput = new Date()) => {
+export const toInputDateValue = (dateInput) => {
   const date = parseDateInput(dateInput);
   if (!date) return '';
 
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
+
   return `${year}-${month}-${day}`;
-};
-
-export const toInputDateTimeValue = (dateInput) => {
-  const date = parseDateInput(dateInput);
-  if (!date) return '';
-
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-
-  return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
 export const formatDate = (dateInput) => {
@@ -72,28 +61,34 @@ export const formatDate = (dateInput) => {
   return `${day}/${month}/${year}`;
 };
 
-export const formatTime12Hour = (dateInput) => {
-  const date = parseDateInput(dateInput);
-  if (!date) return '';
+export const formatTime12Hour = (time) => {
+  if (!time) return '';
 
-  let hours = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const value = String(time).trim();
+  const timePart = value.includes('T')
+    ? value.split('T')[1]
+    : value.includes(' ')
+      ? value.split(' ').pop()
+      : value;
 
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12 || 12;
+  const [hourStr, minute = '00'] = String(timePart || '').split(':');
+  let hour = parseInt(hourStr, 10);
 
-  return `${hours}:${minutes} ${ampm}`;
+  if (Number.isNaN(hour)) return '';
+
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  hour = hour % 12 || 12;
+
+  return `${hour}:${String(minute).padStart(2, '0')} ${ampm}`;
 };
 
-export const formatDateTime = (dateInput) => {
-  const date = parseDateInput(dateInput);
-  if (!date) return '';
-  const day = String(date.getDate()).padStart(2, '0');
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const year = date.getFullYear();
-  let hours = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const ampm = hours >= 12 ? 'PM' : 'AM';
-  hours = hours % 12 || 12;
-  return `${day}/${month}/${year} ${hours}:${minutes} ${ampm}`;
+export const formatDateTime = (dateInput, time) => {
+  const date = formatDate(dateInput);
+  const formattedTime = formatTime12Hour(time);
+
+  if (!date && !formattedTime) return '';
+
+  return formattedTime
+    ? `${date} • ${formattedTime}`
+    : date;
 };

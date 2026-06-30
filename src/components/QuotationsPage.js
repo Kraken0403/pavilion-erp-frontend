@@ -10,7 +10,6 @@ import AddContactDialog from '../components/contacts/AddContactDialog';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import Topbar from './Topbar';
 import QuotationList from './quotation/QuotationList';
-import { toInputDateValue } from '../utils/dateFormatter';
 
 function CreateQuotation() {
   const [contactId, setContactId] = useState('');
@@ -31,7 +30,8 @@ function CreateQuotation() {
   };
 
   const [quotationDate, setQuotationDate] = useState(() => {
-    return toInputDateValue(new Date());
+    const today = new Date();
+    return today.toISOString().split('T')[0]; // yyyy-mm-dd
   });
 
   useEffect(() => {
@@ -117,27 +117,27 @@ function CreateQuotation() {
 
   const handleSubmit = async () => {
     const errors = [];
-
+  
     if (!contactId) errors.push('Contact');
     if (!quotationDate) errors.push('Quotation Date');
-
+  
     const validItems = items.filter(i =>
       i.product?.id &&
       !isNaN(parseFloat(i.quantity)) &&
       !isNaN(parseFloat(i.unit_price))
     );
-
+  
     if (validItems.length !== items.length) {
       errors.push('All products must have quantity and price');
     }
-
+  
     if (errors.length > 0) {
       return showNotification(
         `⚠️ Please complete the following fields: ${errors.join(', ')}`,
         'warning'
       );
     }
-
+  
     const payload = {
       contact_id: contactId,
       quotation_date: quotationDate,
@@ -152,11 +152,11 @@ function CreateQuotation() {
         tax: parseFloat(i.tax) || 0
       }))
     };
-
+  
     try {
       await createQuotation(payload);
       showNotification('✅ Quotation created!');
-
+  
       // Reset form
       setContactId('');
       setSelectedContact(null);
@@ -169,66 +169,66 @@ function CreateQuotation() {
       showNotification("❌ Failed to create quotation. Check console for details.", 'error');
     }
   };
-
+  
 
   return (
     <div className="quotations">
-      <Container>
-        <Topbar />
-        {/* <QuotationList /> */}
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <QuotationContactSection
-            contactId={contactId}
-            setContactId={setContactId}
-            contacts={contacts}
-            selectedContact={selectedContact}
-            setSelectedContact={setSelectedContact}
-            quotationDate={quotationDate}
-            setQuotationDate={setQuotationDate}
-            validUntil={validUntil}
-            setValidUntil={setValidUntil}
-            notes={notes}
-            setNotes={setNotes}
-            openAddContactDialog={() => setOpenAddContactDialog(true)}
-            setPrefillContactName={setPrefillContactName}
-          />
-        </Paper>
-
-        <Paper sx={{ p: 3, mb: 3 }}>
-          <QuotationItemsSection
-            items={items}
-            updateItem={updateItem}
-            handleProductSelect={handleProductSelect}
-            addItem={addItem}
-            openProductDialog={openProductDialog}
-            setOpenProductDialog={setOpenProductDialog}
-          />
-        </Paper>
-
-        <QuotationFooterSection items={items} handleSubmit={handleSubmit} />
-
-        <AddProductDialog
-          open={openProductDialog}
-          onClose={() => setOpenProductDialog(false)}
+        <Container>
+          <Topbar />
+          {/* <QuotationList /> */}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <QuotationContactSection
+          contactId={contactId}
+          setContactId={setContactId}
+          contacts={contacts}
+          selectedContact={selectedContact}
+          setSelectedContact={setSelectedContact}
+          quotationDate={quotationDate}
+          setQuotationDate={setQuotationDate}
+          validUntil={validUntil}
+          setValidUntil={setValidUntil}
+          notes={notes}
+          setNotes={setNotes}
+          openAddContactDialog={() => setOpenAddContactDialog(true)}
+          setPrefillContactName={setPrefillContactName}
         />
+      </Paper>
 
-        <AddContactDialog
-          open={openAddContactDialog}
-          onClose={() => setOpenAddContactDialog(false)}
-          onContactCreated={handleContactCreated}
-          prefillName={prefillContactName}
+      <Paper sx={{ p: 3, mb: 3 }}>
+        <QuotationItemsSection
+          items={items}
+          updateItem={updateItem}
+          handleProductSelect={handleProductSelect}
+          addItem={addItem}
+          openProductDialog={openProductDialog}
+          setOpenProductDialog={setOpenProductDialog}
         />
+      </Paper>
 
-        <NotificationSnackbar
-          open={notif.open}
-          message={notif.message}
-          severity={notif.severity}
-          onClose={() => setNotif({ ...notif, open: false })}
-        />
-      </Container>
+      <QuotationFooterSection items={items} handleSubmit={handleSubmit} />
+
+      <AddProductDialog
+        open={openProductDialog}
+        onClose={() => setOpenProductDialog(false)}
+      />
+
+      <AddContactDialog
+        open={openAddContactDialog}
+        onClose={() => setOpenAddContactDialog(false)}
+        onContactCreated={handleContactCreated}
+        prefillName={prefillContactName}
+      />
+
+      <NotificationSnackbar
+        open={notif.open}
+        message={notif.message}
+        severity={notif.severity}
+        onClose={() => setNotif({ ...notif, open: false })}
+      />
+    </Container>
 
     </div>
-
+  
   );
 }
 

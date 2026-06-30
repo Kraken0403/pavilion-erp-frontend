@@ -1,595 +1,304 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from 'react';
 import {
+  Avatar,
   Box,
+  Collapse,
+  Divider,
   Drawer,
   List,
+  ListItemButton,
   ListItemIcon,
   ListItemText,
-  Toolbar,
-  Collapse,
-} from "@mui/material";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import ListItemButton from "@mui/material/ListItemButton";
-import StorefrontIcon from "@mui/icons-material/Storefront";
-import AssignmentIcon from "@mui/icons-material/Assignment";
-// import SettingsIcon from '@mui/icons-material/Settings';
-import PeopleIcon from "@mui/icons-material/People";
-import ArticleIcon from "@mui/icons-material/Article";
-import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
-import ExpandLess from "@mui/icons-material/ExpandLess";
-import SettingsIcon from "@mui/icons-material/Settings";
-import ReceiptLongIcon from "@mui/icons-material/ReceiptLong";
-import RestaurantMenuIcon from "@mui/icons-material/RestaurantMenu";
-import LocalShippingIcon from "@mui/icons-material/LocalShipping";
-import AssessmentIcon from "@mui/icons-material/Assessment";
-import AlarmIcon from "@mui/icons-material/Alarm";
-import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
-import HourglassEmptyIcon from "@mui/icons-material/HourglassEmpty";
-import HistoryIcon from "@mui/icons-material/History";
-import CategoryIcon from "@mui/icons-material/Category";
-import StyleIcon from "@mui/icons-material/Style";
-import ConfirmationNumberIcon from "@mui/icons-material/ConfirmationNumber";
+  Typography,
+} from '@mui/material';
+import DashboardIcon from '@mui/icons-material/Dashboard';
+import PeopleIcon from '@mui/icons-material/People';
+import GroupsIcon from '@mui/icons-material/Groups';
+import ArticleIcon from '@mui/icons-material/Article';
+import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
+import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
+import PaymentsIcon from '@mui/icons-material/Payments';
+import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import Inventory2Icon from '@mui/icons-material/Inventory2';
+import KitchenIcon from '@mui/icons-material/Kitchen';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
+import ReviewsIcon from '@mui/icons-material/Reviews';
+import SettingsIcon from '@mui/icons-material/Settings';
+import LogoutIcon from '@mui/icons-material/Logout';
+import ExpandLess from '@mui/icons-material/ExpandLess';
+import ExpandMore from '@mui/icons-material/ExpandMore';
+import CategoryIcon from '@mui/icons-material/Category';
+import TuneIcon from '@mui/icons-material/Tune';
+import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useLayout } from '../context/LayoutContext';
+import { useSettings } from '../context/SettingsContext';
+import '../assets/styles/Sidebar.scss';
 
-import ExpandMore from "@mui/icons-material/ExpandMore";
-import { useAuth } from "../context/AuthContext";
-import { useSettings } from "../context/SettingsContext";
-import { useNavigate } from "react-router-dom";
-import { useLayout } from "../context/LayoutContext";
-import { useNotification } from "../context/NotificationContext";
-import "../assets/styles/Sidebar.scss";
+const drawerWidth = 248;
+const collapsedDrawerWidth = 68;
 
-const drawerWidth = 200;
-const MAX_EXPANDED_MODULES = 1;
+const navGroups = [
+  {
+    key: 'dashboard',
+    module: 'dashboard',
+    label: 'Dashboard',
+    icon: DashboardIcon,
+    path: '/dashboard',
+  },
+  {
+    key: 'crm',
+    module: 'leads',
+    label: 'CRM',
+    icon: PeopleIcon,
+    children: [
+      { label: 'Leads', path: '/leads', icon: PeopleIcon, module: 'leads' },
+      { label: 'Customers', path: '/customers', icon: GroupsIcon, module: 'customers' },
+      { label: 'Lead Settings', path: '/leads/settings', icon: SettingsIcon, module: 'leads' },
+    ],
+  },
+  {
+    key: 'sales',
+    module: 'quotations',
+    label: 'Sales',
+    icon: RequestQuoteIcon,
+    children: [
+      { label: 'Quotations', path: '/quotations', icon: ArticleIcon, module: 'quotations' },
+      { label: 'Quotation Settings', path: '/quotations-settings', icon: SettingsIcon, module: 'quotations' },
+      { label: 'Work Orders', path: '/workorders', icon: Inventory2Icon, module: 'work_orders' },
+    ],
+  },
+  {
+    key: 'invoices',
+    module: 'invoices',
+    label: 'Invoices',
+    icon: ReceiptLongIcon,
+    children: [
+      { label: 'Proforma Invoices', path: '/proforma-invoices', icon: RequestQuoteIcon, module: 'invoices' },
+      { label: 'Invoices', path: '/invoices', icon: ReceiptLongIcon, module: 'invoices' },
+      { label: 'Settings', path: '/invoice-settings', icon: SettingsIcon, module: 'invoices' },
+    ],
+  },
+  {
+    key: 'payments',
+    module: 'payments',
+    label: 'Payments',
+    icon: PaymentsIcon,
+    children: [
+      { label: 'Pending Payments', path: '/payments', icon: PaymentsIcon, module: 'payments' },
+      { label: 'Payment History', path: '/payments/history', icon: ReceiptLongIcon, module: 'payments' },
+      { label: 'Passbook', path: '/passbook', icon: AccountBalanceWalletIcon, module: 'passbook' },
+    ],
+  },
+  {
+    key: 'payment-reminders',
+    module: 'payment_reminders',
+    label: 'Payment Reminders',
+    icon: NotificationsActiveIcon,
+    children: [
+      { label: 'Pending Payments', path: '/payment-reminders', icon: NotificationsActiveIcon, module: 'payment_reminders' },
+      { label: 'Settings', path: '/payment-reminders/settings', icon: SettingsIcon, module: 'payment_reminders' },
+    ],
+  },
+  {
+    key: 'catalog',
+    module: 'products',
+    label: 'Catalog',
+    icon: Inventory2Icon,
+    children: [
+      { label: 'Products', path: '/products/list', icon: Inventory2Icon, module: 'products' },
+      { label: 'Vendors', path: '/vendors', icon: StorefrontIcon, module: 'vendors' },
+      { label: 'Categories', path: '/products/categories', icon: CategoryIcon, module: 'products' },
+      { label: 'Attributes', path: '/products/attributes', icon: TuneIcon, module: 'products' },
+      { label: 'Coupons', path: '/coupons', icon: ConfirmationNumberIcon, module: 'settings', cateringOnly: true },
+    ],
+  },
+  {
+    key: 'operations',
+    module: 'kots',
+    cateringOnly: true,
+    label: 'Operations',
+    icon: KitchenIcon,
+    children: [
+      { label: 'KOT Board', path: '/kots', icon: KitchenIcon, module: 'kots' },
+      { label: 'KOT Settings', path: '/kots/settings', icon: SettingsIcon, module: 'kots' },
+      { label: 'Deliveries', path: '/deliveries', icon: LocalShippingIcon, module: 'deliveries' },
+      { label: 'Order Feedbacks', path: '/order-feedbacks', icon: ReviewsIcon, module: 'reports' },
+      { label: 'Feedback Settings', path: '/order-feedbacks/settings', icon: SettingsIcon, module: 'reports' },
+    ],
+  },
+  {
+    key: 'reports',
+    module: 'reports',
+    label: 'Reports',
+    icon: AssessmentIcon,
+    path: '/reports',
+  },
+  {
+    key: 'admin',
+    module: 'settings',
+    label: 'Admin',
+    icon: SettingsIcon,
+    children: [
+      { label: 'Users', path: '/users', icon: PeopleIcon, module: 'users' },
+      { label: 'Settings', path: '/settings', icon: SettingsIcon, module: 'settings' },
+    ],
+  },
+];
+
+function isActivePath(currentPath, targetPath) {
+  if (!targetPath) return false;
+  return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
+}
+
+function groupContainsPath(group, currentPath) {
+  if (group.path && isActivePath(currentPath, group.path)) return true;
+  return Array.isArray(group.children) && group.children.some((item) => isActivePath(currentPath, item.path));
+}
 
 const Sidebar = () => {
-  const { currentUser, canAccessModule } = useAuth();
-  const { settings } = useSettings();
+  const { logout, currentUser, canAccessModule } = useAuth();
   const { sidebarOpen } = useLayout();
-  const { bubbleCounts } = useNotification();
+  const { settings } = useSettings() || {};
+  const businessType = String(settings?.business_type || 'GENERAL').toUpperCase();
+  const showCateringModules = businessType === 'CATERING' || businessType === 'HYBRID';
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const isCateringBusiness = settings?.business_type === "CATERING";
+  const initialOpen = useMemo(() => {
+    return navGroups.reduce((acc, group) => {
+      acc[group.key] = groupContainsPath(group, location.pathname);
+      return acc;
+    }, {});
+  }, [location.pathname]);
 
-  const [expandedModules, setExpandedModules] = useState([]);
+  const [openGroups, setOpenGroups] = useState(initialOpen);
 
-  const isExpanded = (moduleKey) => expandedModules.includes(moduleKey);
-
-  const toggleModule = (moduleKey) => {
-    setExpandedModules((prev) => {
-      if (prev.includes(moduleKey)) {
-        return prev.filter((item) => item !== moduleKey);
-      }
-
-      const next = [...prev, moduleKey];
-      if (next.length <= MAX_EXPANDED_MODULES) return next;
-      return next.slice(next.length - MAX_EXPANDED_MODULES);
-    });
+  const toggleGroup = (key) => {
+    setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
-  const go = (path) => {
-    const safePath = String(path || "")
-      .replace("/qoutations", "/quotations")
-      .replace("/qoutation", "/quotation");
-
-    const currentPath = window.location.pathname || "";
-    if (currentPath === safePath) return;
-
-    navigate(safePath, { replace: false });
-
-    // Universal fallback: if SPA navigation gets stuck, hard-navigate to target.
-    window.setTimeout(() => {
-      if ((window.location.pathname || "") !== safePath) {
-        window.location.assign(safePath);
-      }
-    }, 120);
+  const handleLogout = () => {
+    logout();
+    navigate('/');
   };
 
-  const withModuleBadge = (label, count) => {
-    const parsed = Number(count || 0);
+  const canSee = (moduleKey) => {
+    if (!moduleKey || typeof canAccessModule !== 'function') return true;
+    return canAccessModule(moduleKey);
+  };
+
+  const visibleGroups = navGroups
+    .filter((group) => !group.cateringOnly || showCateringModules)
+    .map((group) => {
+      const visibleChildren = Array.isArray(group.children)
+        ? group.children.filter((item) => (!item.cateringOnly || showCateringModules) && canSee(item.module || group.module))
+        : null;
+
+      if (Array.isArray(group.children) && !visibleChildren.length) return null;
+      if (!Array.isArray(group.children) && !canSee(group.module)) return null;
+
+      return visibleChildren ? { ...group, children: visibleChildren } : group;
+    })
+    .filter(Boolean);
+
+  const renderNavItem = (item, nested = false) => {
+    const Icon = item.icon || ArticleIcon;
+    const active = isActivePath(location.pathname, item.path);
 
     return (
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          width: "100%",
-          minWidth: 0,
-        }}
+      <ListItemButton
+        key={item.path || item.label}
+        onClick={() => navigate(item.path)}
+        className={active ? 'erp-sidebar-link active' : 'erp-sidebar-link'}
+        sx={{ pl: nested ? 4.25 : 2 }}
       >
-        <Box
-          component="span"
-          sx={{
-            flex: 1,
-            minWidth: 0,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {label}
-        </Box>
-
-        {parsed > 0 ? (
-          <Box
-            component="span"
-            sx={{
-              minWidth: 22,
-              height: 22,
-              px: 0.75,
-              ml: 1,
-              borderRadius: "999px",
-              bgcolor: "error.main",
-              color: "#fff",
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "0.72rem",
-              fontWeight: 700,
-              lineHeight: 1,
-              whiteSpace: "nowrap",
-              flexShrink: 0,
-            }}
-          >
-            {parsed > 99 ? "99+" : parsed}
-          </Box>
-        ) : null}
-      </Box>
+        <ListItemIcon className="erp-sidebar-icon"><Icon /></ListItemIcon>
+        <ListItemText primary={item.label} />
+      </ListItemButton>
     );
   };
 
-  const getCountForModule = (moduleKey) => {
-    const key = String(moduleKey || "")
-      .trim()
-      .toLowerCase();
-    if (!key) return 0;
-
-    if (key === "work_orders") return Number(bubbleCounts.workOrderCount || 0);
-
-    const dynamicKey = `${key.replace(/_([a-z])/g, (_m, char) => char.toUpperCase())}Count`;
-    return Number(bubbleCounts?.[dynamicKey] || 0);
-  };
-
-  const withSubmenuBadge = (label, moduleKey) =>
-    withModuleBadge(label, getCountForModule(moduleKey));
+  const activeDrawerWidth = sidebarOpen ? drawerWidth : collapsedDrawerWidth;
 
   return (
-    <div className="sidebar">
-      <Drawer
-        open={sidebarOpen}
-        sx={{
-          width: drawerWidth,
-          flexShrink: 0,
-          "& .MuiDrawer-paper": {
-            width: drawerWidth,
-            boxSizing: "border-box",
-            height: "100vh",
-            position: "fixed",
-            overflowY: "auto",
-          },
-        }}
-        variant="persistent"
-        anchor="left"
-      >
-        <Toolbar />
-        <List>
-          {canAccessModule("dashboard") && (
-            <ListItemButton onClick={() => go("/dashboard")}>
-              <ListItemIcon>
-                <DashboardIcon />
-              </ListItemIcon>
-              <ListItemText primary="Dashboard" />
-            </ListItemButton>
-          )}
+    <Drawer
+      className={`erp-sidebar-drawer ${sidebarOpen ? '' : 'collapsed'}`}
+      variant="permanent"
+      anchor="left"
+      sx={{
+        width: activeDrawerWidth,
+        flexShrink: 0,
+        '& .MuiDrawer-paper': {
+          width: activeDrawerWidth,
+          boxSizing: 'border-box',
+          borderRight: '1px solid #e5e7eb',
+          borderRadius: 0,
+          background: '#ffffff',
+        },
+      }}
+    >
+      <Box className="erp-sidebar-brand">
+        <Avatar className="erp-sidebar-logo">P</Avatar>
+        <Box>
+          <Typography className="erp-sidebar-title">Pav ERP</Typography>
+          <Typography className="erp-sidebar-subtitle">Business Console</Typography>
+        </Box>
+      </Box>
 
-          {canAccessModule("leads") && (
-            <>
-              <ListItemButton onClick={() => toggleModule("leads")}>
-                <ListItemIcon>
-                  <PeopleIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary={withModuleBadge("Leads", bubbleCounts.leadsCount)}
-                />
-                {isExpanded("leads") ? <ExpandLess /> : <ExpandMore />}
-              </ListItemButton>
-              <Collapse in={isExpanded("leads")} timeout="auto" unmountOnExit>
-                <List component="div" disablePadding>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => go("/leads")}>
-                    <ListItemIcon>
-                      <PeopleIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={withSubmenuBadge("View Leads", "leads")}
-                    />
-                  </ListItemButton>
-                  <ListItemButton
-                    sx={{ pl: 4 }}
-                    onClick={() => go("/leads/settings")}
-                  >
-                    <ListItemIcon>
-                      <SettingsIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Lead Settings" />
-                  </ListItemButton>
-                </List>
-              </Collapse>
-            </>
-          )}
+      <List className="erp-sidebar-list">
+        {visibleGroups.map((group) => {
+          const Icon = group.icon || ArticleIcon;
+          const hasChildren = Array.isArray(group.children) && group.children.length > 0;
+          const active = groupContainsPath(group, location.pathname);
 
-          {canAccessModule("customers") && (
-            <ListItemButton onClick={() => go("/customers")}>
-              <ListItemIcon>
-                <PeopleIcon />
-              </ListItemIcon>
-              <ListItemText primary="Customers" />
-            </ListItemButton>
-          )}
+          if (!hasChildren) {
+            return renderNavItem(group);
+          }
 
-          {/* PRODUCTS DROPDOWN */}
-          {canAccessModule("products") && (
-            <>
-              <ListItemButton onClick={() => toggleModule("products")}>
-                <ListItemIcon>
-                  <StorefrontIcon />
-                </ListItemIcon>
-                <ListItemText primary="Products" />
-                {isExpanded("products") ? <ExpandLess /> : <ExpandMore />}
-              </ListItemButton>
-              <Collapse
-                in={isExpanded("products")}
-                timeout="auto"
-                unmountOnExit
+          return (
+            <Box key={group.key} className="erp-sidebar-group">
+              <ListItemButton
+                onClick={() => toggleGroup(group.key)}
+                className={active ? 'erp-sidebar-link active parent' : 'erp-sidebar-link parent'}
               >
-                <List component="div" disablePadding>
-                  <ListItemButton
-                    sx={{ pl: 4 }}
-                    onClick={() => go("/products/list")}
-                  >
-                    <ListItemIcon>
-                      <FormatListBulletedIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Products List" />
-                  </ListItemButton>
-                  <ListItemButton
-                    sx={{ pl: 4 }}
-                    onClick={() => go("/categories")}
-                  >
-                    <ListItemIcon>
-                      <CategoryIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Categories" />
-                  </ListItemButton>
-                  <ListItemButton
-                    sx={{ pl: 4 }}
-                    onClick={() => go("/attributes")}
-                  >
-                    <ListItemIcon>
-                      <StyleIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Attributes" />
-                  </ListItemButton>
-                </List>
-              </Collapse>
-            </>
-          )}
-
-          {/* QUOTATIONS DROPDOWN */}
-          {canAccessModule("quotations") && (
-            <>
-              <ListItemButton onClick={() => toggleModule("quotations")}>
-                <ListItemIcon>
-                  <ArticleIcon />
-                </ListItemIcon>
-                <ListItemText primary="Quotations" />
-                {isExpanded("quotations") ? <ExpandLess /> : <ExpandMore />}
+                <ListItemIcon className="erp-sidebar-icon"><Icon /></ListItemIcon>
+                <ListItemText primary={group.label} />
+                {openGroups[group.key] ? <ExpandLess className="erp-sidebar-chevron" /> : <ExpandMore className="erp-sidebar-chevron" />}
               </ListItemButton>
-
-              <Collapse
-                in={isExpanded("quotations")}
-                timeout="auto"
-                unmountOnExit
-              >
-                <List component="div" disablePadding>
-                  <ListItemButton
-                    sx={{ pl: 4 }}
-                    onClick={() => go("/quotations")}
-                  >
-                    <ListItemIcon>
-                      <FormatListBulletedIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Quotation List" />
-                  </ListItemButton>
-
-                  <ListItemButton
-                    sx={{ pl: 4 }}
-                    onClick={() => go("/quotations-settings")}
-                  >
-                    <ListItemIcon>
-                      <SettingsIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Settings" />
-                  </ListItemButton>
+              <Collapse in={Boolean(openGroups[group.key] || active)} timeout="auto" unmountOnExit>
+                <List component="div" disablePadding className="erp-sidebar-children">
+                  {group.children.map((item) => renderNavItem(item, true))}
                 </List>
               </Collapse>
-            </>
-          )}
+            </Box>
+          );
+        })}
+      </List>
 
-          {/* WORK ORDERS DROPDOWN */}
-          {canAccessModule("work_orders") && (
-            <>
-              <ListItemButton onClick={() => toggleModule("work_orders")}>
-                <ListItemIcon>
-                  <AssignmentIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary={withModuleBadge(
-                    "Work Orders",
-                    bubbleCounts.workOrderCount,
-                  )}
-                />
-                {isExpanded("work_orders") ? <ExpandLess /> : <ExpandMore />}
-              </ListItemButton>
-              <Collapse
-                in={isExpanded("work_orders")}
-                timeout="auto"
-                unmountOnExit
-              >
-                <List component="div" disablePadding>
-                  <ListItemButton
-                    sx={{ pl: 4 }}
-                    onClick={() => go("/workorders")}
-                  >
-                    <ListItemIcon>
-                      <FormatListBulletedIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={withSubmenuBadge(
-                        "Work Order List",
-                        "work_orders",
-                      )}
-                    />
-                  </ListItemButton>
-                </List>
-              </Collapse>
-            </>
-          )}
-
-          {/* KOT (Kitchen Order Ticket) - CATERING ONLY */}
-          {isCateringBusiness && canAccessModule("kots") && (
-            <>
-              <ListItemButton onClick={() => toggleModule("kots")}>
-                <ListItemIcon>
-                  <RestaurantMenuIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary={withModuleBadge("KOT", bubbleCounts.kotCount)}
-                />
-                {isExpanded("kots") ? <ExpandLess /> : <ExpandMore />}
-              </ListItemButton>
-              <Collapse in={isExpanded("kots")} timeout="auto" unmountOnExit>
-                <List component="div" disablePadding>
-                  <ListItemButton sx={{ pl: 4 }} onClick={() => go("/kots")}>
-                    <ListItemIcon>
-                      <FormatListBulletedIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={withSubmenuBadge("KOT Board", "kot")}
-                    />
-                  </ListItemButton>
-                  <ListItemButton
-                    sx={{ pl: 4 }}
-                    onClick={() => go("/kots/settings")}
-                  >
-                    <ListItemIcon>
-                      <SettingsIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="KOT Settings" />
-                  </ListItemButton>
-                </List>
-              </Collapse>
-            </>
-          )}
-
-          {/* DELIVERY */}
-          {canAccessModule("deliveries") && (
-            <>
-              <ListItemButton onClick={() => toggleModule("deliveries")}>
-                <ListItemIcon>
-                  <LocalShippingIcon />
-                </ListItemIcon>
-                <ListItemText
-                  primary={withModuleBadge(
-                    "Delivery",
-                    bubbleCounts.deliveryCount,
-                  )}
-                />
-                {isExpanded("deliveries") ? <ExpandLess /> : <ExpandMore />}
-              </ListItemButton>
-              <Collapse
-                in={isExpanded("deliveries")}
-                timeout="auto"
-                unmountOnExit
-              >
-                <List component="div" disablePadding>
-                  <ListItemButton
-                    sx={{ pl: 4 }}
-                    onClick={() => go("/deliveries")}
-                  >
-                    <ListItemIcon>
-                      <FormatListBulletedIcon />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={withSubmenuBadge("Delivery Board", "delivery")}
-                    />
-                  </ListItemButton>
-                </List>
-              </Collapse>
-            </>
-          )}
-
-          {/* INVOICES DROPDOWN */}
-          {canAccessModule("invoices") && (
-            <>
-              <ListItemButton onClick={() => toggleModule("invoices")}>
-                <ListItemIcon>
-                  <ReceiptLongIcon />
-                </ListItemIcon>
-                <ListItemText primary="Invoices" />
-                {isExpanded("invoices") ? <ExpandLess /> : <ExpandMore />}
-              </ListItemButton>
-
-              <Collapse
-                in={isExpanded("invoices")}
-                timeout="auto"
-                unmountOnExit
-              >
-                <List component="div" disablePadding>
-                  <ListItemButton
-                    sx={{ pl: 4 }}
-                    onClick={() => go("/proforma-invoices")}
-                  >
-                    <ListItemIcon>
-                      <FormatListBulletedIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Proforma Invoices" />
-                  </ListItemButton>
-
-                  <ListItemButton
-                    sx={{ pl: 4 }}
-                    onClick={() => go("/invoices")}
-                  >
-                    <ListItemIcon>
-                      <FormatListBulletedIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Invoice List" />
-                  </ListItemButton>
-
-                  <ListItemButton
-                    sx={{ pl: 4 }}
-                    onClick={() => go("/invoice-settings")}
-                  >
-                    <ListItemIcon>
-                      <SettingsIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Settings" />
-                  </ListItemButton>
-                </List>
-              </Collapse>
-            </>
-          )}
-
-          {canAccessModule("payments") && (
-            <>
-              <ListItemButton onClick={() => toggleModule("payments")}>
-                <ListItemIcon>
-                  <AccountBalanceWalletIcon />
-                </ListItemIcon>
-                <ListItemText primary="Payments" />
-                {isExpanded("payments") ? <ExpandLess /> : <ExpandMore />}
-              </ListItemButton>
-
-              <Collapse
-                in={isExpanded("payments")}
-                timeout="auto"
-                unmountOnExit
-              >
-                <List component="div" disablePadding>
-                  <ListItemButton
-                    sx={{ pl: 4 }}
-                    onClick={() => go("/payments")}
-                  >
-                    <ListItemIcon>
-                      <HourglassEmptyIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Pending Payments" />
-                  </ListItemButton>
-                  <ListItemButton
-                    sx={{ pl: 4 }}
-                    onClick={() => go("/payments/history")}
-                  >
-                    <ListItemIcon>
-                      <HistoryIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Payment History" />
-                  </ListItemButton>
-                </List>
-              </Collapse>
-            </>
-          )}
-
-          {canAccessModule("payment_reminders") && (
-            <>
-              <ListItemButton onClick={() => toggleModule("payment_reminders")}>
-                <ListItemIcon>
-                  <AlarmIcon />
-                </ListItemIcon>
-                <ListItemText primary="Payment Reminders" />
-                {isExpanded("payment_reminders") ? (
-                  <ExpandLess />
-                ) : (
-                  <ExpandMore />
-                )}
-              </ListItemButton>
-
-              <Collapse
-                in={isExpanded("payment_reminders")}
-                timeout="auto"
-                unmountOnExit
-              >
-                <List component="div" disablePadding>
-                  <ListItemButton
-                    sx={{ pl: 4 }}
-                    onClick={() => go("/payment-reminders")}
-                  >
-                    <ListItemIcon>
-                      <FormatListBulletedIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Pending Payments" />
-                  </ListItemButton>
-
-                  <ListItemButton
-                    sx={{ pl: 4 }}
-                    onClick={() => go("/payment-reminders/settings")}
-                  >
-                    <ListItemIcon>
-                      <SettingsIcon />
-                    </ListItemIcon>
-                    <ListItemText primary="Settings" />
-                  </ListItemButton>
-                </List>
-              </Collapse>
-            </>
-          )}
-
-          {canAccessModule("reports") && (
-            <ListItemButton onClick={() => go("/reports")}>
-              <ListItemIcon>
-                <AssessmentIcon />
-              </ListItemIcon>
-              <ListItemText primary="Reports" />
-            </ListItemButton>
-          )}
-
-          {currentUser?.role === "admin" && canAccessModule("users") && (
-            <ListItemButton onClick={() => go("/users")}>
-              <ListItemIcon>
-                <PeopleIcon />
-              </ListItemIcon>
-              <ListItemText primary="Users" />
-            </ListItemButton>
-          )}
-
-          {canAccessModule("settings") && (
-            <ListItemButton onClick={() => go("/settings")}>
-              <ListItemIcon>
-                <SettingsIcon />
-              </ListItemIcon>
-              <ListItemText primary="Settings" />
-            </ListItemButton>
-          )}
-        </List>
-      </Drawer>
-    </div>
+      <Box className="erp-sidebar-footer">
+        <Divider />
+        <Box className="erp-sidebar-user">
+          <Avatar className="erp-sidebar-user-avatar">
+            {String(currentUser?.name || currentUser?.email || 'U').charAt(0).toUpperCase()}
+          </Avatar>
+          <Box className="erp-sidebar-user-copy">
+            <Typography className="erp-sidebar-user-name">
+              {currentUser?.name || currentUser?.email || 'ERP User'}
+            </Typography>
+            <Typography className="erp-sidebar-user-role">Signed in</Typography>
+          </Box>
+        </Box>
+        <ListItemButton onClick={handleLogout} className="erp-sidebar-link logout">
+          <ListItemIcon className="erp-sidebar-icon"><LogoutIcon /></ListItemIcon>
+          <ListItemText primary="Logout" />
+        </ListItemButton>
+      </Box>
+    </Drawer>
   );
 };
 

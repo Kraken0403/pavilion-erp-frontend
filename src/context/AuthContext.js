@@ -37,7 +37,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Load auth state on app boot
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
     const token = localStorage.getItem('token');
@@ -55,7 +54,6 @@ export const AuthProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // 🔥 Listen for forced logout from Axios interceptor
   useEffect(() => {
     const handleLogout = () => {
       logout();
@@ -63,6 +61,7 @@ export const AuthProvider = ({ children }) => {
 
     window.addEventListener('auth:logout', handleLogout);
     return () => window.removeEventListener('auth:logout', handleLogout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const login = (user, token) => {
@@ -71,14 +70,12 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser(user);
     loadUserPermissions(user?.id);
 
-    // 🔥 Notify SettingsContext that user is logged in
     window.dispatchEvent(new CustomEvent('auth:login', { detail: { token } }));
 
     try {
       connectSocket();
       if (token) authenticateSocket(token);
     } catch (e) {
-      // non-fatal
       console.warn('Socket auth during login failed', e && e.message ? e.message : e);
     }
   };
@@ -89,7 +86,6 @@ export const AuthProvider = ({ children }) => {
     setCurrentUser(null);
     setModulePermissions(getDefaultModulePermissions());
 
-    // 🔥 Notify SettingsContext that user is logged out
     window.dispatchEvent(new CustomEvent('auth:logout-with-settings'));
 
     try { disconnectSocket(); } catch (e) { }

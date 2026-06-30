@@ -2,38 +2,42 @@ import { io } from 'socket.io-client';
 
 let socket = null;
 
+const trimTrailingSlash = (value) => String(value || '').replace(/\/+$/, '');
+
+const normalizeSocketOrigin = (value) => {
+  const cleaned = trimTrailingSlash(value);
+
+  if (!cleaned) return 'http://localhost:5000';
+
+  try {
+    const url = new URL(cleaned);
+    return url.origin;
+  } catch (error) {
+    const apiIndex = cleaned.toLowerCase().indexOf('/api');
+    return apiIndex >= 0 ? cleaned.slice(0, apiIndex) : cleaned;
+  }
+};
+
+const getSocketBackendUrl = (opts = {}) => {
+  return normalizeSocketOrigin(
+    opts.url ||
+    process.env.REACT_APP_WS_URL ||
+    process.env.REACT_APP_BACKEND_URL ||
+    process.env.REACT_APP_API_BASE_URL ||
+    'http://localhost:5000'
+  );
+};
+
 export const connectSocket = (opts = {}) => {
   if (socket) return socket;
-  // Normalize backend URL: prefer explicit opt, then WS override, then API base.
-  // Strip any API path segments so the client connects to the server origin
-  // where the Socket.IO server is mounted (invalid namespaces often come
-  // from connecting to a path like '/api').
-  let backend = opts.url || process.env.REACT_APP_WS_URL || process.env.REACT_APP_API_BASE_URL || '';
-  if (!backend && typeof window !== 'undefined') backend = window.location.origin;
-  try {
-    // If the URL includes an '/api' path (or other path), remove it and use origin
-    const tmp = new URL(backend);
-    const apiIndex = tmp.pathname.toLowerCase().indexOf('/api');
-    if (apiIndex >= 0) {
-      backend = tmp.origin;
-    } else if (tmp.pathname && tmp.pathname !== '/') {
-      // If any path exists, prefer the origin to avoid namespace mismatches
-      backend = tmp.origin;
-    } else {
-      backend = tmp.origin;
-    }
-  } catch (e) {
-    // If not a full URL, try to strip common prefixes
-    const idx = String(backend || '').indexOf('/api');
-    if (idx >= 0) backend = backend.slice(0, idx);
-  }
 
-  console.debug('Socket connecting to backend origin:', backend);
+  const backend = getSocketBackendUrl(opts);
   const token = opts.token || localStorage.getItem('token') || null;
 
   const options = {
-    transports: ['websocket'],
     withCredentials: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
   };
 
   if (token) {
@@ -43,7 +47,7 @@ export const connectSocket = (opts = {}) => {
   socket = io(backend, options);
 
   socket.on('connect_error', (err) => {
-    console.warn('Socket connect_error', err && err.message ? err.message : err);
+    console.warn('Socket connect_error', err?.message || err);
   });
 
   socket.on('connect', () => {
@@ -55,6 +59,7 @@ export const connectSocket = (opts = {}) => {
   });
 
   socket.on('unauthorized', (data) => {
+    // Socket auth failure should not hard-logout the app. REST auth decides login state.
     console.warn('Socket unauthorized', data);
   });
 
@@ -72,7 +77,7 @@ export const disconnectSocket = () => {
 };
 
 export const authenticateSocket = (token) => {
-  if (!socket) return;
+  if (!socket || !token) return;
   socket.emit('authenticate', token);
 };
 

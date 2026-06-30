@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { TextField, MenuItem, Button, Grid, Box, Tab, Tabs } from '@mui/material';
 import { addLead } from '../services/leadService';  // Assuming the API call
 import EditTabs from './EditTabs';  // Assuming EditTabs handles Tab components
-import { formatStatusLabel } from '../utils/statusFormatter';
+import WgiymEditor from './ui/WgiymEditor';
 
 const LeadForm = ({ onAddSuccess, onAddFailure }) => {
     const [activeTab, setActiveTab] = useState(0);
@@ -200,7 +200,7 @@ const LeadForm = ({ onAddSuccess, onAddFailure }) => {
                         >
                             {['new', 'in-progress', 'closed', 'won', 'lost'].map((status) => (
                                 <MenuItem key={status} value={status}>
-                                    {formatStatusLabel(status)}
+                                    {status}
                                 </MenuItem>
                             ))}
                         </TextField>
@@ -228,15 +228,10 @@ const LeadForm = ({ onAddSuccess, onAddFailure }) => {
             {activeTab === 3 && (
                 <Grid container spacing={2} sx={{ marginTop: '1rem' }}>
                     <Grid item xs={12}>
-                        <TextField
-                            label="Notes"
-                            name="notes"
-                            value={leadData.notes}
-                            onChange={handleChange}
-                            multiline
-                            rows={4}
-                            fullWidth
-                            margin="normal"
+                        <label className="field-label">Notes</label>
+                        <WgiymEditor
+                            value={leadData.notes || ''}
+                            onChange={(value) => setLeadData({ ...leadData, notes: value })}
                         />
                     </Grid>
                 </Grid>

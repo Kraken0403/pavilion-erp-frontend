@@ -1,23 +1,14 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Container } from '@mui/material'
 import { useParams } from 'react-router-dom'
 
-import Topbar from './Topbar'
 import NotificationSnackbar from '../components/ui/NotificationSnackbar'
 
 import QuotationContactSection from '../components/quotation/QuotationContactSection'
 import QuotationItemsSection from '../components/quotation/QuotationItemsSection'
 import QuotationFooterSection from '../components/quotation/QuotationFooterSection'
 import QuotationSummary from './quotation/QuotationSummary'
-import { getSettings } from '../services/settingsService'
-import { displayCurrency } from '../utils/currencyUtils'
 
-import {
-  Grid,
-  TextField,
-  Typography,
-} from '@mui/material'
-import TimePicker12 from './TimePicker12'
 import {
   fetchAllProducts,
   createProduct,
@@ -31,54 +22,29 @@ import { fetchLeads } from '../services/leadService'
 import { getQuotationSettings } from '../services/quotationSettingsService'
 import { calculateQuotationTotals } from '../utils/quotationCalculator'
 import QuotationHeader from '../components/quotation/QuotationHeader'
-import { toInputDateValue } from '../utils/dateFormatter'
+import { useSettings } from '../context/SettingsContext'
+import '../assets/styles/QuotationDetail.scss'
 
 
 function CreateQuotation() {
-  const toDateInput = (value) => {
-    if (!value) return ''
-    const raw = String(value).trim()
-    const match = raw.match(/^(\d{4}-\d{2}-\d{2})/)
-    if (match) return match[1]
-
-    const parsed = new Date(raw)
-    if (Number.isNaN(parsed.getTime())) return ''
-    return toInputDateValue(parsed)
-  }
-
-  const toTimeInput = (value) => {
-    if (!value) return ''
-    const raw = String(value).trim()
-    const match = raw.match(/^(\d{2}:\d{2})/)
-    if (match) return match[1]
-
-    const parsed = new Date(raw)
-    if (Number.isNaN(parsed.getTime())) return ''
-    const hh = String(parsed.getHours()).padStart(2, '0')
-    const mm = String(parsed.getMinutes()).padStart(2, '0')
-    return `${hh}:${mm}`
-  }
-
+  const { settings: globalSettings } = useSettings() || {}
   /* ---------------------------------------
      GLOBAL SETTINGS
   --------------------------------------- */
-  const [gstPricingMode, setGstPricingMode] = useState('INCLUSIVE')
+  const [gstPricingMode, setGstPricingMode] = useState('EXCLUSIVE')
   const [currency, setCurrency] = useState('₹')
   const [quotationMode, setQuotationMode] = useState('GENERAL')
   const [editingProduct, setEditingProduct] = useState(null);
   const [leadId, setLeadId] = useState('')
   const [leads, setLeads] = useState([])
-  const [addLeadOpen, setAddLeadOpen] = useState(false)
-  const [prefillLeadName, setPrefillLeadName] = useState('')
   const [selectedLead, setSelectedLead] = useState(null)
   const [quotationDate, setQuotationDate] = useState(
-    toInputDateValue(new Date())
+    new Date().toISOString().split('T')[0]
   )
   const [validUntil, setValidUntil] = useState('')
   const [notes, setNotes] = useState('')
 
   const [items, setItems] = useState([])
-  const [productPrefilledLeadId, setProductPrefilledLeadId] = useState(null)
 
   const { leadId: routeLeadId } = useParams()
 
@@ -89,66 +55,22 @@ function CreateQuotation() {
     event_name: '',
     event_date: '',
     event_time: '',
-    event_start_date: '',
-    event_start_time: '',
-    event_end_date: '',
-    event_end_time: '',
     event_location: ''
   })
 
   const [openProductDialog, setOpenProductDialog] = useState(false)
-
-
+  const [openAddLeadDialog, setOpenAddLeadDialog] = useState(false)
+  const [prefillLeadName, setPrefillLeadName] = useState('')
   const [notif, setNotif] = useState({ open: false, message: '', severity: 'success' })
 
-  const showNotification = useCallback((message, severity = 'success') => {
-    setNotif({ open: true, message, severity })
-  }, [])
-
-  const calculatePrefilledLine = useCallback(({ quantity, selling_price, discount, gst_rate }) => {
-    const qty = Math.max(Number(quantity || 1), 1)
-    const price = Math.max(Number(selling_price || 0), 0)
-    const rawDiscount = Math.max(Number(discount || 0), 0)
-    const gross = qty * price
-    const appliedDiscount = Math.min(rawDiscount, Math.max(gross, 0))
-    const discounted = Math.max(gross - appliedDiscount, 0)
-    const gst = Math.max(Number(gst_rate || 0), 0)
-
-    let tax = 0
-    let line_total = discounted
-
-    if (gst > 0) {
-      if (gstPricingMode === 'INCLUSIVE') {
-        tax = discounted * gst / (100 + gst)
-        line_total = discounted
-      } else {
-        tax = discounted * gst / 100
-        line_total = discounted + tax
-      }
-    }
-
-    return { tax, line_total }
-  }, [gstPricingMode])
-
-  /* ---------------------------------------
-   GLOBAL SYSTEM MODE (CATERING / GENERAL)
-    --------------------------------------- */
-  useEffect(() => {
-    getSettings()
-      .then(settings => {
-        setQuotationMode(settings?.business_type || 'GENERAL')
-        setGstPricingMode(settings?.gst_pricing_mode || 'INCLUSIVE')
-      })
-      .catch(err => console.error('Failed to load global settings', err))
-  }, [])
 
   useEffect(() => {
     fetchAllProducts()
       .then(res => {
         const list =
           Array.isArray(res) ? res :
-            Array.isArray(res?.data) ? res.data :
-              Array.isArray(res?.products) ? res.products : []
+          Array.isArray(res?.data) ? res.data :
+          Array.isArray(res?.products) ? res.products : []
         setProducts(list)
       })
       .catch(err => console.error('Failed to load products', err))
@@ -160,11 +82,18 @@ function CreateQuotation() {
   useEffect(() => {
     getQuotationSettings()
       .then(settings => {
-        setCurrency(displayCurrency(settings?.currency_code))
+        const businessType = String(globalSettings?.business_type || 'GENERAL').toUpperCase()
+        const nextMode = businessType === 'CATERING'
+          ? 'CATERING'
+          : businessType === 'HYBRID'
+            ? (settings?.quotation_mode || 'GENERAL')
+            : 'GENERAL'
+        setQuotationMode(nextMode)
+        setGstPricingMode(settings?.gst_pricing_mode || globalSettings?.gst_pricing_mode || 'EXCLUSIVE')
+        setCurrency(settings?.currency_code || '₹')
       })
       .catch(err => console.error('Failed to load quotation settings', err))
-  }, [])
-
+  }, [globalSettings])
 
   /* ---------------------------------------
      LEADS
@@ -176,8 +105,8 @@ function CreateQuotation() {
       .then(res => {
         const arr =
           Array.isArray(res) ? res :
-            Array.isArray(res?.data) ? res.data :
-              Array.isArray(res?.leads) ? res.leads : []
+          Array.isArray(res?.data) ? res.data :
+          Array.isArray(res?.leads) ? res.leads : []
 
         setLeads(arr)
 
@@ -238,8 +167,8 @@ function CreateQuotation() {
       const res = await fetchAllProducts()
       const list =
         Array.isArray(res) ? res :
-          Array.isArray(res?.data) ? res.data :
-            Array.isArray(res?.products) ? res.products : []
+        Array.isArray(res?.data) ? res.data :
+        Array.isArray(res?.products) ? res.products : []
       setProducts(list)
 
       // 🔒 Close dialog
@@ -299,96 +228,6 @@ function CreateQuotation() {
     }
   }, [quotationMode])
 
-  // Prefill event fields when a lead is selected for catering quotations.
-  useEffect(() => {
-    if (!selectedLead || quotationMode !== 'CATERING') return
-
-    setPax(selectedLead?.pax ? Number(selectedLead.pax) : null)
-    setCateringMeta({
-      event_name: selectedLead?.event_name || selectedLead?.event_type || '',
-      event_date: toDateInput(selectedLead?.event_date),
-      event_time: toTimeInput(selectedLead?.event_time),
-      event_start_date: toDateInput(selectedLead?.event_start_date),
-      event_start_time: toTimeInput(selectedLead?.event_start_time),
-      event_end_date: toDateInput(selectedLead?.event_end_date),
-      event_end_time: toTimeInput(selectedLead?.event_end_time),
-      event_location: selectedLead?.event_location || '',
-    })
-  }, [selectedLead, quotationMode])
-
-  // Prefill quotation item from lead product details when opening from lead route.
-  useEffect(() => {
-    if (!routeLeadId || !selectedLead || !products.length) return
-    if (String(productPrefilledLeadId) === String(selectedLead.id)) return
-
-    setProductPrefilledLeadId(selectedLead.id)
-
-    // Do not overwrite if user already added/edited items.
-    if (items.length > 0) return
-
-    const leadProductId = Number(selectedLead?.product_id || 0)
-    const leadProductName = String(selectedLead?.product_name || '').trim()
-
-    let matchedProduct = null
-
-    if (leadProductId > 0) {
-      matchedProduct = products.find((product) => Number(product?.id) === leadProductId) || null
-    }
-
-    if (!matchedProduct && leadProductName) {
-      const normalizedName = leadProductName.toLowerCase()
-      matchedProduct = products.find(
-        (product) => String(product?.name || '').trim().toLowerCase() === normalizedName
-      ) || null
-    }
-
-    if (!matchedProduct) {
-      if (leadProductId > 0 || leadProductName) {
-        showNotification('Lead product not found in product master. Please select it manually.', 'warning')
-      }
-      return
-    }
-
-    const quantity = quotationMode === 'CATERING'
-      ? Math.max(1, Number(selectedLead?.pax || 1))
-      : 1
-
-    const selling_price = Number(matchedProduct?.selling_price || matchedProduct?.price || 0)
-    const cost_price = Number(matchedProduct?.cost_price || 0)
-    const discount = 0
-    const gst_rate = Number(matchedProduct?.gst_rate || 0)
-
-    const calc = calculatePrefilledLine({
-      quantity,
-      selling_price,
-      discount,
-      gst_rate,
-    })
-
-    setItems([
-      {
-        product: matchedProduct,
-        quantity,
-        selling_price,
-        cost_price,
-        discount,
-        gst_rate,
-        tax: calc.tax,
-        line_total: calc.line_total,
-        variant_id: matchedProduct?.variantId || null
-      }
-    ])
-  }, [
-    routeLeadId,
-    selectedLead,
-    products,
-    quotationMode,
-    items.length,
-    productPrefilledLeadId,
-    calculatePrefilledLine,
-    showNotification,
-  ])
-
   /* ---------------------------------------
      DISCOUNT (FLAT FOR NOW)
   --------------------------------------- */
@@ -405,23 +244,11 @@ function CreateQuotation() {
     gstPricingMode
   })
 
-  // Rounding amount: default removes decimal part (nearest integer adjustment)
-  const [roundingAmount, setRoundingAmount] = useState(null)
-  const [roundingManual, setRoundingManual] = useState(false)
 
-  useEffect(() => {
-    if (roundingManual) return
-    const grand = Number(totals.grandTotal || 0)
-    const defaultRound = Math.round(grand) - grand
-    setRoundingAmount(Number(defaultRound.toFixed(2)))
-  }, [totals.grandTotal, roundingManual])
 
-  const handleSetRoundingAmount = (v) => {
-    setRoundingManual(true)
-    setRoundingAmount(Number(v || 0))
-  }
 
-  const derivedTotals = { ...totals, roundingAmount: Number(roundingAmount || 0) }
+  const showNotification = (message, severity = 'success') =>
+    setNotif({ open: true, message, severity })
 
   /* ---------------------------------------
      SUBMIT
@@ -432,17 +259,6 @@ function CreateQuotation() {
 
     if (quotationMode === 'CATERING' && (!pax || pax < 1)) {
       return showNotification('PAX is required for catering', 'warning')
-    }
-
-    // ✅ VALIDATE: Sum of quantities must equal PAX in CATERING mode
-    if (quotationMode === 'CATERING') {
-      const totalQty = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
-      if (totalQty !== Number(pax)) {
-        return showNotification(
-          `Total quantity (${totalQty}) must equal PAX (${pax})`,
-          'error'
-        )
-      }
     }
 
     const validItems = items.filter(
@@ -469,8 +285,7 @@ function CreateQuotation() {
 
       // Optional but recommended to store
       total_tax: Number(totals.totalTax || 0),
-      grand_total: Number((totals.grandTotal || 0) + (Number(roundingAmount) || 0)),
-      rounding_amount: Number(roundingAmount || 0),
+      grand_total: Number(totals.grandTotal || 0),
 
       items: validItems.map(i => ({
         product_id: i.product.id,
@@ -478,30 +293,25 @@ function CreateQuotation() {
         quantity: Number(i.quantity),
         unit_price: Number(i.selling_price),
         discount: Number(i.discount || 0),
-        gst_rate: Number(i.gst_rate || 0),
-        cost_price: Number(i.cost_price || 0),
-        cost_price_unit: i.cost_price_unit || 'unit',
-        cost_price_qty: Number(i.cost_price_qty || 1),
-        cost_pricing_mode: i.cost_pricing_mode || 'absolute',
-        cost_discount_percent: Number(i.cost_discount_percent || 0)
+        gst_rate: Number(i.gst_rate || 0)
       })),
 
       ...(quotationMode === 'CATERING' && {
         pax,
-        event_name: cateringMeta.event_name || null,
-        event_location: cateringMeta.event_location || null,
-        event_start_date: cateringMeta.event_start_date || null,
-        event_start_time: cateringMeta.event_start_time || null,
-        event_end_date: cateringMeta.event_end_date || null,
-        event_end_time: cateringMeta.event_end_time || null
+        event_name: cateringMeta.event_name,
+        event_date: cateringMeta.event_date || null,
+        event_time: cateringMeta.event_time || null,
+        event_location: cateringMeta.event_location || null
       })
     }
 
     try {
       await createQuotation(payload)
       showNotification('✅ Quotation created successfully')
-      // redirect to quotations list
-      window.location.href = '/quotations'
+
+      // reset
+      setItems([])
+      setOverallDiscount(0)
     } catch (err) {
       showNotification(
         err?.response?.data?.error ||
@@ -517,10 +327,8 @@ function CreateQuotation() {
      UI
   --------------------------------------- */
   return (
-    <div className="quotations">
-      <Container>
-        <Topbar />
-
+    <div className="quotations quotation-page quotation-create-page">
+      <Container className="quotation-page-container">
         <QuotationHeader
           quotation={{
             quotation_number: 'NEW',
@@ -530,159 +338,74 @@ function CreateQuotation() {
           showActions={false}
         />
 
-
-        <div className="quotation-card">
+        <div className="quotation-card quotation-card--compact">
           <QuotationContactSection
-            leadId={leadId}
-            setLeadId={setLeadId}
-            leads={leads}
-            selectedLead={selectedLead}
-            setSelectedLead={setSelectedLead}
-            quotationDate={quotationDate}
-            setQuotationDate={setQuotationDate}
-            validUntil={validUntil}
-            setValidUntil={setValidUntil}
-            notes={notes}
-            setNotes={setNotes}
-            openAddLeadDialog={() => setAddLeadOpen(true)}
-            setPrefillLeadName={setPrefillLeadName}
-          />
+              leadId={leadId}
+              setLeadId={setLeadId}
+              leads={leads}
+              selectedLead={selectedLead}
+              setSelectedLead={setSelectedLead}
+              quotationDate={quotationDate}
+              setQuotationDate={setQuotationDate}
+              validUntil={validUntil}
+              setValidUntil={setValidUntil}
+              notes={notes}
+              setNotes={setNotes}
+              openAddLeadDialog={() => setOpenAddLeadDialog(true)}
+              setPrefillLeadName={setPrefillLeadName}
+              defaultDetailsOpen={false}
+            />
         </div>
-
 
 
 
         {quotationMode === 'CATERING' && (
-          <div className="quotation-card">
-            <div className="quotation-contact-section">
-              <Typography className="section-title">
-                <span className="sep"></span>
-                Event Details
-              </Typography>
-
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={4}>
-                  <Typography className="field-label">Event Name</Typography>
-                  <TextField
-                    className="form-input"
-                    fullWidth
-                    value={cateringMeta.event_name || ''}
-                    onChange={(e) => setCateringMeta(p => ({ ...p, event_name: e.target.value }))}
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={4}>
-                  <Typography className="field-label">PAX</Typography>
-                  <TextField
-                    className="form-input"
-                    type="number"
-                    fullWidth
-                    value={pax || ''}
-                    onChange={(e) => setPax(e.target.value === '' ? null : Number(e.target.value))}
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={4}>
-                  <Typography className="field-label">Event Venue</Typography>
-                  <TextField
-                    className="form-input"
-                    fullWidth
-                    value={cateringMeta.event_location || ''}
-                    onChange={(e) => setCateringMeta(p => ({ ...p, event_location: e.target.value }))}
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={3}>
-                  <Typography className="field-label">Event Start Date</Typography>
-                  <TextField
-                    className="form-input"
-                    type="date"
-                    fullWidth
-                    value={cateringMeta.event_start_date || ''}
-                    onChange={(e) =>
-                      setCateringMeta((p) => ({
-                        ...p,
-                        event_start_date: e.target.value,
-                      }))
-                    }
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={3}>
-                  <Typography className="field-label">Event Start Time</Typography>
-                  <TimePicker12
-                    label="Event Start Time"
-                    className="form-input"
-                    value={cateringMeta.event_start_time || ''}
-                    onChange={(val) => setCateringMeta((p) => ({ ...p, event_start_time: val }))}
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={3}>
-                  <Typography className="field-label">Event End Date</Typography>
-                  <TextField
-                    className="form-input"
-                    type="date"
-                    fullWidth
-                    value={cateringMeta.event_end_date || ''}
-                    onChange={(e) =>
-                      setCateringMeta((p) => ({
-                        ...p,
-                        event_end_date: e.target.value,
-                      }))
-                    }
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={3}>
-                  <Typography className="field-label">Event End Time</Typography>
-                  <TimePicker12
-                    label="Event End Time"
-                    className="form-input"
-                    value={cateringMeta.event_end_time || ''}
-                    onChange={(val) => setCateringMeta((p) => ({ ...p, event_end_time: val }))}
-                  />
-                </Grid>
-              </Grid>
+          <div className="quotation-card quotation-card--compact catering-meta">
+            <h3>Event Details</h3>
+            <div className="grid">
+              <input placeholder="Event Name" value={cateringMeta.event_name}
+                onChange={e => setCateringMeta(p => ({ ...p, event_name: e.target.value }))} />
+              <input type="date" value={cateringMeta.event_date}
+                onChange={e => setCateringMeta(p => ({ ...p, event_date: e.target.value }))} />
+              <input type="time" value={cateringMeta.event_time}
+                onChange={e => setCateringMeta(p => ({ ...p, event_time: e.target.value }))} />
+              <input placeholder="Event Location" value={cateringMeta.event_location}
+                onChange={e => setCateringMeta(p => ({ ...p, event_location: e.target.value }))} />
+              <input type="number" min={1} placeholder="PAX" value={pax || ''}
+                onChange={e => setPax(Number(e.target.value) || null)} />
             </div>
-          </div>
+            </div>
         )}
 
-        <div className="quotation-card">
+
+        <div className="quotation-card quotation-card--items">
           <QuotationItemsSection
-            items={items}
-            setItems={setItems}
-            updateItem={updateItem}
-            handleProductSelect={handleProductSelect}
-            addItem={addItem}
-            openProductDialog={openProductDialog}
-            setOpenProductDialog={setOpenProductDialog}
-            quotationMode={quotationMode}
-            pax={quotationMode === 'CATERING' ? pax : null}
-            gstPricingMode={gstPricingMode}
-            isLocked={false}
-            reorderItems={reorderItems}
-            products={products}
-          />
+              items={items}
+              setItems={setItems}
+              updateItem={updateItem}
+              handleProductSelect={handleProductSelect}
+              addItem={addItem}
+              openProductDialog={openProductDialog}
+              setOpenProductDialog={setOpenProductDialog}
+              quotationMode={quotationMode}
+              pax={quotationMode === 'CATERING' ? pax : null}
+              isLocked={false}
+              reorderItems={reorderItems}
+              products={products}
+            />
         </div>
 
-        <div className="quotation-card">
+        <div className="quotation-card quotation-card--summary">
           <QuotationSummary
-            totals={derivedTotals}
+            totals={totals}
             overallDiscount={overallDiscount}
             setOverallDiscount={setOverallDiscount}
             currency={currency}
-            gstPricingMode={gstPricingMode}
-            roundingAmount={roundingAmount}
-            setRoundingAmount={handleSetRoundingAmount}
           />
           <QuotationFooterSection
-            total={Number((totals.grandTotal || 0) + (Number(roundingAmount) || 0))}
+            total={Number(totals.grandTotal || 0)}
             handleSubmit={handleSubmit}
             currency={currency}
-            disabled={!leadId}
           />
         </div>
 
@@ -697,24 +420,13 @@ function CreateQuotation() {
         />
 
         <AddLeadDialog
-          open={addLeadOpen}
-          onClose={() => setAddLeadOpen(false)}
+          open={openAddLeadDialog}
+          onClose={() => setOpenAddLeadDialog(false)}
           prefillName={prefillLeadName}
-          showNotification={showNotification}
-          onLeadCreated={async (leadId) => {
-            const res = await fetchLeads()
-            const arr =
-              Array.isArray(res) ? res :
-                Array.isArray(res?.data) ? res.data :
-                  Array.isArray(res?.leads) ? res.leads : []
-
-            setLeads(arr)
-
-            const match = arr.find(l => String(l.id) === String(leadId))
-            if (match) {
-              setSelectedLead(match)
-              setLeadId(match.id)
-            }
+          onLeadCreated={lead => {
+            setLeads(p => [...p, lead])
+            setLeadId(lead.id)
+            setSelectedLead(lead)
           }}
         />
 

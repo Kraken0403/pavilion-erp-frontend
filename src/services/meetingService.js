@@ -2,9 +2,8 @@
 import axios from 'axios';
 
 import { getAuthHeaders } from './authService';
-import { API_BASE_URL } from '../config/env';
 
-const API_URL = `${API_BASE_URL}/meetings`;
+const API_URL = 'http://localhost:5000/api/meetings';
 
 // Add a new meeting
 export const createMeeting = async (meetingData) => {

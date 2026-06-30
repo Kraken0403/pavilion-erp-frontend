@@ -6,6 +6,8 @@ import { formatDate, formatTime12Hour } from '../../utils/dateFormatter'
 
 function WorkOrderEventSection({ workOrder }) {
   if (!workOrder) return null
+  const mode = String(workOrder.mode || workOrder.quotation_mode || 'GENERAL').toUpperCase()
+  if (mode !== 'CATERING') return null
 
   const {
     event_name,

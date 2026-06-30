@@ -1,6 +1,5 @@
 // src/services/quotationService.js
 import api from './api';
-import { downloadPdfFromResponse } from '../utils/pdfHelpers';
 
 /* ---------------------------------------
    ERROR HANDLER
@@ -12,7 +11,6 @@ const handleError = (error, context = 'Quotation error') => {
   );
   throw error;
 };
-
 
 /**
  * Create a new quotation with items
@@ -51,14 +49,15 @@ export const fetchQuotations = async () => {
 };
 
 /**
- * Get approved quotations only
+ * Get approved quotations for work orders/proforma creation.
+ * Backend currently exposes /quotations, so filtering is kept on the frontend.
  */
 export const fetchApprovedQuotations = async () => {
-  const data = await fetchQuotations();
-  const list = Array.isArray(data) ? data : data?.data || [];
-  return list.filter(
-    (q) => String(q.status || '').trim().toLowerCase() === 'approved'
-  );
+  const quotations = await fetchQuotations();
+
+  return Array.isArray(quotations)
+    ? quotations.filter((quotation) => String(quotation?.status || '').toLowerCase() === 'approved')
+    : [];
 };
 
 /**
@@ -113,6 +112,26 @@ export const updateQuotationItems = async (id, items) => {
    QUOTATION PDF
 ======================= */
 
+const getFilenameFromDisposition = (contentDisposition, fallback) => {
+  const header = String(contentDisposition || '');
+
+  const encodedMatch = header.match(/filename\*=UTF-8''([^;]+)/i);
+  if (encodedMatch?.[1]) {
+    try {
+      return decodeURIComponent(encodedMatch[1].replace(/["']/g, ''));
+    } catch (_) {
+      return encodedMatch[1].replace(/["']/g, '');
+    }
+  }
+
+  const regularMatch = header.match(/filename="?([^";]+)"?/i);
+  if (regularMatch?.[1]) {
+    return regularMatch[1].trim();
+  }
+
+  return fallback;
+};
+
 export const generateQuotationPdf = async (quotationId) => {
   if (!quotationId) {
     throw new Error('Quotation ID is required');
@@ -120,50 +139,26 @@ export const generateQuotationPdf = async (quotationId) => {
 
   try {
     const res = await api.get(
-      `/quotations/${quotationId}/pdf-puppet`,
-      { responseType: 'blob' } // 👈 IMPORTANT
-    );
-     // Extract filename from Content-Disposition header
-    const disposition = res.headers['content-disposition'];
-    let filename = `quotation-${quotationId}.pdf`; // fallback
-    if (disposition) {
-      const match = disposition.match(/filename="?([^"]+)"?/);
-      if (match) filename = match[1];
-    }
-
-    await downloadPdfFromResponse(
-      res,
-      filename,  // ✅ uses server filename
-      'Failed to download quotation PDF'
+      `/quotations/${quotationId}/pdf`,
+      { responseType: 'blob' }
     );
 
+    const fallbackFilename = `Quotation-${quotationId}.pdf`;
+    const filename = getFilenameFromDisposition(
+      res.headers?.['content-disposition'],
+      fallbackFilename
+    );
+
+    const blob = new Blob([res.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename || fallbackFilename;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
   } catch (error) {
     handleError(error, 'Failed to generate quotation PDF');
-  }
-};
-
-export const sendQuotationEmailToCustomer = async (quotationId) => {
-  if (!quotationId) {
-    throw new Error('Quotation ID is required');
-  }
-
-  try {
-    const res = await api.post(`/quotations/${quotationId}/send-email`);
-    return res.data;
-  } catch (error) {
-    handleError(error, `Failed to send quotation email for ${quotationId}`);
-  }
-};
-
-export const sendQuotationWhatsAppToCustomer = async (quotationId) => {
-  if (!quotationId) {
-    throw new Error('Quotation ID is required');
-  }
-
-  try {
-    const res = await api.post(`/quotations/${quotationId}/send-whatsapp`);
-    return res.data;
-  } catch (error) {
-    handleError(error, `Failed to send quotation WhatsApp for ${quotationId}`);
   }
 };

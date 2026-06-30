@@ -1,6 +1,5 @@
 // src/services/workOrderServices.js
 import api from './api';
-import { downloadPdfFromResponse } from '../utils/pdfHelpers';
 
 /* ---------------------------------------
    ERROR HANDLER
@@ -30,13 +29,13 @@ export const createWorkOrderFromQuotation = async (quotationId) => {
   }
 };
 
-// Create Work Order Manually
-export const createManualWorkOrder = async (workOrderData) => {
+
+export const createWorkOrder = async (payload) => {
   try {
-    const res = await api.post('/work-orders/manual', workOrderData);
+    const res = await api.post('/work-orders/manual', payload);
     return res.data;
   } catch (error) {
-    handleError(error, 'Failed to create manual work order');
+    handleError(error, 'Failed to create work order');
   }
 };
 
@@ -87,11 +86,15 @@ export const generateWorkOrderPdf = async (workOrderId) => {
       }
     );
 
-    await downloadPdfFromResponse(
-      res,
-      `work-order-${workOrderId}.pdf`,
-      'Failed to download work order PDF'
-    );
+    const blob = new Blob([res.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+
+    window.open(url, '_blank');
+
+    // cleanup
+    setTimeout(() => {
+      window.URL.revokeObjectURL(url);
+    }, 1000);
 
   } catch (error) {
     handleError(error, 'Failed to generate work order PDF');

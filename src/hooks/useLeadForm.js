@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -8,53 +8,7 @@ import {
 } from '../services/leadService';   // ✔ FIXED — correct imports
 
 import { getUserById } from '../services/userServices';
-import { sendEmail, sendWhatsApp } from '../services/spEmailServices';
-import { toInputDateValue, formatTime12Hour } from '../utils/dateFormatter';
-
-const toDateOnly = (value) => {
-    if (!value) return '';
-    return toInputDateValue(value);
-};
-
-const toTimeOnly = (value) => {
-    if (!value) return '';
-    const raw = String(value).trim();
-    const fromString = raw.match(/^(\d{2}):(\d{2})(?::\d{2})?$/);
-    if (fromString) {
-        const h = Number(fromString[1]);
-        const m = Number(fromString[2]);
-        const d = new Date();
-        d.setHours(h, m, 0, 0);
-        return formatTime12Hour(d);
-    }
-
-    const parsed = new Date(raw);
-    if (Number.isNaN(parsed.getTime())) return '';
-
-    return formatTime12Hour(parsed);
-};
-
-const sanitizeLeadDates = (lead) => {
-    const source = String(lead?.source || '').toLowerCase();
-    const isWebsiteLead = source.includes('website');
-    const hasEventDate = Boolean(lead?.event_date);
-    const hasFollowUpDate = Boolean(lead?.follow_up_date);
-
-    if (!isWebsiteLead || !hasEventDate || !hasFollowUpDate) {
-        return lead;
-    }
-
-    const sameDate = toDateOnly(lead.follow_up_date) === toDateOnly(lead.event_date);
-
-    if (!sameDate) {
-        return lead;
-    }
-
-    return {
-        ...lead,
-        follow_up_date: ''
-    };
-};
+import { sendEmail } from '../services/spEmailServices';
 
 
 const useLeadForm = (initialLeadData, isEdit = false, leadId = null) => {
@@ -83,18 +37,12 @@ const useLeadForm = (initialLeadData, isEdit = false, leadId = null) => {
 
         const loadLeadData = async () => {
             try {
-                const lead = sanitizeLeadDates(await getLeadById(leadId));
+                const lead = await getLeadById(leadId);
 
                 // set main fields
                 setLeadData(prev => ({
                     ...prev,
                     ...lead,
-                    event_date: toDateOnly(lead.event_date),
-                    event_time: toTimeOnly(lead.event_time),
-                    event_start_date: toDateOnly(lead.event_start_date),
-                    event_start_time: toTimeOnly(lead.event_start_time),
-                    event_end_date: toDateOnly(lead.event_end_date),
-                    event_end_time: toTimeOnly(lead.event_end_time),
                     custom_fields: lead.custom_fields || []
                 }));
 
@@ -122,22 +70,22 @@ const useLeadForm = (initialLeadData, isEdit = false, leadId = null) => {
     // ─────────────────────────────────────────────
     // GENERAL FIELD CHANGE HANDLER
     // ─────────────────────────────────────────────
-    const handleChange = useCallback((e) => {
+    const handleChange = (e) => {
         const { name, value } = e.target;
 
         setLeadData(prev => ({
             ...prev,
             [name]: value,
         }));
-    }, []);
+    };
 
 
     // ─────────────────────────────────────────────
     // CUSTOM FIELD HANDLER (ALREADY IN CORRECT FORMAT)
     // ─────────────────────────────────────────────
-    const handleCustomFieldsUpdate = useCallback((fields) => {
+    const handleCustomFieldsUpdate = (fields) => {
         setCustomFields(fields);
-    }, []);
+    };
 
 
     // ─────────────────────────────────────────────
@@ -170,38 +118,6 @@ const useLeadForm = (initialLeadData, isEdit = false, leadId = null) => {
             setNotification({
                 open: true,
                 message: err.message || "Failed to send email.",
-                severity: "error",
-            });
-        }
-    };
-
-    const sendWhatsApptoSp = async () => {
-        try {
-            const sp = await getUserById(leadData.assigned_salesperson);
-
-            if (!sp?.phone_number) {
-                throw new Error("Assigned salesperson has no phone number.");
-            }
-
-            const payload = {
-                ...leadData,
-                custom_fields: customFields,
-                salesperson_phone_number: sp.phone_number
-            };
-
-            await sendWhatsApp(payload);
-
-            setNotification({
-                open: true,
-                message: 'WhatsApp sent successfully!',
-                severity: 'success',
-            });
-
-        } catch (err) {
-            console.error("❌ WhatsApp sending failed:", err);
-            setNotification({
-                open: true,
-                message: err.message || "Failed to send WhatsApp.",
                 severity: "error",
             });
         }
@@ -278,8 +194,7 @@ const useLeadForm = (initialLeadData, isEdit = false, leadId = null) => {
 
         handleChange,
         handleSubmit,
-        sendEmailtoSp,
-        sendWhatsApptoSp
+        sendEmailtoSp
     };
 };
 

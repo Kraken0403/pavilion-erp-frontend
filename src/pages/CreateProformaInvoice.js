@@ -19,6 +19,7 @@ import { fetchQuotationById, updateQuotationStatus } from '../services/quotation
 import { getProformaInvoiceById } from '../services/invoiceService'
 import { toInputDateValue } from '../utils/dateFormatter'
 import { fetchWorkOrderById } from '../services/workOrderServices'
+import '../assets/styles/QuotationDetail.scss'
 
 function CreateProformaInvoice() {
   const navigate = useNavigate()

@@ -1,10 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import QuotationsTable from '../components/quotation/QuotationTable';
 import { fetchQuotations } from '../services/quotationService';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import Topbar from '../components/Topbar';
-import PageLoader from '../components/ui/PageLoader';
-import useAutoRefresh from '../hooks/useAutoRefresh';
 
 function Quotations() {
   /* ---------------- DATA ---------------- */
@@ -31,29 +29,26 @@ function Quotations() {
   };
 
   /* ---------------- FETCH ---------------- */
-  const loadQuotations = async ({ isAutoRefresh = false } = {}) => {
+  const loadQuotations = async () => {
     try {
-      if (!isAutoRefresh) setLoading(true);
+      setLoading(true);
       const data = await fetchQuotations();
       setQuotations(data);
     } catch (err) {
       console.error(err);
       showNotification('❌ Failed to load quotations', 'error');
     } finally {
-      if (!isAutoRefresh) setLoading(false);
+      setLoading(false);
     }
   };
 
-  useAutoRefresh(loadQuotations, { intervalMs: 20000 });
+  useEffect(() => {
+    loadQuotations();
+  }, []);
 
   /* ---------------- RENDER ---------------- */
   if (loading) {
-    return (
-      <>
-        <Topbar />
-        <PageLoader message="Loading quotations..." minHeight={280} />
-      </>
-    );
+    return <div style={{ padding: 20 }}>Loading quotations…</div>;
   }
 
   return (
@@ -68,7 +63,6 @@ function Quotations() {
         dateFilter={dateFilter}
         setDateFilter={setDateFilter}
         reload={loadQuotations}
-        onNotify={showNotification}
       />
 
       <NotificationSnackbar

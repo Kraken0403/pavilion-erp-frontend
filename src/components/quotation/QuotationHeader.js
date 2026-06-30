@@ -4,9 +4,7 @@ import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown'
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined'
 import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined'
 import WorkOutlineOutlinedIcon from '@mui/icons-material/WorkOutlineOutlined'
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
 import FileCopyOutlinedIcon from '@mui/icons-material/FileCopyOutlined'
-import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsActiveOutlined'
 
 import { generateQuotationPdf } from '../../services/quotationService'
 
@@ -18,10 +16,7 @@ function QuotationHeader({
   onStatusChange,
   onApprove,
   onCreateWorkOrder,
-  onCreateProforma,
   onCreateVersion,
-  onSendEmail,
-  onSendWhatsApp,
 
   showActions = true
 }) {
@@ -33,6 +28,7 @@ function QuotationHeader({
     id,
     quotation_number,
     version,
+    quotation_mode,
     status
   } = quotation
 
@@ -58,7 +54,7 @@ function QuotationHeader({
 
           {version && <p className="muted">Version {version}</p>}
         </div>
-        {/* 
+{/* 
         <div className="quotation-meta">
           {quotation_mode && (
             <p className="chip">
@@ -136,18 +132,6 @@ function QuotationHeader({
             )}
 
             {/* CREATE WORK ORDER */}
-            {status === 'approved' && onCreateProforma && (
-              <MenuItem
-                onClick={() => {
-                  setActionsAnchorEl(null)
-                  onCreateProforma()
-                }}
-              >
-                <ReceiptLongIcon fontSize="small" style={{ marginRight: 10 }} />
-                Send Proforma invoice
-              </MenuItem>
-            )}
-
             {status === 'approved' && onCreateWorkOrder && (
               <MenuItem
                 onClick={() => {
@@ -161,7 +145,7 @@ function QuotationHeader({
             )}
 
             {/* CREATE VERSION */}
-            {onCreateVersion && status === 'pending' && !isLocked && (
+            {onCreateVersion && status !== 'converted' && status !== 'rejected' && (
               <MenuItem
                 onClick={() => {
                   setActionsAnchorEl(null)
@@ -170,19 +154,6 @@ function QuotationHeader({
               >
                 <FileCopyOutlinedIcon fontSize="small" style={{ marginRight: 10 }} />
                 Create New Version
-              </MenuItem>
-            )}
-
-            {/* SEND NOTIFICATION */}
-            {(onSendEmail || onSendWhatsApp) && (
-              <MenuItem
-                onClick={() => {
-                  setActionsAnchorEl(null)
-                  onSendEmail?.()
-                }}
-              >
-                <NotificationsActiveOutlinedIcon fontSize="small" style={{ marginRight: 10 }} />
-                Share Quotation
               </MenuItem>
             )}
           </Menu>

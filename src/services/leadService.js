@@ -73,50 +73,6 @@ export const deleteLead = async (id) => {
 };
 
 /* ---------------------------------------
-   BULK DELETE LEADS
---------------------------------------- */
-export const bulkDeleteLeads = async (ids = []) => {
-  try {
-    const normalizedIds = Array.isArray(ids)
-      ? [...new Set(ids.map((id) => Number(id)).filter((id) => Number.isInteger(id) && id > 0))]
-      : [];
-
-    if (!normalizedIds.length) {
-      return { deleted_count: 0, deleted_ids: [], not_found_ids: [] };
-    }
-
-    const res = await api.post('/leads/bulk-delete', { ids: normalizedIds });
-    return res.data;
-  } catch (error) {
-    handleError(error, 'Failed to bulk delete leads');
-  }
-};
-
-/* ---------------------------------------
-   BULK IMPORT LEADS
---------------------------------------- */
-export const bulkImportLeads = async (file) => {
-  try {
-    const formData = new FormData();
-    formData.append('file', file);
-
-    const res = await api.post(
-      '/leads/bulk-import',
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }
-    );
-
-    return res.data; // { total, success, failed, errors }
-  } catch (error) {
-    handleError(error, 'Failed to bulk import leads');
-  }
-};
-
-/* ---------------------------------------
    FETCH FILTERED LEADS
 --------------------------------------- */
 export const fetchFilteredLeads = async (filters = {}) => {

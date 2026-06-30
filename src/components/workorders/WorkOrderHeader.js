@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Menu, MenuItem } from '@mui/material'
 import { useNavigate } from 'react-router-dom'
 
@@ -7,54 +7,15 @@ import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined'
 import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined'
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined'
 import { generateWorkOrderPdf } from '../../services/workOrderServices'
-import { getInvoices, getProformaInvoices } from '../../services/invoiceService'
 // import { generateWorkOrderPdf } from '../../services/workOrderService'
-import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined'
-import RestaurantMenuOutlinedIcon from '@mui/icons-material/RestaurantMenuOutlined'
-import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined'
-import { formatStatusLabel } from '../../utils/statusFormatter'
-
 
 function WorkOrderHeader({
   workOrder,
   onStatusChange,
-  onGenerateKOT,
-  onCreateDelivery,
-  showGenerateKOT = false,
   showActions = true
 }) {
   const [anchorEl, setAnchorEl] = useState(null)
   const navigate = useNavigate()
-
-  const handleCreateProforma = () => {
-    if (!workOrder?.id) return
-    setAnchorEl(null)
-    navigate('/proforma-invoices/create', { state: { workOrderId: workOrder.id } })
-  }
-
-  const [hasLinkedInvoice, setHasLinkedInvoice] = useState(false)
-
-  useEffect(() => {
-    let mounted = true
-    ;(async () => {
-      try {
-        const workOrderId = workOrder?.id
-        if (!workOrderId) return
-        const [invoicesRes, proformasRes] = await Promise.all([getInvoices(), getProformaInvoices()])
-        const invoices = Array.isArray(invoicesRes) ? invoicesRes : invoicesRes?.data || []
-        const proformas = Array.isArray(proformasRes) ? proformasRes : proformasRes?.data || []
-
-        const hasInv = invoices.some(i => String(i.source_type || '').toUpperCase() === 'WORK_ORDER' && Number(i.source_id) === Number(workOrderId))
-        const hasPro = proformas.some(p => String(p.source_type || '').toUpperCase().includes('WORK') && Number(p.source_id) === Number(workOrderId)) || proformas.some(p => Number(p.source_id) === Number(workOrderId))
-
-        if (mounted) setHasLinkedInvoice(Boolean(hasInv || hasPro))
-      } catch (err) {
-        // ignore errors
-      }
-    })()
-    return () => { mounted = false }
-  }, [workOrder])
-  
 
   if (!workOrder) return null
 
@@ -103,7 +64,7 @@ function WorkOrderHeader({
 
           {/* STATUS CAPSULE */}
           <span className={`status-pill status-${status}`}>
-            {formatStatusLabel(status)}
+            {status}
           </span>
 
           {/* ACTIONS */}
@@ -130,49 +91,6 @@ function WorkOrderHeader({
               <PictureAsPdfOutlinedIcon fontSize="small" style={{ marginRight: 10 }} />
               Download PDF
             </MenuItem>
-
-            {/* "Send to Invoice" option removed per request */}
-
-            {!hasLinkedInvoice && (
-              <MenuItem
-                onClick={() => {
-                  setAnchorEl(null)
-                  handleCreateProforma()
-                }}
-              >
-                <ReceiptLongOutlinedIcon fontSize="small" style={{ marginRight: 10 }} />
-                Create Proforma Invoice
-              </MenuItem>
-            )}
-            {hasLinkedInvoice && (
-              <MenuItem disabled>
-                <ReceiptLongOutlinedIcon fontSize="small" style={{ marginRight: 10 }} />
-                Proforma / Tax Invoice exists
-              </MenuItem>
-            )}
-
-            {showGenerateKOT && (
-              <MenuItem
-                onClick={() => {
-                  setAnchorEl(null)
-                  onGenerateKOT?.()
-                }}
-              >
-                <RestaurantMenuOutlinedIcon fontSize="small" style={{ marginRight: 10 }} />
-                Generate KOT
-              </MenuItem>
-            )}
-
-            <MenuItem
-              onClick={() => {
-                setAnchorEl(null)
-                onCreateDelivery?.()
-              }}
-            >
-              <LocalShippingOutlinedIcon fontSize="small" style={{ marginRight: 10 }} />
-              Create Delivery
-            </MenuItem>
-
 
             {/* MARK COMPLETED */}
             {status !== 'completed' && (

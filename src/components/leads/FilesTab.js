@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   getFilesByLead,
   uploadFile,
@@ -10,12 +10,10 @@ import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 
 import ConfirmDialog from "../ui/ConfirmDialog";
 import NotificationSnackbar from "../ui/NotificationSnackbar";
-import { BACKEND_URL } from "../../config/env";
 
 import "../../assets/styles/FilesTab.scss";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const FILE_BASE_URL = (BACKEND_URL || "").replace(/\/$/, "");
 
 const FilesTab = ({ leadId }) => {
   const [files, setFiles] = useState([]);
@@ -33,14 +31,14 @@ const FilesTab = ({ leadId }) => {
     severity: "info"
   });
 
-  const fetchFiles = useCallback(async () => {
-    const data = await getFilesByLead(leadId);
-    setFiles(Array.isArray(data) ? data : []);
-  }, [leadId]);
-
   useEffect(() => {
     if (leadId) fetchFiles();
-  }, [leadId, fetchFiles]);
+  }, [leadId]);
+
+  const fetchFiles = async () => {
+    const data = await getFilesByLead(leadId);
+    setFiles(Array.isArray(data) ? data : []);
+  };
 
   /* -------------------------
      FILE SELECT
@@ -163,8 +161,8 @@ const FilesTab = ({ leadId }) => {
           {uploading
             ? "Uploading..."
             : hasUploaded
-              ? "Uploaded"
-              : "Upload File"}
+            ? "Uploaded"
+            : "Upload File"}
         </button>
       </div>
 
@@ -186,7 +184,7 @@ const FilesTab = ({ leadId }) => {
 
                 <div className="file-actions">
                   <a
-                    href={`${FILE_BASE_URL}/${f.file_path}`}
+                    href={`http://localhost:5000/${f.file_path}`}
                     download
                     title="Download"
                     className="file-action-btn"

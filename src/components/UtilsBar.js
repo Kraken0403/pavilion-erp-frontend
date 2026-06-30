@@ -1,10 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import FilterAltOutlinedIcon from '@mui/icons-material/FilterAltOutlined';
 import ArrowDropDownIcon from '@mui/icons-material/ArrowDropDown';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
-import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsActiveOutlined';
-// import { Chip, Select, MenuItem, Checkbox } from "@mui/material";
 
 import {
   IconButton,
@@ -21,19 +19,18 @@ const UtilsBar = ({
   buttonLabel,
   onButtonClick,
 
+  // selection aware
   selectedCount = 0,
   onDeleteSelected,
   onExportSelected,
 
+  // search + filter
   searchValue,
   onSearchChange,
   onDateFilterChange,
   onImportBulk,
   sortValue,
   onSortChange,
-  onSendReminders,
-  onSendEmail,
-  onSendWhatsApp,
 }) => {
   const [filterAnchor, setFilterAnchor] = useState(null);
   const [actionsAnchor, setActionsAnchor] = useState(null);
@@ -42,13 +39,6 @@ const UtilsBar = ({
   const [endDate, setEndDate] = useState('');
 
   const hasSelection = selectedCount > 0;
-  const handleSendNotification = onSendReminders || onSendEmail || onSendWhatsApp;
-
-  /* ================= FILTER ACTIVE CHECK ================= */
-
-  const isFilterActive = useMemo(() => {
-    return Boolean(startDate || endDate);
-  }, [startDate, endDate]);
 
   /* ================= DATE FILTER ================= */
 
@@ -73,15 +63,7 @@ const UtilsBar = ({
           <p>{buttonLabel}</p>
         </button>
 
-        {onImportBulk && (
-          <Button
-            className="secondary-btn"
-            onClick={onImportBulk}
-          >
-            Import
-          </Button>
-        )}
-
+        {/* ACTIONS DROPDOWN (ALWAYS VISIBLE) */}
         <Button
           className="secondary-btn"
           onClick={(e) => setActionsAnchor(e.currentTarget)}
@@ -107,41 +89,27 @@ const UtilsBar = ({
               Export Selected
             </MenuItem>
 
-            {/* <MenuItem
+            {onImportBulk && (
+              <MenuItem
+                onClick={() => {
+                  onImportBulk?.();
+                  setActionsAnchor(null);
+                }}
+              >
+                Import
+              </MenuItem>
+            )}
+
+            <MenuItem
+              disabled={!hasSelection}
               onClick={() => {
-                onImportBulk?.();
+                onDeleteSelected?.();
                 setActionsAnchor(null);
               }}
+              sx={{ color: '#d32f2f' }}
             >
-              Import Products
-            </MenuItem> */}
-
-            {handleSendNotification && (
-              <MenuItem
-                disabled={!hasSelection}
-                onClick={() => {
-                  handleSendNotification();
-                  setActionsAnchor(null);
-                }}
-              >
-                <NotificationsActiveOutlinedIcon fontSize="small" style={{ marginRight: 8 }} />
-                Send Notification
-              </MenuItem>
-            )}
-
-
-            {onDeleteSelected && (
-              <MenuItem
-                disabled={!hasSelection}
-                onClick={() => {
-                  onDeleteSelected();
-                  setActionsAnchor(null);
-                }}
-                sx={{ color: '#d32f2f' }}
-              >
-                Delete Selected
-              </MenuItem>
-            )}
+              Delete Selected
+            </MenuItem>
           </Box>
         </Popover>
       </div>
@@ -149,32 +117,17 @@ const UtilsBar = ({
       {/* RIGHT CONTROLS */}
       <div className="ub-search">
         {/* FILTER ICON */}
-        <IconButton
-          onClick={(e) => setFilterAnchor(e.currentTarget)}
-          className={isFilterActive ? 'filter-active' : ''}
-        >
+        <IconButton onClick={(e) => setFilterAnchor(e.currentTarget)}>
           <FilterAltOutlinedIcon />
         </IconButton>
 
         {/* SORT */}
         <Select
+          className="utils-select"
           size="small"
           value={sortValue}
           onChange={(e) => onSortChange(e.target.value)}
           IconComponent={ArrowDropDownIcon}
-          sx={{
-            width: '200px',
-            borderRadius: '3px',
-            '& .MuiOutlinedInput-notchedOutline': { borderColor: '#ddd' },
-            '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: '#bbb' },
-            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-              borderColor: '#ddd',
-            },
-            '& .MuiSelect-select': {
-              padding: '6px 10px',
-              fontSize: '14px',
-            },
-          }}
         >
           <MenuItem value="latest">Latest first</MenuItem>
           <MenuItem value="oldest">Oldest first</MenuItem>

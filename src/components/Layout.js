@@ -1,36 +1,35 @@
 import React, { useMemo, useState } from 'react';
-import Sidebar from './Sidebar';
 import { Box } from '@mui/material';
-import { LayoutProvider } from '../context/LayoutContext';
 import { Outlet } from 'react-router-dom';
+import Sidebar from './Sidebar';
+import Topbar from './Topbar';
+import { LayoutProvider } from '../context/LayoutContext';
 
 const Layout = () => {
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
-    const toggleSidebar = () => {
-        setSidebarOpen((prev) => !prev);
-    };
+  const toggleSidebar = () => {
+    setSidebarOpen((prev) => !prev);
+  };
 
-    const contextValue = useMemo(
-        () => ({ sidebarOpen, toggleSidebar }),
-        [sidebarOpen]
-    );
+  const contextValue = useMemo(
+    () => ({ sidebarOpen, toggleSidebar }),
+    [sidebarOpen]
+  );
 
-    return (
-        <LayoutProvider value={contextValue}>
-            <Box sx={{ display: 'flex' }}>
-                <div className={`sidebar-container ${sidebarOpen ? '' : 'collapsed'}`}>
-                    <Sidebar />
-                </div>
-
-                <div
-                    className={`main-container ${sidebarOpen ? '' : 'expanded'}`}
-                >
-                    <Outlet />
-                </div>
-            </Box>
-        </LayoutProvider>
-    );
+  return (
+    <LayoutProvider value={contextValue}>
+      <Box className="erp-layout-shell">
+        <aside className={`sidebar-container ${sidebarOpen ? '' : 'collapsed'}`}>
+          <Sidebar />
+        </aside>
+        <main className={`main-container ${sidebarOpen ? '' : 'expanded'}`}>
+          <Topbar layoutTopbar />
+          <Outlet />
+        </main>
+      </Box>
+    </LayoutProvider>
+  );
 };
 
 export default Layout;

@@ -1,340 +1,196 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useState } from 'react';
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
   TextField,
-  MenuItem,
-  Typography,
-  Box,
-  IconButton
-} from "@mui/material";
-import CloseIcon from "@mui/icons-material/Close";
-import { addLead } from "../../services/leadService";
-import { getAllCustomFields } from "../../services/customFieldServices";
-import { getAllUsers } from "../../services/userServices";
-import { formatStatusLabel } from "../../utils/statusFormatter";
+  Grid,
+  MenuItem
+} from '@mui/material';
 
-import "../../assets/styles/AddProductDialog.scss"; // reuse same styling
+import { addLead } from '../../services/leadService';
+import { getAllCustomFields } from '../../services/customFieldServices';
+import WgiymEditor from '../ui/WgiymEditor';
 
-const INITIAL_FORM = {
-  first_name: "",
-  last_name: "",
-  email: "",
-  phone_number: "",
-  company_name: "",
-  gst_number: "",
-  contact_name: "",
-  lead_status: "new",
-  priority: "low",
-  follow_up_date: "",
-  assigned_salesperson: "",
-  hotness: "",
-  amount: "",
-  billing_address: "",
-  billing_city: "",
-  billing_state: "",
-  billing_pincode: "",
-  shipping_address: "",
-  shipping_city: "",
-  shipping_state: "",
-  shipping_pincode: "",
-  notes: ""
-};
+function AddLeadDialog({ open, onClose, onLeadCreated, prefillName }) {
+  const [form, setForm] = useState({
+    first_name: '',
+    last_name: '',
+    company_name: '',
+    lead_status: '',
+    email: '',
+    phone_number: '',
+    contact_name: '',
+    follow_up_date: '',
+    priority: '',
+    notes: '',
+    assigned_salesperson: '',
+    hotness: '',
+    amount: ''
+  });
 
-function AddLeadDialog({ open, onClose, onLeadCreated, showNotification, prefillName = "" }) {
-
-  const [form, setForm] = useState(INITIAL_FORM);
-
-  const [users, setUsers] = useState([]);
   const [customFields, setCustomFields] = useState([]);
   const [customValues, setCustomValues] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const hasLoadedMasterDataRef = useRef(false);
-  const isLoadingMasterDataRef = useRef(false);
-  const showNotificationRef = useRef(showNotification);
 
   useEffect(() => {
-    showNotificationRef.current = showNotification;
-  }, [showNotification]);
-
-  /* ---------------------------------------
-     PREFILL NAME
-  --------------------------------------- */
-  useEffect(() => {
-    if (!open) return;
-
     if (prefillName) {
-      const parts = prefillName.split(" ");
+      const [firstName, ...rest] = prefillName.split(" ");
       setForm(prev => ({
         ...prev,
-        first_name: parts[0] || "",
-        last_name: parts.slice(1).join(" ") || ""
+        first_name: firstName,
+        last_name: rest.join(" ")
       }));
     }
-  }, [prefillName, open]);
+  }, [prefillName]);
 
-  /* ---------------------------------------
-     LOAD USERS + CUSTOM FIELDS
-  --------------------------------------- */
   useEffect(() => {
-    if (!open) {
-      hasLoadedMasterDataRef.current = false;
-      isLoadingMasterDataRef.current = false;
-      return;
+    loadCustomFields();
+  }, []);
+
+  const loadCustomFields = async () => {
+    try {
+      const fields = await getAllCustomFields();
+      setCustomFields(fields);
+    } catch (err) {
+      console.error("❌ Failed loading custom fields", err);
     }
-
-    if (hasLoadedMasterDataRef.current || isLoadingMasterDataRef.current) {
-      return;
-    }
-
-    let isCancelled = false;
-    isLoadingMasterDataRef.current = true;
-
-    (async () => {
-      try {
-        const [userList, fields] = await Promise.all([
-          getAllUsers(),
-          getAllCustomFields(),
-        ]);
-
-        if (isCancelled) return;
-
-        // Only show users who have the 'salesman' role.
-        const salesUsers = (Array.isArray(userList) ? userList : []).filter((u) => {
-          const roleText = String(u.role_name || u.role || '').toLowerCase();
-          return roleText.includes('salesman');
-        });
-
-        setUsers(salesUsers);
-        setCustomFields(Array.isArray(fields) ? fields : []);
-        hasLoadedMasterDataRef.current = true;
-      } catch (error) {
-        if (isCancelled) return;
-        console.error('Failed to load AddLeadDialog master data:', error);
-        setUsers([]);
-        setCustomFields([]);
-        showNotificationRef.current?.('Failed to load users/custom fields', 'error');
-      } finally {
-        isLoadingMasterDataRef.current = false;
-      }
-    })();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [open]);
-
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleCustomChange = (fieldId, value) => {
+  const handleChange = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleCustomValue = (fieldId, value) => {
     setCustomValues(prev => ({ ...prev, [fieldId]: value }));
   };
 
-  const handleSave = async () => {
-    if (submitting) return;
-
+  const handleSubmit = async () => {
     try {
-      setSubmitting(true);
-
-      /* -----------------------------
-         BASIC VALIDATION
-      ----------------------------- */
-      if (!form.first_name?.trim()) {
-        showNotification("First name is required", "warning");
-        return;
-      }
-
-      /* -----------------------------
-         SAFE NUMERIC CONVERSION
-      ----------------------------- */
-      const safeNumber = (val) =>
-        val === "" || val === null || val === undefined
-          ? null
-          : Number(val);
-
-      /* -----------------------------
-         CLEAN PAYLOAD
-      ----------------------------- */
       const payload = {
         ...form,
-
-        // convert numeric fields properly
-        hotness: safeNumber(form.hotness),
-        amount: safeNumber(form.amount),
-
-        // convert empty strings to null for optional text fields
-        email: form.email || null,
-        phone_number: form.phone_number || null,
-        gst_number: form.gst_number || null,
-        contact_name: form.contact_name || null,
-        follow_up_date: form.follow_up_date || null,
-        assigned_salesperson:
-          form.assigned_salesperson === "" ? null : form.assigned_salesperson,
-
-        billing_address: form.billing_address || null,
-        billing_city: form.billing_city || null,
-        billing_state: form.billing_state || null,
-        billing_pincode: form.billing_pincode || null,
-
-        shipping_address: form.shipping_address || null,
-        shipping_city: form.shipping_city || null,
-        shipping_state: form.shipping_state || null,
-        shipping_pincode: form.shipping_pincode || null,
-
-        notes: form.notes || null,
-
-        custom_fields: Object.entries(customValues).map(([id, val]) => ({
-          field_id: Number(id),
-          field_value: val || null
+        custom_fields: Object.entries(customValues).map(([field_id, field_value]) => ({
+          field_id,
+          field_value
         }))
       };
 
-      /* -----------------------------
-         API CALL
-      ----------------------------- */
-      const response = await addLead(payload);
-
-      /*
-        Depending on your backend, response could be:
-        { leadId: 27 }
-        OR full lead object
-      */
-
-      const createdLeadId =
-        response?.leadId || response?.id || null;
-
-      if (!createdLeadId) {
-        throw new Error("Lead created but no ID returned from server");
-      }
-
-      /* -----------------------------
-         SUCCESS
-      ----------------------------- */
-      showNotification("Lead created successfully", "success");
-
-      onLeadCreated(createdLeadId);
-
+      const created = await addLead(payload);
+      const leadId = created?.leadId || created?.id || created?.data?.id;
+      const newLead = {
+        id: leadId,
+        ...form,
+        lead_status: form.lead_status || 'new',
+        priority: form.priority || 'medium',
+      };
+      onLeadCreated(newLead);
       onClose();
-
     } catch (err) {
-      console.error("Error creating lead:", err);
-
-      showNotification(
-        err?.response?.data?.details ||
-        err?.response?.data?.error ||
-        err?.message ||
-        "Failed to create lead",
-        "error"
-      );
-    } finally {
-      setSubmitting(false);
+      console.error("❌ Failed to add lead:", err);
+      alert("Failed to create lead");
     }
   };
 
-  const handleClose = () => {
-    setForm(INITIAL_FORM);
-    setCustomValues({});
-    onClose();
-  };
-
   return (
-    <Dialog className="add-product-dialog" open={open} maxWidth="md" fullWidth>
-      <DialogTitle className="dialog-title">
-        Add New Lead
-        <IconButton onClick={handleClose} size="small">
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth PaperProps={{ className: "flowbite-card" }}>
+      <DialogTitle className="dialog-title">Add New Lead</DialogTitle>
 
-      <DialogContent className="dialog-content">
+      <DialogContent dividers className="dialog-content">
+        <Grid container spacing={2}>
 
-        {/* CONTACT SECTION */}
-        <Typography className="field-label">First Name</Typography>
-        <TextField className="form-input" fullWidth name="first_name" value={form.first_name} onChange={handleChange} />
+          <Grid item xs={6}>
+            <TextField className="form-input" label="First Name" fullWidth
+              value={form.first_name}
+              onChange={(e) => handleChange('first_name', e.target.value)}
+            />
+          </Grid>
 
-        <Typography className="field-label" sx={{ mt: 2 }}>Last Name</Typography>
-        <TextField className="form-input" fullWidth name="last_name" value={form.last_name} onChange={handleChange} />
+          <Grid item xs={6}>
+            <TextField className="form-input" label="Last Name" fullWidth
+              value={form.last_name}
+              onChange={(e) => handleChange('last_name', e.target.value)}
+            />
+          </Grid>
 
-        <Typography className="field-label" sx={{ mt: 2 }}>Email</Typography>
-        <TextField className="form-input" fullWidth name="email" value={form.email} onChange={handleChange} />
+          <Grid item xs={6}>
+            <TextField className="form-input" label="Company Name" fullWidth
+              value={form.company_name}
+              onChange={(e) => handleChange('company_name', e.target.value)}
+            />
+          </Grid>
 
-        <Typography className="field-label" sx={{ mt: 2 }}>Phone</Typography>
-        <TextField className="form-input" fullWidth name="phone_number" value={form.phone_number} onChange={handleChange} />
+          <Grid item xs={6}>
+            <TextField className="form-input" label="Email" fullWidth
+              value={form.email}
+              onChange={(e) => handleChange('email', e.target.value)}
+            />
+          </Grid>
 
-        <Typography className="field-label" sx={{ mt: 2 }}>Company Name</Typography>
-        <TextField className="form-input" fullWidth name="company_name" value={form.company_name} onChange={handleChange} />
+          <Grid item xs={6}>
+            <TextField className="form-input" label="Phone Number" fullWidth
+              value={form.phone_number}
+              onChange={(e) => handleChange('phone_number', e.target.value)}
+            />
+          </Grid>
 
-        <Typography className="field-label" sx={{ mt: 2 }}>GST Number</Typography>
-        <TextField className="form-input" fullWidth name="gst_number" value={form.gst_number} onChange={handleChange} />
+          <Grid item xs={6}>
+            <TextField className="form-input" label="Lead Status" fullWidth
+              value={form.lead_status}
+              onChange={(e) => handleChange('lead_status', e.target.value)}
+              select
+            >
+              <MenuItem value="new">New</MenuItem>
+              <MenuItem value="contacted">Contacted</MenuItem>
+              <MenuItem value="qualified">Qualified</MenuItem>
+              <MenuItem value="lost">Lost</MenuItem>
+            </TextField>
+          </Grid>
 
-        {/* STATUS + PRIORITY */}
-        <Typography className="field-label" sx={{ mt: 2 }}>Status</Typography>
-        <TextField className="form-input" select fullWidth name="lead_status" value={form.lead_status} onChange={handleChange}>
-          {["new", "in-progress", "closed", "won", "lost"].map(s =>
-            <MenuItem key={s} value={s}>{formatStatusLabel(s)}</MenuItem>
-          )}
-        </TextField>
+          <Grid item xs={6}>
+            <TextField
+              className="form-input"
+              label="Follow Up Date"
+              type="datetime-local"
+              fullWidth
+              InputLabelProps={{ shrink: true }}
+              value={form.follow_up_date}
+              onChange={(e) => handleChange('follow_up_date', e.target.value)}
+            />
+          </Grid>
 
-        <Typography className="field-label" sx={{ mt: 2 }}>Priority</Typography>
-        <TextField className="form-input" select fullWidth name="priority" value={form.priority} onChange={handleChange}>
-          {["low", "medium", "high"].map(p =>
-            <MenuItem key={p} value={p}>{p}</MenuItem>
-          )}
-        </TextField>
+          <Grid item xs={6}>
+            <TextField className="form-input" label="Priority" fullWidth
+              value={form.priority}
+              onChange={(e) => handleChange('priority', e.target.value)}
+            />
+          </Grid>
 
-        {/* ASSIGNED SALES */}
-        <Typography className="field-label" sx={{ mt: 2 }}>Assigned Salesperson</Typography>
-        <TextField className="form-input" select fullWidth name="assigned_salesperson" value={form.assigned_salesperson} onChange={handleChange}>
-          {users.map(u => (
-            <MenuItem key={u.id} value={u.id}>{u.name}</MenuItem>
-          ))}
-        </TextField>
+          <Grid item xs={12}>
+            <label className="field-label">Notes</label>
+            <WgiymEditor value={form.notes || ''} onChange={(value) => handleChange('notes', value)} />
+          </Grid>
 
-        {/* FOLLOW UP */}
-        <Typography className="field-label" sx={{ mt: 2 }}>Follow Up Date</Typography>
-        <TextField className="form-input" type="datetime-local" fullWidth name="follow_up_date" value={form.follow_up_date} onChange={handleChange} />
-
-        {/* HOTNESS + AMOUNT */}
-        <Typography className="field-label" sx={{ mt: 2 }}>Hotness</Typography>
-        <TextField className="form-input" type="number" fullWidth name="hotness" value={form.hotness} onChange={handleChange} />
-
-        <Typography className="field-label" sx={{ mt: 2 }}>Amount</Typography>
-        <TextField className="form-input" type="number" fullWidth name="amount" value={form.amount} onChange={handleChange} />
-
-        {/* NOTES */}
-        <Typography className="field-label" sx={{ mt: 2 }}>Notes</Typography>
-        <TextField className="form-input" multiline rows={3} fullWidth name="notes" value={form.notes} onChange={handleChange} />
-
-        {/* CUSTOM FIELDS */}
-        {customFields.length > 0 && (
-          <>
-            <Typography className="field-label" sx={{ mt: 3 }}>Custom Fields</Typography>
-
-            {customFields.map(field => (
-              <Box key={field.field_id} sx={{ mt: 2 }}>
-                <Typography className="field-label">{field.field_name}</Typography>
-
+          {/* Custom Fields */}
+          {customFields.map((field, i) => {
+            const fieldId = field.field_id || field.id;
+            return (
+              <Grid item xs={6} key={fieldId || i}>
                 <TextField
                   className="form-input"
+                  label={field.field_name}
                   fullWidth
-                  value={customValues[field.field_id] || ""}
-                  onChange={(e) => handleCustomChange(field.field_id, e.target.value)}
+                  onChange={(e) => handleCustomValue(fieldId, e.target.value)}
                 />
-              </Box>
-            ))}
-          </>
-        )}
+              </Grid>
+            );
+          })}
 
+        </Grid>
       </DialogContent>
 
       <DialogActions className="dialog-actions">
-        <button className="cancel-btn" onClick={handleClose}>Cancel</button>
-        <button className="save-btn-x" disabled={submitting} onClick={handleSave}>Save</button>
+        <button type="button" className="cancel-btn" onClick={onClose}>Cancel</button>
+        <button type="button" className="save-btn-x" onClick={handleSubmit}>Save Lead</button>
       </DialogActions>
     </Dialog>
   );

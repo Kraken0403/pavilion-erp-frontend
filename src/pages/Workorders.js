@@ -13,58 +13,27 @@ import {
   fetchWorkOrders,
   updateWorkOrderStatus
 } from '../services/workOrderServices'
-import { formatStatusLabel, normalizeStatusValue } from '../utils/statusFormatter'
-import useAutoRefresh from '../hooks/useAutoRefresh'
-import { parseDateInput, formatDate as formatDateUtil } from '../utils/dateFormatter'
 
 import { useSettings } from '../context/SettingsContext'
-import { displayCurrency } from '../utils/currencyUtils'
-import { useNotification } from '../context/NotificationContext'
 
 const statusOptions = [
-  'pending',
-  'preparing',
-  'ready',
+  'issued',
+  'in_progress',
   'completed',
   'cancelled'
 ]
 
 const formatDate = (iso) => {
   if (!iso) return '—'
-  const parsed = parseDateInput(iso)
-  if (!parsed) return '—'
-  return formatDateUtil(parsed)
-}
-
-const normalizeWorkOrderStatus = (status) => {
-  const raw = normalizeStatusValue(status)
-  if (raw === 'issued') return 'pending'
-  if (raw === 'in_progress') return 'preparing'
-  return raw
+  return new Date(iso).toLocaleDateString('en-IN')
 }
 
 const ITEMS_PER_PAGE = 20
 
-const getWorkOrdersSignature = (items) => {
-  if (!Array.isArray(items)) return '[]'
-
-  return JSON.stringify(
-    items.map((item) => ({
-      id: Number(item?.id || 0),
-      work_order_number: String(item?.work_order_number || ''),
-      issue_date: String(item?.issue_date || ''),
-      customer_name: String(item?.customer_name || ''),
-      total_amount: Number(item?.total_amount || 0),
-      status: String(item?.status || ''),
-    }))
-  )
-}
-
 function WorkOrders() {
   const navigate = useNavigate()
   const { settings } = useSettings()
-  const { getUnreadNotificationFor, markRecordNotificationsSeen } = useNotification()
-  const currency = displayCurrency(settings?.currency_code)
+  const currency = settings?.currency_code || '₹'
 
   const [orders, setOrders] = useState([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -80,45 +49,17 @@ function WorkOrders() {
 
   const load = async () => {
     const res = await fetchWorkOrders()
-    const nextOrders = Array.isArray(res?.workOrders) ? res.workOrders : []
-
-    setOrders((prev) => {
-      const prevSignature = getWorkOrdersSignature(prev)
-      const nextSignature = getWorkOrdersSignature(nextOrders)
-      return prevSignature === nextSignature ? prev : nextOrders
-    })
+    setOrders(res?.workOrders || [])
   }
 
-  useAutoRefresh(load, { intervalMs: 15000 })
+  useEffect(() => {
+    load()
+  }, [])
 
   /* ================= FILTER + SORT ================= */
 
   const processed = useMemo(() => {
     let data = [...orders]
-
-    if (dateFilter?.startDate) {
-      const startDate = parseDateInput(dateFilter.startDate)
-      data = data.filter(
-        (o) => {
-          const issueDate = parseDateInput(o.issue_date)
-          if (!issueDate || !startDate) return false
-          return issueDate >= startDate
-        }
-      )
-    }
-
-    if (dateFilter?.endDate) {
-      const end = parseDateInput(dateFilter.endDate)
-      if (!end) return data
-      end.setHours(23, 59, 59, 999)
-      data = data.filter(
-        (o) => {
-          const issueDate = parseDateInput(o.issue_date)
-          if (!issueDate) return false
-          return issueDate <= end
-        }
-      )
-    }
 
     // Search
     if (searchQuery.trim()) {
@@ -131,13 +72,13 @@ function WorkOrders() {
 
     // Sort
     if (sortValue === 'latest') {
-      data.sort((a, b) => (parseDateInput(b.issue_date) || new Date(0)) - (parseDateInput(a.issue_date) || new Date(0)))
+      data.sort((a, b) => new Date(b.issue_date) - new Date(a.issue_date))
     } else if (sortValue === 'oldest') {
-      data.sort((a, b) => (parseDateInput(a.issue_date) || new Date(0)) - (parseDateInput(b.issue_date) || new Date(0)))
+      data.sort((a, b) => new Date(a.issue_date) - new Date(b.issue_date))
     }
 
     return data
-  }, [orders, searchQuery, sortValue, dateFilter])
+  }, [orders, searchQuery, sortValue])
 
   useEffect(() => {
     setCurrentPage(1)
@@ -166,16 +107,6 @@ function WorkOrders() {
   const handleStatusChange = async (id, status) => {
     await updateWorkOrderStatus(id, status)
     load()
-  }
-
-  const handleOpenWorkOrder = async (workOrderId) => {
-    try {
-      await markRecordNotificationsSeen('work_orders', workOrderId)
-    } catch {
-      // Navigation should still work even if notification refresh fails.
-    }
-
-    navigate(`/workorders/${workOrderId}`)
   }
 
   /* ================= UI ================= */
@@ -210,89 +141,51 @@ function WorkOrders() {
           </thead>
 
           <tbody>
-            {currentRows.map(o => {
-              const notification = getUnreadNotificationFor('work_orders', o.id)
-              const action = String(notification?.action || '').toLowerCase()
-              const badgeLabel = notification ? (/(create|new|added)/.test(action) ? 'NEW' : 'UPDATED') : ''
-              const statusKey = normalizeWorkOrderStatus(o.status)
+            {currentRows.map(o => (
+              <tr
+                key={o.id}
+                className="clickable-row"
+                onClick={() => navigate(`/workorders/${o.id}`)}
+              >
+                <td onClick={e => e.stopPropagation()}>
+                  <Checkbox
+                    checked={selected.includes(o.id)}
+                    onChange={() => toggleSelect(o.id)}
+                  />
+                </td>
 
-              return (
-                <tr
-                  key={o.id}
-                  className="clickable-row"
-                  onClick={() => handleOpenWorkOrder(o.id)}
-                >
-                  <td onClick={e => e.stopPropagation()}>
-                    <Checkbox
-                      checked={selected.includes(o.id)}
-                      onChange={() => toggleSelect(o.id)}
-                    />
-                  </td>
+                <td>{o.work_order_number}</td>
+                <td>{o.customer_name || '—'}</td>
+                <td>{formatDate(o.issue_date)}</td>
+                <td>{currency} {o.total_amount}</td>
 
-                  <td>
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                      <span>{o.work_order_number}</span>
-                      {badgeLabel ? (
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            minWidth: 74,
-                            padding: '3px 8px',
-                            borderRadius: 999,
-                            color: '#fff',
-                            background: badgeLabel === 'NEW' ? '#e53935' : '#f57c00',
-                            fontSize: 11,
-                            fontWeight: 700,
-                            letterSpacing: '0.02em',
-                          }}
-                        >
-                          {badgeLabel}
-                        </span>
-                      ) : null}
+                <td onClick={e => e.stopPropagation()}>
+                  {editingStatusId === o.id ? (
+                    <select
+                      className="status-select-inline"
+                      value={o.status}
+                      autoFocus
+                      onBlur={() => setEditingStatusId(null)}
+                      onChange={async (e) => {
+                        await handleStatusChange(o.id, e.target.value)
+                        setEditingStatusId(null)
+                      }}
+                    >
+                      {statusOptions.map(s => (
+                        <option key={s} value={s}>{s}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span
+                      className={`status-pill status-${o.status}`}
+                      onClick={() => setEditingStatusId(o.id)}
+                    >
+                      {o.status}
                     </span>
-                  </td>
-                  <td>{o.customer_name || '—'}</td>
-                  <td>{formatDate(o.issue_date)}</td>
-                  <td>{currency} {o.total_amount}</td>
-
-                  <td onClick={e => e.stopPropagation()}>
-                    {editingStatusId === o.id ? (
-                      <select
-                        className="status-select-inline"
-                        value={normalizeWorkOrderStatus(o.status)}
-                        autoFocus
-                        onBlur={() => setEditingStatusId(null)}
-                        onChange={async (e) => {
-                          await handleStatusChange(o.id, e.target.value)
-                          setEditingStatusId(null)
-                        }}
-                      >
-                        {statusOptions.map(s => (
-                          <option key={s} value={s}>{formatStatusLabel(s)}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <span
-                        className={`status-pill status-${statusKey}`}
-                        onClick={() => setEditingStatusId(o.id)}
-                      >
-                        {formatStatusLabel(statusKey)}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              )
-            })}
-
-            {!currentRows.length && (
-              <tr>
-                <td colSpan={6} className="table-empty-message">
-                  No work orders found
+                  )}
                 </td>
               </tr>
-            )}
+            ))}
           </tbody>
         </table>
       </div>

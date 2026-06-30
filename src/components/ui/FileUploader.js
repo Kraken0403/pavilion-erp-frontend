@@ -1,89 +1,45 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Box, Button, Typography } from '@mui/material';
-import api from '../../services/api.js';
-import { BACKEND_URL } from '../../config/env';
+import api, { SERVER_ORIGIN } from '../../services/api.js';
 
 function FileUploader({ label = "Upload File", fileUrl, onFileUploaded }) {
   const fileInputRef = useRef();
-  const [localPreview, setLocalPreview] = useState('');
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
-  const safeBackendUrl = useMemo(() => (BACKEND_URL || '').replace(/\/$/, ''), []);
-
-  const normalizeUploadedUrl = useMemo(() => {
-    return (url) => {
-      if (!url) return '';
-      if (!/^https?:\/\//i.test(url)) return `${safeBackendUrl}${url}`;
-
-      try {
-        const parsed = new URL(url);
-        const backendParsed = safeBackendUrl ? new URL(safeBackendUrl) : null;
-        // Backward compatibility: previously stored absolute URLs like
-        // https://host/uploads/x.png (missing /backend) on proxied deployments.
-        if (
-          backendParsed &&
-          parsed.hostname === backendParsed.hostname &&
-          parsed.pathname.startsWith('/uploads/')
-        ) {
-          return `${safeBackendUrl}${parsed.pathname}${parsed.search || ''}${parsed.hash || ''}`;
-        }
-      } catch {
-        // Fallback to raw URL if parsing fails
-      }
-
-      return url;
-    };
-  }, [safeBackendUrl]);
-
-  const resolvedPreviewUrl = useMemo(() => {
-    if (localPreview) return localPreview;
+  const previewUrl = useMemo(() => {
     if (!fileUrl) return '';
-    return normalizeUploadedUrl(fileUrl);
-  }, [fileUrl, localPreview, normalizeUploadedUrl]);
-
-  useEffect(() => {
-    return () => {
-      if (localPreview) {
-        URL.revokeObjectURL(localPreview);
-      }
-    };
-  }, [localPreview]);
-
+    try {
+      return new URL(fileUrl, SERVER_ORIGIN).toString();
+    } catch (_) {
+      return fileUrl;
+    }
+  }, [fileUrl]);
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    if (!file.type?.startsWith('image/')) {
-      setError('Please select an image file.');
-      return;
-    }
-
-    setError('');
-
-    if (localPreview) {
-      URL.revokeObjectURL(localPreview);
-    }
-    const nextPreview = URL.createObjectURL(file);
-    setLocalPreview(nextPreview);
-    setUploading(true);
   
     try {
+      setUploading(true);
+      setError('');
       const formData = new FormData();
       formData.append('file', file);
   
-      // const res = await api.post('/api/upload/logo', formData);
-      const res = await api.post('/upload/logo', formData);
-  
+      const res = await api.post('/upload/logo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+
+      if (!res.data?.url) {
+        throw new Error('Upload completed but no file URL was returned');
+      }
+
       onFileUploaded(res.data.url);
-      setLocalPreview('');
     } catch (err) {
       console.error('File upload failed:', err);
-      setError('Logo upload failed. Please try again.');
+      setError(err?.response?.data?.error || err?.response?.data?.details || err.message || 'File upload failed');
     } finally {
       setUploading(false);
-      // allow selecting same file again
       e.target.value = '';
     }
   };
@@ -96,7 +52,7 @@ function FileUploader({ label = "Upload File", fileUrl, onFileUploaded }) {
         onClick={() => fileInputRef.current.click()}
         disabled={uploading}
       >
-        {uploading ? 'Uploading...' : fileUrl ? 'Change File' : 'Choose File'}
+        {uploading ? 'Uploading…' : fileUrl ? 'Change File' : 'Choose File'}
       </Button>
       <input
         ref={fileInputRef}
@@ -105,14 +61,16 @@ function FileUploader({ label = "Upload File", fileUrl, onFileUploaded }) {
         hidden
         onChange={handleFileChange}
       />
-      {!!resolvedPreviewUrl && (
-        <Box mt={2}>
-          <Typography variant="body2">Uploaded Preview:</Typography>
-          <img src={resolvedPreviewUrl} alt="Uploaded File" style={{ maxHeight: '150px', marginTop: '8px' }} />
-        </Box>
-      )}
       {error && (
-        <Typography variant="body2" color="error" mt={1}>{error}</Typography>
+        <Typography variant="body2" color="error" mt={1}>
+          {error}
+        </Typography>
+      )}
+      {previewUrl && (
+        <Box mt={2} sx={{ display: 'inline-flex', alignItems: 'center', gap: 2, p: 1.5, border: '1px solid #e5e7eb', borderRadius: 2, background: '#f9fafb' }}>
+          <img src={previewUrl} alt="Uploaded File" style={{ maxHeight: '92px', maxWidth: '220px', objectFit: 'contain' }} />
+          <Typography variant="body2" color="text.secondary">Logo preview</Typography>
+        </Box>
       )}
     </Box>
   );

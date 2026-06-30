@@ -1,5 +1,5 @@
 import React from 'react';
-import { Container, Snackbar, Alert } from '@mui/material';
+import { Snackbar, Alert } from '@mui/material';
 import Topbar from '../components/Topbar';
 import EditForm from '../components/EditForm';
 import useLeadForm from '../hooks/useLeadForm';
@@ -19,8 +19,8 @@ const NewLead = () => {
         hotness: 1,
         amount: 0,
         notes: '',
-        gst_number: '',
-        user: 'default_user',
+        gst_number: '', 
+        user: 'default_user', 
     };
 
     const {
@@ -33,14 +33,14 @@ const NewLead = () => {
         handleSubmit,
         handleCloseNotification,
         setActiveTab,
-        sendEmailtoSp,
-        sendWhatsApptoSp
+        sendEmailtoSp
     } = useLeadForm(initialLeadData);
 
     return (
         <>
             <Topbar />
-            <Container>
+            <div className="leads-table-container lead-form-page">
+                <div className="module-card lead-form-card">
                 <EditForm
                     leadData={leadData}
                     handleChange={handleChange}
@@ -50,9 +50,9 @@ const NewLead = () => {
                     activeTab={activeTab}
                     setActiveTab={setActiveTab}
                     sendEmailtoSp={sendEmailtoSp}
-                    sendWhatsApptoSp={sendWhatsApptoSp}
                 />
-            </Container>
+                </div>
+            </div>
             <Snackbar
                 open={notification.open}
                 autoHideDuration={6000}

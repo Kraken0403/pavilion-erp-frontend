@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   getActivitiesByLead,
   createActivity,
   deleteActivity
 } from "../../services/activityService";
 
-import { formatDateTime, formatDate, formatTime12Hour } from "../../utils/dateFormatter";
+import { formatDateTime, formatDate } from "../../utils/dateFormatter";
 
 import CallIcon from "@mui/icons-material/Call";
 import EventIcon from "@mui/icons-material/Event";
@@ -18,7 +18,6 @@ import ConfirmDialog from "../ui/ConfirmDialog";
 import NotificationSnackbar from "../ui/NotificationSnackbar";
 
 import "../../assets/styles/ActivitiesTab.scss";
-import TimePicker12 from '../TimePicker12'
 
 const DESCRIPTION_CHAR_LIMIT = 200;
 
@@ -63,15 +62,19 @@ const ActivitiesTab = ({ leadId }) => {
 
   /* ================= FETCH ================= */
 
-  const fetchActivities = useCallback(async () => {
+  useEffect(() => {
+    if (leadId) fetchActivities();
+  }, [leadId]);
+
+  const fetchActivities = async () => {
     try {
       const res = await getActivitiesByLead(leadId);
 
       const list = Array.isArray(res)
         ? res
         : Array.isArray(res?.activities)
-          ? res.activities
-          : [];
+        ? res.activities
+        : [];
 
       setActivities(
         list
@@ -89,11 +92,7 @@ const ActivitiesTab = ({ leadId }) => {
       console.error("Failed to load activities", e);
       setActivities([]);
     }
-  }, [leadId]);
-
-  useEffect(() => {
-    if (leadId) fetchActivities();
-  }, [leadId, fetchActivities]);
+  };
 
   /* ================= FORM ================= */
 
@@ -273,13 +272,15 @@ const ActivitiesTab = ({ leadId }) => {
 
             <div className="act-input">
               <label>Time</label>
-              <TimePicker12
+              <input
+                type="time"
+                name="due_time"
                 value={activity.due_time}
-                onChange={(val) => setActivity((prev) => ({ ...prev, due_time: val }))}
+                onChange={handleChange}
               />
               {activity.due_time && (
                 <div className="date-preview">
-                  {formatTime12Hour(`1970-01-01T${activity.due_time}`) || activity.due_time}
+                  {activity.due_time.slice(0, 5)}
                 </div>
               )}
             </div>
@@ -341,12 +342,12 @@ const ActivitiesTab = ({ leadId }) => {
                         prev.map((item) =>
                           item.id === a.id
                             ? {
-                              ...item,
-                              status:
-                                item.status === "completed"
-                                  ? "open"
-                                  : "completed"
-                            }
+                                ...item,
+                                status:
+                                  item.status === "completed"
+                                    ? "open"
+                                    : "completed"
+                              }
                             : item
                         )
                       );

@@ -3,7 +3,7 @@ import api from './api';
 // 🔹 Create a new contact
 export const createContact = async (data) => {
   try {
-    const res = await axios.post(`/contacts`, data);
+    const res = await api.post(`/contacts`, data);
     return res.data;
   } catch (error) {
     console.error('Failed to create contact:', error);

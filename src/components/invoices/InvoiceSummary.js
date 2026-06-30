@@ -1,34 +1,69 @@
 import React from 'react'
-import { Typography, TextField, InputAdornment } from '@mui/material'
+import { TextField, InputAdornment } from '@mui/material'
+import '../../assets/styles/InvoiceSummary.scss'
+
+function formatAmount(value) {
+  return Number(value || 0).toFixed(2)
+}
 
 function InvoiceSummary({ totals, currency, pricingMode = 'EXCLUSIVE', roundingAmount = 0, setRoundingAmount = () => {} }) {
-  const gstLabel = pricingMode === 'INCLUSIVE' ? 'GST (included)' : 'GST (exclusive)'
+  const gstTotal = Number(totals.cgst_total || 0) + Number(totals.sgst_total || 0) + Number(totals.igst_total || 0)
+  const gstLabel = pricingMode === 'INCLUSIVE' ? 'GST included in price' : 'GST added separately'
 
   return (
-    <div className="quotation-summary">
-      <Typography>
-        Subtotal: {currency} {totals.subtotal?.toFixed(2)}
-      </Typography>
-      <Typography>
-        {gstLabel}: {currency} {((totals.cgst_total || 0) + (totals.sgst_total || 0) + (totals.igst_total || 0)).toFixed(2)}
-      </Typography>
-
-      <div style={{ marginTop: 8, marginBottom: 8 }}>
-        <span style={{ display: 'block', marginBottom: 6, color: '#666' }}>Rounding +/-</span>
-        <TextField
-          size="small"
-          type="number"
-          value={roundingAmount ?? 0}
-          onChange={(e) => setRoundingAmount(Number(e.target.value || 0))}
-          inputProps={{ style: { textAlign: 'right' } }}
-          InputProps={{ startAdornment: (<InputAdornment position="start">{currency}</InputAdornment>) }}
-          sx={{ width: 160 }}
-        />
+    <div className="invoice-summary-card">
+      <div className="invoice-summary-card__header">
+        <div>
+          <span className="invoice-summary-eyebrow">Amount Summary</span>
+          <h3>Invoice totals</h3>
+        </div>
+        <span className="invoice-summary-badge">{pricingMode || 'EXCLUSIVE'}</span>
       </div>
 
-      <Typography variant="h6">
-        Grand Total: {currency} {Number(totals.grand_total || 0).toFixed(2)}
-      </Typography>
+      <div className="invoice-summary-list">
+        <div className="invoice-summary-row">
+          <span>Subtotal</span>
+          <strong>{currency} {formatAmount(totals.subtotal)}</strong>
+        </div>
+
+        <div className="invoice-summary-row muted">
+          <span>{gstLabel}</span>
+          <strong>{currency} {formatAmount(gstTotal)}</strong>
+        </div>
+
+        {Number(totals.cgst_total || 0) > 0 || Number(totals.sgst_total || 0) > 0 ? (
+          <div className="invoice-summary-tax-split">
+            <span>CGST: {currency} {formatAmount(totals.cgst_total)}</span>
+            <span>SGST: {currency} {formatAmount(totals.sgst_total)}</span>
+          </div>
+        ) : null}
+
+        {Number(totals.igst_total || 0) > 0 ? (
+          <div className="invoice-summary-tax-split">
+            <span>IGST: {currency} {formatAmount(totals.igst_total)}</span>
+          </div>
+        ) : null}
+
+        <div className="invoice-summary-rounding">
+          <div>
+            <span>Rounding adjustment</span>
+            <small>Use negative value for round-down</small>
+          </div>
+          <TextField
+            size="small"
+            type="number"
+            value={roundingAmount ?? 0}
+            onChange={(e) => setRoundingAmount(Number(e.target.value || 0))}
+            inputProps={{ step: '0.01', style: { textAlign: 'right' } }}
+            InputProps={{ startAdornment: (<InputAdornment position="start">{currency}</InputAdornment>) }}
+          />
+        </div>
+      </div>
+
+      <div className="invoice-summary-grand-total">
+        <span>Grand Total</span>
+        <strong>{currency} {formatAmount(totals.grand_total)}</strong>
+      </div>
     </div>
   )
 }

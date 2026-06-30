@@ -1,13 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { Checkbox, IconButton, Switch } from '@mui/material'
+import React, { useEffect, useMemo, useState } from 'react'
+import { Checkbox, IconButton } from '@mui/material'
 import { Edit, Delete } from '@mui/icons-material'
 import * as XLSX from 'xlsx'
 
 import {
   getCategories,
-  deleteCategory,
-  updateCategory,
-  getCategoryById
+  deleteCategory
 } from '../../services/productServices'
 
 import AddCategoryDialog from './AddCategoryDialog'
@@ -45,9 +43,9 @@ function CategoryList() {
 
   /* ---------------- HELPERS ---------------- */
 
-  const showSnackbar = useCallback((message, severity = 'info') => {
+  const showSnackbar = (message, severity = 'info') => {
     setSnackbar({ open: true, message, severity })
-  }, [])
+  }
 
   const closeSnackbar = () => {
     setSnackbar(prev => ({ ...prev, open: false }))
@@ -55,7 +53,7 @@ function CategoryList() {
 
   /* ---------------- FETCH ---------------- */
 
-  const fetchCategories = useCallback(async () => {
+  const fetchCategories = async () => {
     try {
       const data = await getCategories()
       const flat = []
@@ -69,8 +67,7 @@ function CategoryList() {
             name: label,
             rawName: cat.name,
             parent_id: cat.parent_id,
-                product_count: cat.product_count,
-                shop_visible: typeof cat.shop_visible !== 'undefined' ? Boolean(cat.shop_visible) : true,
+            product_count: cat.product_count,
             isParent: !!cat.children?.length
           })
 
@@ -85,11 +82,11 @@ function CategoryList() {
     } catch (err) {
       showSnackbar('Failed to load categories', 'error')
     }
-  }, [showSnackbar])
+  }
 
   useEffect(() => {
     fetchCategories()
-  }, [fetchCategories])
+  }, [])
 
   /* ---------------- FILTER + SORT ---------------- */
 
@@ -178,35 +175,6 @@ function CategoryList() {
     setConfirmOpen(true)
   }
 
-  const toggleVisibility = async (cat) => {
-    try {
-      const newVal = !cat.shop_visible
-
-      // Some backends require the full payload (including name). Fetch full category then update.
-      let full = null
-      try {
-        full = await getCategoryById(cat.id)
-      } catch (e) {
-        // fallback to using flattened info
-        full = { name: cat.rawName || cat.name || '', parent_id: cat.parent_id || null }
-      }
-
-      const payload = {
-        name: full.name || cat.rawName || cat.name || '',
-        parent_id: full.parent_id != null ? full.parent_id : (cat.parent_id || null),
-        shop_visible: newVal
-      }
-
-      await updateCategory(cat.id, payload)
-      showSnackbar('Category visibility updated', 'success')
-      fetchCategories()
-    } catch (err) {
-      const msg = err.response?.data?.error || 'Failed to update category'
-      showSnackbar(msg, 'error')
-      console.error('Failed to update category', err)
-    }
-  }
-
   const handleDeleteSelected = () => {
     if (!selected.length) {
       showSnackbar('Please select at least one category', 'warning')
@@ -278,7 +246,6 @@ function CategoryList() {
                 />
               </th>
               <th>CATEGORY</th>
-              <th style={{ width: 120 }}>VISIBLE</th>
               <th style={{ width: 140 }}>PRODUCTS</th>
               <th style={{ width: 120 }}>ACTIONS</th>
             </tr>
@@ -302,15 +269,6 @@ function CategoryList() {
                   </td>
 
                   <td>{cat.name}</td>
-
-                  <td>
-                    <Switch
-                      checked={Boolean(cat.shop_visible)}
-                      onChange={() => toggleVisibility(cat)}
-                      color="primary"
-                      inputProps={{ 'aria-label': `visible-${cat.id}` }}
-                    />
-                  </td>
 
                   <td>
                     <strong>{cat.product_count}</strong>

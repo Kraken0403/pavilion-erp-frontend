@@ -12,7 +12,6 @@ import {
   Divider
 } from '@mui/material';
 import Topbar from '../components/Topbar';
-import PageLoader from '../components/ui/PageLoader';
 import {
   fetchProductById,
   getVariantsByProduct,
@@ -88,7 +87,9 @@ const ProductDetail = () => {
     return (
       <Container>
         <Topbar />
-        <PageLoader message="Loading product details..." minHeight={260} />
+        <Box mt={4}>
+          <Typography variant="h6">Loading product details...</Typography>
+        </Box>
       </Container>
     );
   }
@@ -124,9 +125,12 @@ const ProductDetail = () => {
             <Typography variant="h4" gutterBottom>
               {product.name}
             </Typography>
-            <Typography variant="body1" paragraph>
-              {product.description}
-            </Typography>
+            <Box className="rich-text-preview" dangerouslySetInnerHTML={{ __html: product.description || '' }} />
+            {product.vendor_name && (
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                Vendor: {product.vendor_name}
+              </Typography>
+            )}
             <Typography variant="h6" color="primary">
               Cost: ₹{product.cost}
             </Typography>

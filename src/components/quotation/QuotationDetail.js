@@ -5,54 +5,51 @@ import Topbar from '../Topbar'
 import NotificationSnackbar from '../ui/NotificationSnackbar'
 import QuotationContactSection from './QuotationContactSection'
 import QuotationItemsSection from './QuotationItemsSection'
-import ChannelSelectModal from '../ui/ChannelSelectModal'
 import AddLeadDialog from '../leads/AddLeadDialog'
 import AddProductDialog from '../products/AddProductDialog'
-import {
-  Grid,
-  TextField,
-  Typography,
-} from '@mui/material'
-import TimePicker12 from '../TimePicker12'
+import { createWorkOrderFromQuotation } from '../../services/workOrderServices'
 import {
   fetchQuotationById,
   createQuotation,
   updateQuotation,
   updateQuotationStatus,
-  updateQuotationItems,
-  sendQuotationEmailToCustomer,
-  sendQuotationWhatsAppToCustomer,
+  updateQuotationItems
 } from '../../services/quotationService'
 import { fetchLeads } from '../../services/leadService'
 import { useSettings } from '../../context/SettingsContext'
-import { displayCurrency } from '../../utils/currencyUtils'
 import { calculateQuotationTotals } from '../../utils/quotationCalculator'
 import QuotationSummary from './QuotationSummary'
 import QuotationFooterSection from './QuotationFooterSection'
 import QuotationHeader from './QuotationHeader'
 
-import {
-  fetchAllProducts,
+import { 
+  fetchAllProducts,  
+  createProduct,
+  updateProduct
 } from '../../services/productServices'
 
 import '../../assets/styles/QuotationDetail.scss'
 
 import '../../assets/styles/LeadsTable.scss'
-import { formatQty, formatMoney } from '../../utils/formatters'
 
 /* ---------------------------------------
    CONSTANTS — MUST MATCH DB ENUMS
 --------------------------------------- */
 const COST_PRICING_MODES = ['absolute', 'percentage']
 
+const statusColors = {
+  pending: 'status-warning',
+  approved: 'status-success',
+  rejected: 'status-error',
+  converted: 'status-info'
+}
+
 function QuotationDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
 
   const { settings } = useSettings()
-  const currency = displayCurrency(settings?.currency_code)
-  const isGeneralBusiness = String(settings?.business_type || 'GENERAL').toUpperCase() === 'GENERAL'
-  const gstPricingMode = settings?.gst_pricing_mode || 'INCLUSIVE'
+  const currency = settings?.currency_code || '₹'
   const [products, setProducts] = useState([])
   const [overallDiscount, setOverallDiscount] = useState(0)
 
@@ -64,32 +61,28 @@ function QuotationDetail() {
   const [openAddLeadDialog, setOpenAddLeadDialog] = useState(false)
   const [prefillLeadName, setPrefillLeadName] = useState('')
 
-  const loadLeads = useCallback(async () => {
+  const loadLeads = async () => {
     try {
       const res = await fetchLeads()
       const leadsArray =
         Array.isArray(res?.leads) ? res.leads :
-          Array.isArray(res?.data) ? res.data :
-            []
-
+        Array.isArray(res?.data) ? res.data :
+        []
+  
       setLeads(leadsArray)
     } catch (err) {
       console.error('Failed to load leads', err)
     }
-  }, [])
-
+  }
+  
 
   const [cateringMeta, setCateringMeta] = useState({
     event_name: '',
     event_date: '',
     event_time: '',
-    event_start_date: '',
-    event_start_time: '',
-    event_end_date: '',
-    event_end_time: '',
     event_location: ''
   })
-
+  
 
   const [headerForm, setHeaderForm] = useState({
     lead_id: '',
@@ -111,14 +104,22 @@ function QuotationDetail() {
   })
 
   const [selectedLead, setSelectedLead] = useState(null)
-  const [channelModalOpen, setChannelModalOpen] = useState(false)
+  const handleLeadIdChange = useCallback((leadId) => {
+    setHeaderForm((prev) => {
+      const current = prev.lead_id ?? ''
+      const next = leadId ?? ''
+      if (String(current) === String(next)) return prev
+      return { ...prev, lead_id: next }
+    })
+  }, [])
+
 
   /* ---------------------------------------
      HELPERS
   --------------------------------------- */
-  const showNotification = useCallback((message, severity = 'success') => {
+  const showNotification = (message, severity = 'success') => {
     setNotif({ open: true, message, severity })
-  }, [])
+  }
 
   const normalizeCostMode = (mode) =>
     COST_PRICING_MODES.includes(mode) ? mode : 'absolute'
@@ -138,33 +139,33 @@ function QuotationDetail() {
           i.product?.title ||
           '[Unnamed Product]'
 
-        return {
-          product_id,
-          product_name,
-
-          variant_id: i.variant_id ?? null,
-          variant_sku: i.variant_sku || '',
-
-          quantity: Number(i.quantity) || 0,
-
-          // COST SNAPSHOT
-          cost_price: Number(i.cost_price) || 0,
-          cost_price_qty: Number(i.cost_price_qty) || 1,
-          cost_price_unit: i.cost_price_unit || 'unit',
-          cost_unit: i.cost_unit || i.cost_price_unit || 'unit',
-          cost_pricing_mode: normalizeCostMode(i.cost_pricing_mode),
-          cost_discount_percent: Number(i.cost_discount_percent) || 0,
-
-          // SELLING SNAPSHOT
-          unit_price: Number(i.selling_price) || 0,
-          discount: Number(i.discount) || 0,
-          tax: Number(i.tax) || 0,
-
-          // JSON SNAPSHOTS
-          attributes_json: i.attributes_json || {},
-          packaging_json: i.packaging_json || {}
-        }
-
+          return {
+            product_id,
+            product_name,
+          
+            variant_id: i.variant_id ?? null,
+            variant_sku: i.variant_sku || '',
+          
+            quantity: Number(i.quantity) || 0,
+          
+            // COST SNAPSHOT
+            cost_price: Number(i.cost_price) || 0,
+            cost_price_qty: Number(i.cost_price_qty) || 1,
+            cost_price_unit: i.cost_price_unit || 'unit',
+            cost_unit: i.cost_unit || i.cost_price_unit || 'unit',
+            cost_pricing_mode: normalizeCostMode(i.cost_pricing_mode),
+            cost_discount_percent: Number(i.cost_discount_percent) || 0,
+          
+            // SELLING SNAPSHOT
+            unit_price: Number(i.selling_price) || 0,
+            discount: Number(i.discount) || 0,
+            tax: Number(i.tax) || 0,
+          
+            // JSON SNAPSHOTS
+            attributes_json: i.attributes_json || {},
+            packaging_json: i.packaging_json || {}
+          }
+          
       })
       // ✅ Keep only valid rows (backend will reject otherwise)
       .filter((i) => i.product_id && i.product_name && i.quantity > 0)
@@ -239,13 +240,21 @@ function QuotationDetail() {
     })
   }
 
+  /* ---------------------------------------
+     LOAD QUOTATION
+  --------------------------------------- */
+  useEffect(() => {
+    loadQuotation()
+    loadLeads()
+  }, [id])
+
   useEffect(() => {
     fetchAllProducts()
       .then(res => {
         const list =
           Array.isArray(res) ? res :
-            Array.isArray(res?.data) ? res.data :
-              Array.isArray(res?.products) ? res.products : []
+          Array.isArray(res?.data) ? res.data :
+          Array.isArray(res?.products) ? res.products : []
         setProducts(list)
       })
       .catch(err => console.error('Failed to load products', err))
@@ -258,32 +267,28 @@ function QuotationDetail() {
       )
     }
   }, [quotation])
+  
 
 
-
-  const loadQuotation = useCallback(async () => {
+  const loadQuotation = async () => {
     try {
       setLoading(true)
       const data = await fetchQuotationById(id)
       setQuotation(data)
-        if (data.quotation_mode === 'CATERING') {
+      if (data.quotation_mode === 'CATERING') {
         setPax(Number(data.pax) || 1)
         setCateringMeta({
           event_name: data.event_name || '',
-          event_date: data.event_date ? (data.event_date.match(/^\d{4}-\d{2}-\d{2}/) ? data.event_date.substring(0, 10) : data.event_date) : '',
+          event_date: data.event_date?.substring(0, 10) || '',
           event_time: data.event_time || '',
-          event_start_date: data.event_start_date ? (data.event_start_date.match(/^\d{4}-\d{2}-\d{2}/) ? data.event_start_date.substring(0, 10) : data.event_start_date) : '',
-          event_start_time: data.event_start_time || '',
-          event_end_date: data.event_end_date ? (data.event_end_date.match(/^\d{4}-\d{2}-\d{2}/) ? data.event_end_date.substring(0, 10) : data.event_end_date) : '',
-          event_end_time: data.event_end_time || '',
           event_location: data.event_location || ''
         })
       }
       // HEADER
       setHeaderForm({
         lead_id: data.lead_id ?? '',
-        quotation_date: data.quotation_date ? (data.quotation_date.match(/^\d{4}-\d{2}-\d{2}/) ? data.quotation_date.substring(0, 10) : data.quotation_date) : '',
-        valid_until: data.valid_until ? (data.valid_until.match(/^\d{4}-\d{2}-\d{2}/) ? data.valid_until.substring(0, 10) : data.valid_until) : '',
+        quotation_date: data.quotation_date?.substring(0, 10) ?? '',
+        valid_until: data.valid_until?.substring(0, 10) ?? '',
         notes: data.notes ?? ''
       })
 
@@ -329,14 +334,12 @@ function QuotationDetail() {
         const leads = Array.isArray(leadsRes?.leads)
           ? leadsRes.leads
           : Array.isArray(leadsRes?.data)
-            ? leadsRes.data
-            : []
+          ? leadsRes.data
+          : []
 
         setSelectedLead(
           leads.find((l) => String(l.id) === String(data.lead_id)) || null
         )
-      } else {
-        setSelectedLead(null)
       }
     } catch (err) {
       console.error(err)
@@ -344,15 +347,7 @@ function QuotationDetail() {
     } finally {
       setLoading(false)
     }
-  }, [id, showNotification])
-
-  /* ---------------------------------------
-     LOAD QUOTATION
-  --------------------------------------- */
-  useEffect(() => {
-    loadQuotation()
-    loadLeads()
-  }, [loadQuotation, loadLeads])
+  }
 
   /* ---------------------------------------
      HEADER SAVE
@@ -412,6 +407,38 @@ function QuotationDetail() {
     })
   }
 
+  /**
+   * ✅ Update items (FULL SNAPSHOT ONLY)
+   */
+   const handleSaveItems = async () => {
+    try {
+      const payloadItems = buildSnapshotItemsPayload()
+  
+      if (!payloadItems.length) {
+        return showNotification('Add at least one valid item', 'warning')
+      }
+  
+      // ✅ 1. Save ITEMS
+      await updateQuotationItems(id, payloadItems)
+  
+      // ✅ 2. Save PAX (ONLY if catering)
+      if (quotation.quotation_mode === 'CATERING') {
+        await updateQuotation(id, {
+          pax,
+          ...cateringMeta
+        })
+      }
+  
+      showNotification('Items & PAX updated successfully')
+      loadQuotation()
+    } catch (err) {
+      console.error(err)
+      showNotification(
+        err?.response?.data?.error || 'Failed to update items',
+        'error'
+      )
+    }
+  }
   const handleSubmit = async () => {
     try {
       if (!headerForm.lead_id) {
@@ -420,49 +447,33 @@ function QuotationDetail() {
       if (!headerForm.quotation_date) {
         return showNotification('Quotation date is required', 'warning')
       }
-
+  
       if (quotation?.quotation_mode === 'CATERING' && (!pax || pax < 1)) {
         return showNotification('PAX is required for catering', 'warning')
       }
-
-      // ✅ VALIDATE: Sum of quantities must equal PAX in CATERING mode
-      if (quotation?.quotation_mode === 'CATERING') {
-        const totalQty = items.reduce((sum, item) => sum + Number(item.quantity || 0), 0)
-        if (totalQty !== Number(pax)) {
-          return showNotification(
-            `Total quantity (${totalQty}) must equal PAX (${pax})`,
-            'error'
-          )
-        }
-      }
-
+  
       const payloadItems = buildSnapshotItemsPayload()
       if (!payloadItems.length) {
         return showNotification('Add at least one valid item', 'warning')
       }
-
+  
       // 1) Save items snapshot
       await updateQuotationItems(id, payloadItems)
-
+  
       // 2) Save header + discount + totals (+ catering meta)
       await updateQuotation(id, {
         ...headerForm,
-
+      
         quotation_discount_type: 'FLAT',
         quotation_discount_value: Number(overallDiscount || 0),
-
+      
         ...(quotation?.quotation_mode === 'CATERING' && {
           pax,
-          event_name: cateringMeta.event_name || null,
-          event_location: cateringMeta.event_location || null,
-          event_start_date: cateringMeta.event_start_date || null,
-          event_start_time: cateringMeta.event_start_time || null,
-          event_end_date: cateringMeta.event_end_date || null,
-          event_end_time: cateringMeta.event_end_time || null
+          ...cateringMeta
         })
       })
-
-
+      
+  
       showNotification('✅ Quotation updated successfully')
       loadQuotation()
     } catch (err) {
@@ -473,8 +484,8 @@ function QuotationDetail() {
       )
     }
   }
-
-
+  
+  
 
   /* ---------------------------------------
      VERSION
@@ -482,13 +493,13 @@ function QuotationDetail() {
   const handleCreateVersion = async () => {
     try {
       const payloadItems = buildSnapshotItemsPayload()
-
+  
       if (!payloadItems.length) {
         return showNotification('Add at least one valid item', 'warning')
       }
-
+  
       // const nextVersion = Number(quotation.version || 1) + 1
-
+  
       const payload = {
         parent_id: quotation.parent_id || quotation.id,
         lead_id: headerForm.lead_id,
@@ -498,18 +509,16 @@ function QuotationDetail() {
         items: payloadItems,
         ...(quotation.quotation_mode === 'CATERING' && {
           pax,
-          event_name: cateringMeta.event_name || null,
-          event_location: cateringMeta.event_location || null,
-          event_start_date: cateringMeta.event_start_date || null,
-          event_start_time: cateringMeta.event_start_time || null,
-          event_end_date: cateringMeta.event_end_date || null,
-          event_end_time: cateringMeta.event_end_time || null
+          event_name: cateringMeta.event_name,
+          event_date: cateringMeta.event_date || null,
+          event_time: cateringMeta.event_time || null,
+          event_location: cateringMeta.event_location || null
         })
       }
-
-
+      
+  
       const res = await createQuotation(payload)
-
+  
       showNotification(`New Version created`)
       navigate(`/quotations/${res.id}`)
     } catch (err) {
@@ -520,49 +529,59 @@ function QuotationDetail() {
       )
     }
   }
+  
 
-
-  const handleCreateProforma = async () => {
-    if (quotation.status !== 'approved') {
-      return showNotification(
-        'Proforma can only be created from approved quotations',
-        'warning'
-      )
-    }
-
-    // Navigate to proforma create page with quotation prefill (read-only)
-    navigate('/proforma-invoices/create', { state: { quotationId: quotation.id } })
-  }
-
-  const handleSendQuotationEmail = async () => {
+  const handleCreateWorkOrder = async () => {
     try {
-      await sendQuotationEmailToCustomer(quotation.id)
-      showNotification('Quotation email sent successfully')
+      if (quotation.status !== 'approved') {
+        return showNotification(
+          'Work Order can only be created from approved quotations',
+          'warning'
+        )
+      }
+  
+      const payload = {
+        quotation_id: quotation.id
+      }
+
+      console.log('🔥 Creating WO for quotation ID:', payload)
+
+  
+      const res = await createWorkOrderFromQuotation(payload.quotation_id)
+  
+      showNotification('Work Order created successfully')
+  
+      // 🔒 Lock quotation + mark converted
+      await updateQuotationStatus(quotation.id, 'converted')
+  
+      loadQuotation()
+
+      const workOrderId =
+        res?.id ||
+        res?.work_order_id ||
+        res?.data?.id
+
+      if (!workOrderId) {
+        throw new Error('Work order created but ID not returned')
+      }
+
+      navigate(`/workorders/${workOrderId}`)
+
+  
+      // 🔀 Navigate to Work Order detail
+      // navigate(`/workorders/${res.id}`)
     } catch (err) {
       console.error(err)
       showNotification(
-        err?.response?.data?.error || 'Failed to send quotation email',
+        err?.response?.data?.error || 'Failed to create work order',
         'error'
       )
     }
   }
-
-  const handleSendQuotationWhatsApp = async () => {
-    try {
-      await sendQuotationWhatsAppToCustomer(quotation.id)
-      showNotification('Quotation WhatsApp sent successfully')
-    } catch (err) {
-      console.error(err)
-      showNotification(
-        err?.response?.data?.error || 'Failed to send quotation WhatsApp',
-        'error'
-      )
-    }
-  }
-
+  
   const reorderItems = (from, to) => {
     if (from === to || from == null || to == null) return
-
+  
     setItems(prev => {
       const copy = [...prev]
       const [moved] = copy.splice(from, 1)
@@ -570,8 +589,8 @@ function QuotationDetail() {
       return copy
     })
   }
-
-
+  
+  
 
   /* ---------------------------------------
      TOTALS
@@ -581,28 +600,10 @@ function QuotationDetail() {
     overallDiscount, // ✅ state
     pax,
     quotationMode: quotation?.quotation_mode,
-    gstPricingMode
+    gstPricingMode: settings?.gst_pricing_mode || 'EXCLUSIVE'
   })
-  console.log(quotation)
-
-  const customerName = (
-    `${(quotation?.first_name || selectedLead?.first_name || '') + ' ' + (quotation?.last_name || selectedLead?.last_name || '')}`.trim()
-  ) || quotation?.company_name || selectedLead?.company_name || 'Customer'
-  const eventName = quotation?.catering?.event_name || quotation?.event_name || ''
-  const itemSummaries = (items || []).map(it => {
-    const name = it.product_name || it.product?.name || it.title || 'Item'
-    const qty = formatQty(it.quantity || it.qty || 1)
-    const amt = formatMoney(it.line_total || it.lineTotal || (Number(it.selling_price || it.unit_price || 0) * Number(it.quantity || it.qty || 0)))
-    return `${name} x${qty} · ${amt}`
-  })
-  const visible = itemSummaries.slice(0, 5)
-  const briefSummary = [
-    eventName,
-    visible.join(' · '),
-    itemSummaries.length > 5 ? `+${itemSummaries.length - 5} more` : ''
-  ].filter(Boolean).join(' · ')
-
-
+  
+  
 
   /* ---------------------------------------
      UI
@@ -630,59 +631,54 @@ function QuotationDetail() {
       <Topbar />
 
       <div className="quotation-detail-container">
-        <QuotationHeader
-          quotation={quotation}
-          isLocked={isLocked}
-          onStatusChange={async (newStatus) => {
-            try {
-              await updateQuotationStatus(quotation.id, newStatus)
-              setQuotation(prev => ({ ...prev, status: newStatus }))
-              showNotification('Status updated')
-            } catch {
-              showNotification('Failed to update status', 'error')
-            }
-          }}
-          onApprove={async () => {
-            try {
-              await updateQuotationStatus(quotation.id, 'approved')
-              await loadQuotation() // 🔥 always reload real state
-              showNotification('Quotation approved')
-            } catch (err) {
-              console.error(err)
-              showNotification('Failed to approve quotation', 'error')
-            }
-          }}
-          onCreateProforma={handleCreateProforma}
-          onCreateVersion={handleCreateVersion}
-          onSendEmail={() => setChannelModalOpen(true)}
-          onSendWhatsApp={() => setChannelModalOpen(true)}
-        />
+      <QuotationHeader
+        quotation={quotation}
+        isLocked={isLocked}
+        onStatusChange={async (newStatus) => {
+          try {
+            await updateQuotationStatus(quotation.id, newStatus)
+            setQuotation(prev => ({ ...prev, status: newStatus }))
+            showNotification('Status updated')
+          } catch {
+            showNotification('Failed to update status', 'error')
+          }
+        }}
+        onApprove={async () => {
+          try {
+            await updateQuotationStatus(quotation.id, 'approved')
+            setQuotation(prev => ({ ...prev, status: 'approved' }))
+            showNotification('Quotation approved')
+          } catch {
+            showNotification('Failed to approve quotation', 'error')
+          }
+        }}
+        onCreateWorkOrder={handleCreateWorkOrder}
+        onCreateVersion={handleCreateVersion}
+      />
 
 
 
         <div className="quotation-card">
-          <QuotationContactSection
-            isLocked={isLocked}
-            leads={leads}
-            leadId={headerForm.lead_id}
-            setLeadId={(leadId) =>
-              setHeaderForm((p) => ({ ...p, lead_id: leadId }))
-            }
-            selectedLead={selectedLead}
-            setSelectedLead={setSelectedLead}
-            quotationDate={headerForm.quotation_date}
-            setQuotationDate={(v) =>
-              setHeaderForm((p) => ({ ...p, quotation_date: v }))
-            }
-            validUntil={headerForm.valid_until}
-            setValidUntil={(v) =>
-              setHeaderForm((p) => ({ ...p, valid_until: v }))
-            }
-            notes={headerForm.notes}
-            setNotes={(v) => setHeaderForm((p) => ({ ...p, notes: v }))}
-            openAddLeadDialog={() => setOpenAddLeadDialog(true)}
-            setPrefillLeadName={setPrefillLeadName}
-          />
+        <QuotationContactSection
+          isLocked={isLocked}
+          leads={leads}
+          leadId={headerForm.lead_id}
+          setLeadId={handleLeadIdChange}
+          selectedLead={selectedLead}
+          setSelectedLead={setSelectedLead}
+          quotationDate={headerForm.quotation_date}
+          setQuotationDate={(v) =>
+            setHeaderForm((p) => ({ ...p, quotation_date: v }))
+          }
+          validUntil={headerForm.valid_until}
+          setValidUntil={(v) =>
+            setHeaderForm((p) => ({ ...p, valid_until: v }))
+          }
+          notes={headerForm.notes}
+          setNotes={(v) => setHeaderForm((p) => ({ ...p, notes: v }))}
+          openAddLeadDialog={() => setOpenAddLeadDialog(true)}
+          setPrefillLeadName={setPrefillLeadName}
+        />
 
 
 
@@ -693,112 +689,53 @@ function QuotationDetail() {
           )}
         </div>
 
-        {!isGeneralBusiness && quotation.quotation_mode === 'CATERING' && (
-          <div className="quotation-card">
-            <div className="quotation-contact-section">
-              <Typography className="section-title">
-                <span className="sep"></span>
-                Event Details
-              </Typography>
+        {quotation.quotation_mode === 'CATERING' && (
+            <div className="quotation-card catering-meta">
+              <h3>Event Details</h3>
 
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={4}>
-                  <Typography className="field-label">Event Name</Typography>
-                  <TextField
-                    className="form-input"
-                    fullWidth
-                    disabled={isLocked}
-                    value={cateringMeta.event_name || ''}
-                    onChange={(e) => setCateringMeta(p => ({ ...p, event_name: e.target.value }))}
-                  />
-                </Grid>
+              <div className="grid">
+                <input disabled={isLocked}
+                  placeholder="Event Name"
+                  value={cateringMeta.event_name}
+                  onChange={(e) =>
+                    setCateringMeta(p => ({ ...p, event_name: e.target.value }))
+                  }
+                />
 
-                <Grid item xs={12} md={4}>
-                  <Typography className="field-label">PAX</Typography>
-                  <TextField
-                    className="form-input"
-                    type="number"
-                    fullWidth
-                    disabled={isLocked}
-                    value={pax || ''}
-                    onChange={(e) => setPax(e.target.value === '' ? null : Number(e.target.value))}
-                  />
-                </Grid>
+                <input disabled={isLocked}
+                  type="date"
+                  value={cateringMeta.event_date}
+                  onChange={(e) =>
+                    setCateringMeta(p => ({ ...p, event_date: e.target.value }))
+                  }
+                />
 
-                <Grid item xs={12} md={4}>
-                  <Typography className="field-label">Event Venue</Typography>
-                  <TextField
-                    className="form-input"
-                    fullWidth
-                    disabled={isLocked}
-                    value={cateringMeta.event_location || ''}
-                    onChange={(e) => setCateringMeta(p => ({ ...p, event_location: e.target.value }))}
-                  />
-                </Grid>
+                <input disabled={isLocked}
+                  placeholder="Event Time (e.g. 7 PM – 11 PM)"
+                  value={cateringMeta.event_time}
+                  onChange={(e) =>
+                    setCateringMeta(p => ({ ...p, event_time: e.target.value }))
+                  }
+                />
 
-                <Grid item xs={12} md={3}>
-                  <Typography className="field-label">Event Start Date</Typography>
-                  <TextField
-                    className="form-input"
-                    type="date"
-                    fullWidth
-                    disabled={isLocked}
-                    value={cateringMeta.event_start_date || ''}
-                    onChange={(e) =>
-                      setCateringMeta((p) => ({
-                        ...p,
-                        event_start_date: e.target.value,
-                      }))
-                    }
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
+                <input disabled={isLocked}
+                  placeholder="Event Location / Venue"
+                  value={cateringMeta.event_location}
+                  onChange={(e) =>
+                    setCateringMeta(p => ({ ...p, event_location: e.target.value }))
+                  }
+                />
 
-                <Grid item xs={12} md={3}>
-                  <Typography className="field-label">Event Start Time</Typography>
-                  <TimePicker12
-                    value={cateringMeta.event_start_time || ''}
-                    onChange={(v) => setCateringMeta((p) => ({ ...p, event_start_time: v }))}
-                    minuteStep={1}
-                    disabled={isLocked}
-                    className="form-input"
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={3}>
-                  <Typography className="field-label">Event End Date</Typography>
-                  <TextField
-                    className="form-input"
-                    type="date"
-                    fullWidth
-                    disabled={isLocked}
-                    value={cateringMeta.event_end_date || ''}
-                    onChange={(e) =>
-                      setCateringMeta((p) => ({
-                        ...p,
-                        event_end_date: e.target.value,
-                      }))
-                    }
-                    InputLabelProps={{ shrink: true }}
-                  />
-                </Grid>
-
-                <Grid item xs={12} md={3}>
-                  <Typography className="field-label">Event End Time</Typography>
-                  <TimePicker12
-                    value={cateringMeta.event_end_time || ''}
-                    onChange={(v) => setCateringMeta((p) => ({ ...p, event_end_time: v }))}
-                    minuteStep={1}
-                    disabled={isLocked}
-                    className="form-input"
-                  />
-                </Grid>
-              </Grid>
+                <input disabled={isLocked}
+                  type="number"
+                  min={1}
+                  placeholder="PAX"
+                  value={pax}
+                  onChange={(e) => setPax(Number(e.target.value) || 1)}
+                />
+              </div>
             </div>
-          </div>
-
-        )}
-
+          )}
 
 
 
@@ -812,7 +749,6 @@ function QuotationDetail() {
             reorderItems={reorderItems}
             openProductDialog={openProductDialog}
             setOpenProductDialog={setOpenProductDialog}
-            gstPricingMode={gstPricingMode}
             quotationMode={quotation.quotation_mode}
             pax={pax}
             isLocked={isLocked}
@@ -825,25 +761,24 @@ function QuotationDetail() {
         <div className='quotation-card'>
 
 
-          <QuotationSummary
-            totals={totals}
-            overallDiscount={overallDiscount}
-            setOverallDiscount={setOverallDiscount}
-            currency={currency}
-            isLocked={isLocked}
-            gstPricingMode={gstPricingMode}
-          />
+        <QuotationSummary
+          totals={totals}
+          overallDiscount={overallDiscount}
+          setOverallDiscount={setOverallDiscount}
+          currency={currency}
+          isLocked={isLocked}
+        />
 
-          <QuotationFooterSection
-            total={Number(totals.grandTotal || 0)}
-            handleSubmit={handleSubmit}
-            currency={currency}
-            disabled={isLocked}
-          />
-        </div>
+        <QuotationFooterSection
+          total={Number(totals.grandTotal || 0)}
+          handleSubmit={handleSubmit}
+          currency={currency}
+          disabled={isLocked}
+        />
+      </div>
 
 
-        {/* {!isLocked && (
+          {/* {!isLocked && (
             <button className="btn-primary mt" onClick={handleSaveItems}>
               Save Items
             </button>
@@ -857,25 +792,6 @@ function QuotationDetail() {
       <AddProductDialog
         open={openProductDialog}
         onClose={() => setOpenProductDialog(false)}
-      />
-
-      <ChannelSelectModal
-        open={channelModalOpen}
-        onClose={() => setChannelModalOpen(false)}
-        title={`Share Quotation ${quotation?.quotation_number || ''} with ${customerName}`}
-        subtitle={briefSummary}
-        defaultEmail
-        defaultWhatsApp
-        confirmLabel="Share Quotation"
-        onConfirm={async ({ sendEmail = true, sendWhatsApp = false }) => {
-          setChannelModalOpen(false)
-          if (sendEmail) {
-            await handleSendQuotationEmail()
-          }
-          if (sendWhatsApp) {
-            await handleSendQuotationWhatsApp()
-          }
-        }}
       />
 
       <NotificationSnackbar

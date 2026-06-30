@@ -1,19 +1,18 @@
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Paper,
   Typography,
   TextField,
   Button,
-  MenuItem
+  MenuItem,
+  CircularProgress
 } from '@mui/material';
 
 import { getQuotationSettings, saveQuotationSettings } from '../services/quotationSettingsService';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import WgiymEditor from '../components/ui/WgiymEditor';
 import FileUploader from '../components/ui/FileUploader';
-import Topbar from '../components/Topbar';
-import PageLoader from '../components/ui/PageLoader';
 
 const layoutOptions = [
   { value: 'minimal', label: 'Minimal' },
@@ -38,7 +37,7 @@ function QuotationSettings() {
     sequence_start: 1,
     number_format: '{prefix}/{year}/{seq}',
     numbering_mode: 'continuous',
-    business_type: 'GENERAL' // ✅ NEW GLOBAL FIELD
+    quotation_mode: 'GENERAL'
   });
 
   const [loading, setLoading] = useState(false);
@@ -48,38 +47,30 @@ function QuotationSettings() {
     severity: 'success'
   });
 
-  const showNotification = useCallback((message, severity = 'success') => {
+  const showNotification = (message, severity = 'success') => {
     setNotif({ open: true, message, severity });
+  };
+
+  useEffect(() => {
+    fetchSettings();
   }, []);
 
-  const fetchSettings = useCallback(async () => {
+  const fetchSettings = async () => {
     setLoading(true);
     try {
       const data = await getQuotationSettings();
-
-      // Ensure defaults if backend returns partial
-      setSettings(prev => ({
-        ...prev,
-        ...data,
-        business_type: data.business_type || 'GENERAL'
-      }));
-
+      setSettings(data);
     } catch (err) {
       console.error("Failed to load settings:", err);
       showNotification("Failed to load settings", "error");
     }
     setLoading(false);
-  }, [showNotification]);
-
-  useEffect(() => {
-    fetchSettings();
-  }, [fetchSettings]);
+  };
 
   const handleSave = async () => {
     try {
-      const { gst_pricing_mode, ...payload } = settings;
-      await saveQuotationSettings(payload);
-      showNotification("✅ Settings saved successfully!");
+      await saveQuotationSettings(settings);
+      showNotification("✅ Quotation settings saved!");
     } catch (err) {
       console.error("Failed to save settings:", err);
       showNotification("❌ Failed to save settings", "error");
@@ -88,23 +79,23 @@ function QuotationSettings() {
 
   return (
     <Container>
-      <Topbar />
+      <Typography variant="h4" gutterBottom>
+        Quotation Settings
+      </Typography>
 
       <Paper sx={{ p: 3 }}>
         {loading ? (
-          <PageLoader message="Loading quotation settings..." minHeight={220} />
+          <CircularProgress />
         ) : (
           <>
-            {/* ---------------- LAYOUT ---------------- */}
+            {/* Layout */}
             <TextField
               label="Quotation Layout"
               select
               fullWidth
               sx={{ mb: 3 }}
               value={settings.layout_option}
-              onChange={(e) =>
-                setSettings({ ...settings, layout_option: e.target.value })
-              }
+              onChange={(e) => setSettings({ ...settings, layout_option: e.target.value })}
             >
               {layoutOptions.map(op => (
                 <MenuItem key={op.value} value={op.value}>
@@ -113,17 +104,28 @@ function QuotationSettings() {
               ))}
             </TextField>
 
+            <TextField
+                select
+                label="Quotation Mode"
+                fullWidth
+                sx={{ mb: 3 }}
+                value={settings.quotation_mode || 'GENERAL'}
+                onChange={(e) => setSettings({ ...settings, quotation_mode: e.target.value })}
+              >
+                <MenuItem value="GENERAL">General (Default)</MenuItem>
+                {/* <MenuItem value="CATERING">Catering (With PAX)</MenuItem>
+                <MenuItem value="FUSION_BOX">Fusion Box</MenuItem>
+                <MenuItem value="MEAL_BOX">Chef’s Meal Box</MenuItem> */}
+              </TextField>
 
-            {/* ---------------- LOGO ---------------- */}
+
+            {/* Logo */}
             <FileUploader
               label="Company Logo"
               fileUrl={settings.logo_url}
-              onFileUploaded={(url) =>
-                setSettings((prev) => ({ ...prev, logo_url: url }))
-              }
+              onFileUploaded={(url) => setSettings({ ...settings, logo_url: url })}
             />
 
-            {/* ---------------- NUMBERING SECTION ---------------- */}
             <Typography variant="h6" mt={4}>
               Quotation Numbering
             </Typography>
@@ -133,9 +135,7 @@ function QuotationSettings() {
               fullWidth
               sx={{ mt: 2 }}
               value={settings.prefix}
-              onChange={(e) =>
-                setSettings({ ...settings, prefix: e.target.value })
-              }
+              onChange={(e) => setSettings({ ...settings, prefix: e.target.value })}
             />
 
             <TextField
@@ -144,12 +144,7 @@ function QuotationSettings() {
               fullWidth
               sx={{ mt: 2 }}
               value={settings.sequence_start}
-              onChange={(e) =>
-                setSettings({
-                  ...settings,
-                  sequence_start: Number(e.target.value)
-                })
-              }
+              onChange={(e) => setSettings({ ...settings, sequence_start: Number(e.target.value) })}
             />
 
             <TextField
@@ -158,9 +153,7 @@ function QuotationSettings() {
               sx={{ mt: 2 }}
               helperText="Available tags: {prefix} {year} {month} {seq}"
               value={settings.number_format}
-              onChange={(e) =>
-                setSettings({ ...settings, number_format: e.target.value })
-              }
+              onChange={(e) => setSettings({ ...settings, number_format: e.target.value })}
             />
 
             <TextField
@@ -169,9 +162,7 @@ function QuotationSettings() {
               fullWidth
               sx={{ mt: 2 }}
               value={settings.numbering_mode}
-              onChange={(e) =>
-                setSettings({ ...settings, numbering_mode: e.target.value })
-              }
+              onChange={(e) => setSettings({ ...settings, numbering_mode: e.target.value })}
             >
               {numberingModes.map(op => (
                 <MenuItem key={op.value} value={op.value}>
@@ -180,45 +171,25 @@ function QuotationSettings() {
               ))}
             </TextField>
 
-            {/* ---------------- COVER LETTER ---------------- */}
-            <Typography variant="h6" mt={4}>
-              Cover Letter / Introduction
-            </Typography>
+            <Typography variant="h6" mt={4}>Cover Letter / Introduction</Typography>
             <WgiymEditor
               value={settings.cover_letter_html}
-              onChange={(val) =>
-                setSettings({ ...settings, cover_letter_html: val })
-              }
+              onChange={(val) => setSettings({ ...settings, cover_letter_html: val })}
             />
 
-            {/* ---------------- TERMS ---------------- */}
-            <Typography variant="h6" mt={4}>
-              Terms & Conditions
-            </Typography>
+            <Typography variant="h6" mt={4}>Terms & Conditions</Typography>
             <WgiymEditor
               value={settings.terms_conditions_html}
-              onChange={(val) =>
-                setSettings({ ...settings, terms_conditions_html: val })
-              }
+              onChange={(val) => setSettings({ ...settings, terms_conditions_html: val })}
             />
 
-            {/* ---------------- FOOTER ---------------- */}
-            <Typography variant="h6" mt={4}>
-              Footer Notes (Optional)
-            </Typography>
+            <Typography variant="h6" mt={4}>Footer Notes (Optional)</Typography>
             <WgiymEditor
               value={settings.footer_notes_html}
-              onChange={(val) =>
-                setSettings({ ...settings, footer_notes_html: val })
-              }
+              onChange={(val) => setSettings({ ...settings, footer_notes_html: val })}
             />
 
-            {/* ---------------- SAVE BUTTON ---------------- */}
-            <Button
-              variant="contained"
-              sx={{ mt: 4 }}
-              onClick={handleSave}
-            >
+            <Button variant="contained" sx={{ mt: 4 }} onClick={handleSave}>
               Save Settings
             </Button>
           </>

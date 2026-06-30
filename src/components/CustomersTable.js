@@ -88,7 +88,7 @@ const CustomersTable = ({
         name: c.customer_name,
         email: c.customer_email,
         phone: c.customer_phone,
-        orders: c.total_invoices,
+        orders: c.total_orders ?? c.total_invoices,
         spent: c.total_spent,
         last_transaction: c.last_transaction_date,
       }));
@@ -137,7 +137,7 @@ const CustomersTable = ({
                 <td>{c.customer_name || '—'}</td>
                 <td>{c.customer_email || '—'}</td>
                 <td>{c.customer_phone || '—'}</td>
-                <td>{c.total_invoices ?? 0}</td>
+                <td>{c.total_orders ?? c.total_invoices ?? 0}</td>
                 <td>{c.total_spent ?? 0}</td>
                 <td>{c.last_transaction_date || '—'}</td>
               </tr>

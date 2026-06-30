@@ -1,5 +1,5 @@
 // src/pages/Settings.js
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Container, Paper } from "@mui/material";
 import Topbar from "../components/Topbar";
 import NotificationSnackbar from "../components/ui/NotificationSnackbar";
@@ -16,48 +16,39 @@ export default function Settings() {
     severity: "success",
   });
 
-  const showNotif = useCallback((message, severity = "success") => {
+  const showNotif = (message, severity = "success") => {
     setNotif({ open: true, message, severity });
+  };
+
+  useEffect(() => {
+    loadSettings();
   }, []);
 
-  const loadSettings = useCallback(async () => {
+  /* ---------------------------------------
+     LOAD SETTINGS
+  --------------------------------------- */
+  const loadSettings = async () => {
     try {
       const data = await getSettings();
-
-      // Ensure defaults
-      setSettings({
-        ...data,
-        business_type: data.business_type || "GENERAL",
-        gst_pricing_mode: data.gst_pricing_mode || "INCLUSIVE",
-        currency_code: data.currency_code || "INR",
-      });
-
+      setSettings(data);
     } catch (err) {
       console.error("❌ Failed to load settings", err);
       showNotif("Failed to load settings", "error");
     }
-  }, [showNotif]);
-
-  useEffect(() => {
-    loadSettings();
-  }, [loadSettings]);
+  };
 
   /* ---------------------------------------
-     SUBMIT SETTINGS
+     SUBMIT SETTINGS (UPDATED)
   --------------------------------------- */
   const handleSubmit = async (form) => {
     const formData = new FormData();
 
-    /* -----------------------------
-       COMPANY BASIC INFO
-    ----------------------------- */
+    // Company basic info
     formData.append("company_name", form.company_name || "");
     formData.append("company_email", form.company_email || "");
     formData.append("company_phone", form.company_phone || "");
 
-    /* -----------------------------
-       COMPANY ADDRESS
-    ----------------------------- */
+    // Address fields
     formData.append("company_address_line1", form.company_address_line1 || "");
     formData.append("company_address_line2", form.company_address_line2 || "");
     formData.append("company_city", form.company_city || "");
@@ -65,35 +56,24 @@ export default function Settings() {
     formData.append("company_pincode", form.company_pincode || "");
     formData.append("company_country", form.company_country || "India");
 
-    /* -----------------------------
-       GST SETTINGS
-    ----------------------------- */
+    // GST settings
     formData.append("gst_enabled", form.gst_enabled ? 1 : 0);
     formData.append("gst_pricing_mode", form.gst_pricing_mode || "INCLUSIVE");
     formData.append("gst_number", form.gst_number || "");
     formData.append("gst_state_code", form.gst_state_code || "");
 
-    /* -----------------------------
-       CURRENCY
-    ----------------------------- */
+    // Currency
     formData.append("currency_code", form.currency_code || "INR");
 
-    /* -----------------------------
-       GLOBAL BUSINESS TYPE
-    ----------------------------- */
-    formData.append("business_type", form.business_type || "GENERAL");
-
-    /* -----------------------------
-       LOGO
-    ----------------------------- */
-    if (form.company_logo instanceof File) {
+    // Logo
+    if (form.company_logo) {
       formData.append("company_logo", form.company_logo);
     }
 
     try {
       await updateSettings(formData);
       showNotif("Settings updated successfully!", "success");
-      loadSettings(); // reload latest values
+      loadSettings(); // reload updated values
     } catch (err) {
       console.error("❌ Failed to update settings:", err);
       showNotif(
@@ -111,10 +91,7 @@ export default function Settings() {
 
       <Container>
         <Paper sx={{ p: 3 }}>
-          <SettingsForm
-            settings={settings}
-            onSubmit={handleSubmit}
-          />
+          <SettingsForm settings={settings} onSubmit={handleSubmit} />
         </Paper>
       </Container>
 
