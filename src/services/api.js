@@ -2,35 +2,75 @@ import axios from 'axios';
 
 const trimTrailingSlash = (value) => String(value || '').replace(/\/+$/, '');
 
-const getServerOrigin = () => {
-  const raw =
-    process.env.REACT_APP_BACKEND_URL ||
-    process.env.REACT_APP_API_BASE_URL ||
-    'http://localhost:5000';
-
-  const cleaned = trimTrailingSlash(raw);
-
-  try {
-    const url = new URL(cleaned);
-    return url.origin;
-  } catch (error) {
-    const apiIndex = cleaned.toLowerCase().indexOf('/api');
-    return apiIndex >= 0 ? cleaned.slice(0, apiIndex) : cleaned;
-  }
+const stripApiSuffix = (value) => {
+  const cleaned = trimTrailingSlash(value);
+  return cleaned.replace(/\/api$/i, '');
 };
 
-export const SERVER_ORIGIN = trimTrailingSlash(getServerOrigin());
+const isLocalBrowser = () => {
+  if (typeof window === 'undefined') return false;
+  return ['localhost', '127.0.0.1'].includes(window.location.hostname);
+};
 
-const getApiBaseUrl = () => {
-  const configuredApiUrl = trimTrailingSlash(process.env.REACT_APP_API_BASE_URL);
-
-  if (!configuredApiUrl) {
-    return `${SERVER_ORIGIN}/api`;
+const getBackendBaseUrl = () => {
+  // Never let a localhost frontend accidentally call the live ERP backend.
+  // This also avoids production CORS/cookie behaviour while developing locally.
+  if (process.env.NODE_ENV !== 'production' && isLocalBrowser()) {
+    return 'http://localhost:5000';
   }
 
-  return configuredApiUrl.endsWith('/api')
-    ? configuredApiUrl
-    : `${configuredApiUrl}/api`;
+  const backendUrl = trimTrailingSlash(process.env.REACT_APP_BACKEND_URL);
+  const apiBaseUrl = trimTrailingSlash(process.env.REACT_APP_API_BASE_URL);
+
+  if (backendUrl) {
+    return backendUrl;
+  }
+
+  if (apiBaseUrl) {
+    return stripApiSuffix(apiBaseUrl);
+  }
+
+  // Dev fallback only
+  if (process.env.NODE_ENV !== 'production') {
+    return 'http://localhost:5000';
+  }
+
+  // Production same-domain fallback for CloudPanel /backend proxy
+  return `${window.location.origin}/backend`;
+};
+
+export const BACKEND_BASE_URL = trimTrailingSlash(getBackendBaseUrl());
+
+// Backward-compatible export name, but now it preserves /backend.
+export const SERVER_ORIGIN = BACKEND_BASE_URL;
+
+export const resolveBackendAssetUrl = (value) => {
+  const raw = String(value || '').trim();
+  if (!raw) return '';
+  if (/^(?:data:|blob:|https?:\/\/)/i.test(raw)) return raw;
+
+  const normalized = raw.startsWith('/') ? raw : `/${raw}`;
+  if (normalized === '/backend' || normalized.startsWith('/backend/')) {
+    return `${window.location.origin}${normalized}`;
+  }
+
+  return `${BACKEND_BASE_URL}${normalized}`;
+};
+
+const getApiBaseUrl = () => {
+  if (process.env.NODE_ENV !== 'production' && isLocalBrowser()) {
+    return 'http://localhost:5000/api';
+  }
+
+  const configuredApiUrl = trimTrailingSlash(process.env.REACT_APP_API_BASE_URL);
+
+  if (configuredApiUrl) {
+    return configuredApiUrl.endsWith('/api')
+      ? configuredApiUrl
+      : `${configuredApiUrl}/api`;
+  }
+
+  return `${BACKEND_BASE_URL}/api`;
 };
 
 /* ---------------------------------------
@@ -87,9 +127,6 @@ api.interceptors.response.use(
     }
 
     // 403 means forbidden/no permission. Do NOT logout.
-    // Several normal app calls can return 403, for example admin-only
-    // notification/user-permission endpoints. Logging out here causes the
-    // "login then immediately kicked out" issue.
     if (status === 403) {
       return Promise.reject(error);
     }
@@ -104,7 +141,7 @@ api.interceptors.response.use(
 
       try {
         const refreshResponse = await axios.post(
-          `${SERVER_ORIGIN}/auth/refresh`,
+          `${BACKEND_BASE_URL}/auth/refresh`,
           {},
           { withCredentials: true }
         );

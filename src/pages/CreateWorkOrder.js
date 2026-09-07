@@ -13,6 +13,7 @@ import {
 
 import Topbar from "../components/Topbar";
 import NotificationSnackbar from "../components/ui/NotificationSnackbar";
+import WgiymEditor from "../components/ui/WgiymEditor";
 
 import {
   fetchApprovedQuotations,
@@ -221,15 +222,16 @@ export default function CreateWorkOrder() {
         )}
 
         {/* ---------------- SUBMIT ---------------- */}
-        <Button
-          variant="contained"
-          color="primary"
-          fullWidth
-          size="large"
-          onClick={handleSubmit}
-        >
-          Create Work Order
-        </Button>
+        <div className="erp-embedded-form-footer">
+          <Button
+            variant="contained"
+            color="primary"
+            size="large"
+            onClick={handleSubmit}
+          >
+            Create Work Order
+          </Button>
+        </div>
       </Box>
 
       {/* Notifications */}

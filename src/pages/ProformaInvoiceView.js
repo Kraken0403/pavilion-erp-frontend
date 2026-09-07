@@ -11,6 +11,7 @@ import { sendProformaEmail, sendProformaWhatsApp } from '../services/invoiceServ
 import Topbar from '../components/Topbar'
 import NotificationSnackbar from '../components/ui/NotificationSnackbar'
 import PageLoader from '../components/ui/PageLoader'
+import DetailBackLink from '../components/ui/DetailBackLink'
 import {
   getProformaInvoiceById,
   createTaxInvoiceFromProforma,
@@ -131,8 +132,9 @@ function ProformaInvoiceView() {
   
 
   return (
-    <div className="quotation-detail-container">
+    <div className="quotation-detail-container finance-document-detail">
       <Topbar />
+      <DetailBackLink to="/proforma-invoices" label="Proforma invoices" />
 
       {loading ? (
         <div className="quotation-card">
@@ -159,13 +161,14 @@ function ProformaInvoiceView() {
 
             <div className="quotation-actions">
               <Chip
+                className="status-chip"
                 label={formatStatusLabel(invoice.status)}
                 color={statusColors[invoice.status] || 'default'}
                 size="small"
               />
 
               <button
-                className="secondary-btn"
+                className="hs-listing__create"
                 onClick={handleExportPdf}
                 style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
               >
@@ -266,8 +269,14 @@ function ProformaInvoiceView() {
             <Box sx={{ maxWidth: 360, ml: 'auto' }}>
               <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                 <Typography variant="body2" color="text.secondary">Subtotal</Typography>
-                <Typography variant="body2">{formatMoney(invoice.subtotal)}</Typography>
+                <Typography variant="body2">{formatMoney(invoice.display_taxable_subtotal ?? invoice.subtotal)}</Typography>
               </Box>
+              {Number(invoice._computed_discount || invoice.discount || 0) > 0 && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary">Discount{invoice.discount_percent ? ` (${invoice.discount_percent}%)` : ''}</Typography>
+                  <Typography variant="body2">-{formatMoney(invoice._computed_discount || invoice.discount)}</Typography>
+                </Box>
+              )}
               {Number(invoice.cgst_total || 0) > 0 && (
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                   <Typography variant="body2" color="text.secondary">CGST</Typography>

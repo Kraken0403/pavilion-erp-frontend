@@ -1,109 +1,47 @@
-import React, { useEffect, useMemo, useState } from 'react';
-import { Button, Chip } from '@mui/material';
+import React, { useEffect, useState } from 'react';
+import { Close, PaymentsOutlined } from '@mui/icons-material';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, TextField } from '@mui/material';
+import HubSpotListing from '../ui/HubSpotListing';
 import { getVendorPayables, recordVendorPayment } from '../../services/vendorService';
 import { formatDate } from '../../utils/dateFormatter';
 
-const formatCurrency = (value) => new Intl.NumberFormat('en-IN', {
-  style: 'currency', currency: 'INR', minimumFractionDigits: 2, maximumFractionDigits: 2,
-}).format(Number(value || 0));
+const money = (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(Number(value || 0));
+const fields = [
+  { key: 'vendor_name', label: 'Vendor' }, { key: 'reference', label: 'Reference' },
+  { key: 'product_name', label: 'Product' }, { key: 'amount', label: 'Amount' },
+  { key: 'paid_amount', label: 'Paid' }, { key: 'balance', label: 'Balance' },
+  { key: 'status', label: 'Status', options: ['pending', 'partial', 'paid'] },
+  { key: 'created_at', label: 'Created' }, { key: '_action', label: 'Action' },
+];
 
-function VendorPayablesPanel() {
+export default function VendorPayablesPanel() {
   const [rows, setRows] = useState([]);
   const [summary, setSummary] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-
+  const [activeRow, setActiveRow] = useState(null);
+  const [amount, setAmount] = useState('');
+  const [error, setError] = useState('');
   const loadRows = async () => {
-    setLoading(true);
-    try {
-      const res = await getVendorPayables({ status: '' });
-      setRows(res?.data || []);
-      setSummary(res?.summary || {});
-    } catch (err) {
-      console.error('Vendor payables load failed', err);
-    } finally {
-      setLoading(false);
-    }
+    const response = await getVendorPayables({ status: '' });
+    setSummary(response?.summary || {});
+    setRows((response?.data || []).map((row) => ({
+      ...row,
+      reference: row.work_order_number || row.quotation_number || '—',
+      product_name: row.product_name || row.description || '—',
+      balance: Number(row.amount || 0) - Number(row.paid_amount || 0),
+    })));
   };
-
-  useEffect(() => { loadRows(); }, []);
-
-  const filteredRows = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return rows;
-    return rows.filter((row) => [row.vendor_name, row.product_name, row.work_order_number, row.quotation_number, row.status]
-      .some((v) => String(v || '').toLowerCase().includes(q)));
-  }, [rows, search]);
-
-  const handleRecordPayment = async (row) => {
-    const balance = Number(row.amount || 0) - Number(row.paid_amount || 0);
-    if (balance <= 0) return;
-    const raw = window.prompt(`Enter vendor payment amount for ${row.vendor_name || 'vendor'}`, String(balance));
-    if (!raw) return;
-    const amount = Number(raw);
-    if (!Number.isFinite(amount) || amount <= 0) return window.alert('Enter a valid payment amount');
-    await recordVendorPayment(row.id, amount);
-    await loadRows();
+  useEffect(() => { loadRows().catch(() => setRows([])); }, []);
+  const openPayment = (row) => { setActiveRow(row); setAmount(String(row.balance)); setError(''); };
+  const savePayment = async () => {
+    const value = Number(amount);
+    if (!Number.isFinite(value) || value <= 0 || value > Number(activeRow?.balance || 0)) { setError('Enter an amount greater than zero and no more than the outstanding balance.'); return; }
+    await recordVendorPayment(activeRow.id, value);
+    setActiveRow(null); setAmount(''); await loadRows();
   };
-
-  return (
-    <div className="table-container module-card vendor-payables-panel">
-      <div className="module-header compact">
-        <div>
-          <h2>Vendor Payables</h2>
-          <p>Auto-created from approved quotations and work orders when product vendors are selected.</p>
-        </div>
-        <div className="search-input slim">
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search vendor payable" />
-        </div>
-      </div>
-
-      <div className="module-summary">
-        <div className="summary-item"><div className="summary-label">Total Payable</div><div className="summary-value">{formatCurrency(summary.total_amount)}</div></div>
-        <div className="summary-item"><div className="summary-label">Paid</div><div className="summary-value">{formatCurrency(summary.paid_amount)}</div></div>
-        <div className="summary-item"><div className="summary-label">Balance</div><div className="summary-value">{formatCurrency(summary.balance_amount)}</div></div>
-      </div>
-
-      <table className="leads-table">
-        <thead>
-          <tr>
-            <th>Vendor</th>
-            <th>Reference</th>
-            <th>Product</th>
-            <th>Amount</th>
-            <th>Paid</th>
-            <th>Balance</th>
-            <th>Status</th>
-            <th>Created</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody>
-          {loading ? (
-            <tr><td colSpan={9} className="table-empty-message">Loading vendor payables...</td></tr>
-          ) : filteredRows.length ? filteredRows.map((row) => (
-            <tr key={row.id}>
-              <td>{row.vendor_name || '—'}</td>
-              <td>{row.work_order_number || row.quotation_number || '—'}</td>
-              <td>{row.product_name || row.description || '—'}</td>
-              <td>{formatCurrency(row.amount)}</td>
-              <td>{formatCurrency(row.paid_amount)}</td>
-              <td>{formatCurrency(Number(row.amount || 0) - Number(row.paid_amount || 0))}</td>
-              <td><Chip size="small" label={row.status || 'pending'} color={row.status === 'paid' ? 'success' : row.status === 'partial' ? 'warning' : 'default'} /></td>
-              <td>{row.created_at ? formatDate(row.created_at) : '—'}</td>
-              <td>
-                {row.status !== 'paid' ? (
-                  <Button size="small" variant="outlined" onClick={() => handleRecordPayment(row)}>Record Payment</Button>
-                ) : '—'}
-              </td>
-            </tr>
-          )) : (
-            <tr><td colSpan={9} className="table-empty-message">No vendor payables yet</td></tr>
-          )}
-        </tbody>
-      </table>
-    </div>
-  );
+  return <section className="vendor-payables-section"><div className="module-summary vendor-payables-summary"><div className="summary-item"><div className="summary-label">Total payable</div><div className="summary-value">{money(summary.total_amount)}</div></div><div className="summary-item"><div className="summary-label">Paid</div><div className="summary-value">{money(summary.paid_amount)}</div></div><div className="summary-item"><div className="summary-label">Balance</div><div className="summary-value">{money(summary.balance_amount)}</div></div></div><div className="vendor-payables-listing"><HubSpotListing title="Vendor payables" rows={rows} initialFields={fields} onRefresh={loadRows} renderValue={(field, value, row) => {
+    if (['amount', 'paid_amount', 'balance'].includes(field)) return money(value);
+    if (field === 'created_at') return value ? formatDate(value) : '—';
+    if (field === '_action') return row.status !== 'paid' ? <button className="secondary-btn" onClick={(event) => { event.stopPropagation(); openPayment(row); }}><PaymentsOutlined />Record payment</button> : '—';
+    return value ?? '—';
+  }} /></div><Dialog className="erp-form-drawer" open={Boolean(activeRow)} onClose={() => setActiveRow(null)} fullWidth maxWidth="sm"><DialogTitle>Record vendor payment<IconButton aria-label="Close" onClick={() => setActiveRow(null)} sx={{ position: 'absolute', right: 10, top: 10 }}><Close /></IconButton></DialogTitle><DialogContent dividers><p>{activeRow?.vendor_name} · Outstanding {money(activeRow?.balance)}</p><TextField autoFocus fullWidth type="number" label="Payment amount" value={amount} onChange={(event) => { setAmount(event.target.value); setError(''); }} error={Boolean(error)} helperText={error} sx={{ mt: 2 }} inputProps={{ min: 0, max: activeRow?.balance, step: '0.01' }} /></DialogContent><DialogActions><Button onClick={() => setActiveRow(null)}>Cancel</Button><Button variant="contained" onClick={savePayment}>Record payment</Button></DialogActions></Dialog></section>;
 }
-
-export default VendorPayablesPanel;

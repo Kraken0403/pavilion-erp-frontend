@@ -1,7 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react'
 import {
   Autocomplete,
-  Box,
   TextField,
   Typography,
 } from '@mui/material'
@@ -13,9 +12,8 @@ function QuotationItemsSection({
   items,
   setItems,
   updateItem,
-  addItem,
+  onAddProducts,
   reorderItems,
-  setOpenProductDialog,
   isLocked,
   products = [],
 }) {
@@ -99,9 +97,9 @@ function QuotationItemsSection({
         </div>
 
         {!isLocked && (
-          <button className="add-item-btn" type="button" onClick={addItem}>
+          <button className="add-item-btn" type="button" onClick={onAddProducts}>
             <AddIcon fontSize="small" />
-            Add Product
+            Add Products
           </button>
         )}
       </div>
@@ -195,9 +193,22 @@ function QuotationItemsSection({
                             const baseItem = {
                               ...items[index],
                               product: val,
+                              product_id: val.id ?? val.product_id ?? val._id,
+                              product_name: normalizeProductLabel(val),
+                              variant_id: val.variant_id ?? null,
+                              variant_sku: val.variant_sku || val.sku || '',
                               cost_price: val.cost_price ?? val.cost ?? 0,
+                              cost_price_qty: val.cost_price_qty ?? 1,
+                              cost_price_unit: val.cost_price_unit || 'unit',
+                              cost_unit: val.cost_price_unit || 'unit',
+                              cost_pricing_mode: val.cost_pricing_mode || 'absolute',
+                              cost_discount_percent: val.cost_discount_percent ?? 0,
                               selling_price: val.selling_price ?? val.price ?? 0,
+                              selling_price_qty: val.selling_price_qty ?? 1,
+                              selling_price_unit: val.selling_price_unit || 'unit',
                               gst_rate: val.gst_rate ?? 0,
+                              attributes_json: val.attributes_json || {},
+                              packaging_json: val.packaging_json || {},
                               discount: items[index].discount ?? 0,
                               quantity: items[index].quantity ?? 1,
                             }
@@ -211,21 +222,6 @@ function QuotationItemsSection({
                             <li {...props} key={option.__id}>
                               {option.__label}
                             </li>
-                          )}
-                          PaperComponent={({ children }) => (
-                            <Box className="qi-dropdown">
-                              {children}
-                              {!isLocked && (
-                                <Box
-                                  className="qi-add-option"
-                                  onMouseDown={(e) => e.preventDefault()}
-                                  onClick={() => setOpenProductDialog(true)}
-                                >
-                                  <AddIcon fontSize="small" />
-                                  Add Product
-                                </Box>
-                              )}
-                            </Box>
                           )}
                           renderInput={(params) => (
                             <TextField
@@ -377,16 +373,6 @@ function QuotationItemsSection({
             </table>
           </div>
 
-          {!isLocked && (
-            <button
-              className="add-item-btn add-item-btn--bottom"
-              type="button"
-              onClick={addItem}
-            >
-              <AddIcon fontSize="small" />
-              Add Product
-            </button>
-          )}
         </>
       ) : (
         <div className="qi-empty-state">

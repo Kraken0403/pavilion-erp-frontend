@@ -1,8 +1,10 @@
 import React from 'react'
+import DetailBackLink from '../components/ui/DetailBackLink'
 
 function CustomerDetail() {
   return (
     <div style={{ padding: 24 }}>
+      <DetailBackLink to="/customers" label="Customers" />
       <h2>Customer detail removed</h2>
       <p>This page was removed. Use the Customers list to view records.</p>
     </div>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   getFilesByLead,
   uploadFile,
@@ -12,6 +12,7 @@ import ConfirmDialog from "../ui/ConfirmDialog";
 import NotificationSnackbar from "../ui/NotificationSnackbar";
 
 import "../../assets/styles/FilesTab.scss";
+import { formatDateTime } from "../../utils/dateFormatter";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -31,14 +32,14 @@ const FilesTab = ({ leadId }) => {
     severity: "info"
   });
 
-  useEffect(() => {
-    if (leadId) fetchFiles();
-  }, [leadId]);
-
-  const fetchFiles = async () => {
+  const fetchFiles = useCallback(async () => {
     const data = await getFilesByLead(leadId);
     setFiles(Array.isArray(data) ? data : []);
-  };
+  }, [leadId]);
+
+  useEffect(() => {
+    if (leadId) fetchFiles();
+  }, [leadId, fetchFiles]);
 
   /* -------------------------
      FILE SELECT
@@ -121,15 +122,6 @@ const FilesTab = ({ leadId }) => {
     }
   };
 
-  /* -------------------------
-     DATE FORMATTER (SAFE)
-  ------------------------- */
-  const formatDate = (date) => {
-    if (!date) return "Just now";
-    const d = new Date(date);
-    return isNaN(d.getTime()) ? "Just now" : d.toLocaleString();
-  };
-
   return (
     <div className="files-tab">
 
@@ -180,7 +172,7 @@ const FilesTab = ({ leadId }) => {
               <p className="file-name">{f.file_name}</p>
 
               <div className="file-footer">
-                <small>{formatDate(f.created_at)}</small>
+                <small>{formatDateTime(f.created_at) || 'Just now'}</small>
 
                 <div className="file-actions">
                   <a

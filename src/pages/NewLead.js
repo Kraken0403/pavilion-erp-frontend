@@ -4,13 +4,15 @@ import Topbar from '../components/Topbar';
 import EditForm from '../components/EditForm';
 import useLeadForm from '../hooks/useLeadForm';
 
-const NewLead = () => {
+const NewLead = ({ onSaved }) => {
     const initialLeadData = {
         first_name: '',
         last_name: '',
         email: '',
         phone_number: '',
         company_name: '',
+        company_id: '',
+        designation: '',
         lead_status: 'new',
         contact_name: '',
         priority: 'medium',
@@ -19,6 +21,9 @@ const NewLead = () => {
         hotness: 1,
         amount: 0,
         notes: '',
+        source: 'CRM',
+        billing_address: '', billing_city: '', billing_state: '', billing_pincode: '',
+        shipping_address: '', shipping_city: '', shipping_state: '', shipping_pincode: '',
         gst_number: '', 
         user: 'default_user', 
     };
@@ -34,7 +39,7 @@ const NewLead = () => {
         handleCloseNotification,
         setActiveTab,
         sendEmailtoSp
-    } = useLeadForm(initialLeadData);
+    } = useLeadForm(initialLeadData, false, null, onSaved);
 
     return (
         <>

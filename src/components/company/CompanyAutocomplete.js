@@ -19,7 +19,7 @@ function CompanyAutocomplete({ value, onChange, onAddCompany }) {
   const fetchCompanies = async () => {
     setLoading(true);
     try {
-      const companies = await getCompanies();
+      const companies = await getCompanies('CUSTOMER');
       setAllCompanies(companies);
       const matches = companies.filter((c) =>
         c.name.toLowerCase().includes(inputValue.toLowerCase())

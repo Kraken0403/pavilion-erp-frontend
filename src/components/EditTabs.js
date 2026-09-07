@@ -5,7 +5,7 @@ const EditTabs = ({ activeTab, setActiveTab, tabs, leadData, title }) => {
   return (
     <div className="tabs-wrapper">
       <div className="tabs-action-btns">
-        <p>Lead Name: {title}</p>
+        <p>Contact: {title}</p>
         <div className="next-btn">
           {/* Optional action button or leave empty */}
         </div>

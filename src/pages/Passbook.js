@@ -10,9 +10,8 @@ import {
   Typography,
 } from '@mui/material';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import DownloadIcon from '@mui/icons-material/Download';
-import * as XLSX from 'xlsx';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
+import HubSpotListing from '../components/ui/HubSpotListing';
 import {
   createPassbookAccount,
   createPassbookEntry,
@@ -53,13 +52,6 @@ function Passbook() {
   const [accountModalOpen, setAccountModalOpen] = useState(false);
   const [entryModalOpen, setEntryModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [filters, setFilters] = useState({
-    startDate: '',
-    endDate: '',
-    entryDate: '',
-    type: '',
-    search: '',
-  });
 
   const selectedAccount = useMemo(
     () => accounts.find((a) => String(a.id) === String(accountId)),
@@ -79,14 +71,7 @@ function Passbook() {
   const loadEntries = useCallback(async (id = accountId) => {
     if (!id) return;
 
-    const params = {
-      account_id: id,
-      start_date: filters.startDate || undefined,
-      end_date: filters.endDate || undefined,
-      date: filters.entryDate || undefined,
-      type: filters.type || undefined,
-      q: filters.search || undefined,
-    };
+    const params = { account_id: id };
 
     const [entryRows, summaryData] = await Promise.all([
       getPassbookEntries(params),
@@ -95,14 +80,13 @@ function Passbook() {
 
     setEntries(Array.isArray(entryRows) ? entryRows : []);
     setSummary(summaryData || {});
-  }, [accountId, filters]);
+  }, [accountId]);
 
   useEffect(() => { loadAccounts(); }, []);
   useEffect(() => { if (accountId) loadEntries(accountId); }, [accountId, loadEntries]);
 
   const handleOpenAccount = (id) => {
     setAccountId(String(id));
-    setFilters({ startDate: '', endDate: '', entryDate: '', type: '', search: '' });
   };
 
   const handleCreateAccount = async () => {
@@ -132,23 +116,6 @@ function Passbook() {
     await loadEntries(accountId);
     await loadAccounts();
     return null;
-  };
-
-  const handleExport = () => {
-    const rows = entries.map((entry) => ({
-      Date: entry.entry_date ? formatDate(entry.entry_date) : '',
-      Account: entry.account_name || selectedAccount?.account_name || '',
-      Type: entry.type || '',
-      Category: entry.category || '',
-      Party: entry.party_name || '',
-      Amount: Number(entry.amount || 0),
-      Notes: entry.notes || '',
-    }));
-
-    const ws = XLSX.utils.json_to_sheet(rows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, selectedAccount?.account_name || 'Passbook');
-    XLSX.writeFile(wb, `${selectedAccount?.account_name || 'passbook'}-entries.xlsx`);
   };
 
   const renderAccountList = () => (
@@ -195,11 +162,11 @@ function Passbook() {
 
   const renderEntries = () => (
     <>
-      <div className="table-container module-card">
+      <div className="table-container module-card passbook-header-card">
         <div className="module-header compact">
           <div className="passbook-title-row">
             <button className="secondary-btn" onClick={() => setAccountId('')}>
-              <ArrowBackIcon />
+              <ChevronLeftIcon />
               <span>Accounts</span>
             </button>
             <div>
@@ -208,16 +175,6 @@ function Passbook() {
             </div>
           </div>
 
-          <div className="toolbar-actions">
-            <button className="secondary-btn" onClick={handleExport} disabled={!entries.length}>
-              <DownloadIcon />
-              <span>Export</span>
-            </button>
-            <button className="primary-btn" onClick={() => setEntryModalOpen(true)}>
-              <AddCircleOutlineIcon />
-              <span>Add Entry</span>
-            </button>
-          </div>
         </div>
 
         <div className="module-summary">
@@ -240,73 +197,12 @@ function Passbook() {
         </div>
       </div>
 
-      <div className="table-container module-card passbook-filter-card">
-        <div className="module-header compact">
-          <div>
-            <h2>Filters</h2>
-            <p>Date-wise, range-wise, type-wise and text search filters.</p>
-          </div>
-          <button
-            className="secondary-btn"
-            onClick={() => setFilters({ startDate: '', endDate: '', entryDate: '', type: '', search: '' })}
-          >
-            Clear Filters
-          </button>
-        </div>
-
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={3}>
-            <Typography className="field-label">Search</Typography>
-            <TextField className="form-input" fullWidth placeholder="Party, category, notes" value={filters.search} onChange={(e) => setFilters((p) => ({ ...p, search: e.target.value }))} />
-          </Grid>
-          <Grid item xs={12} md={2}>
-            <Typography className="field-label">Exact Date</Typography>
-            <TextField className="form-input" fullWidth type="date" value={filters.entryDate} onChange={(e) => setFilters((p) => ({ ...p, entryDate: e.target.value }))} />
-          </Grid>
-          <Grid item xs={12} md={2}>
-            <Typography className="field-label">From</Typography>
-            <TextField className="form-input" fullWidth type="date" value={filters.startDate} onChange={(e) => setFilters((p) => ({ ...p, startDate: e.target.value }))} />
-          </Grid>
-          <Grid item xs={12} md={2}>
-            <Typography className="field-label">To</Typography>
-            <TextField className="form-input" fullWidth type="date" value={filters.endDate} onChange={(e) => setFilters((p) => ({ ...p, endDate: e.target.value }))} />
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Typography className="field-label">Type</Typography>
-            <TextField className="form-input" fullWidth select value={filters.type} onChange={(e) => setFilters((p) => ({ ...p, type: e.target.value }))}>
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="CREDIT">Credit</MenuItem>
-              <MenuItem value="DEBIT">Debit</MenuItem>
-            </TextField>
-          </Grid>
-        </Grid>
-      </div>
-
-      <div className="table-container">
-        <table className="leads-table passbook-table">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Type</th>
-              <th>Category</th>
-              <th>Party</th>
-              <th>Amount</th>
-              <th>Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.length ? entries.map((entry) => (
-              <tr key={entry.id}>
-                <td>{entry.entry_date ? formatDate(entry.entry_date) : '—'}</td>
-                <td><span className={`status-pill ${entry.type === 'CREDIT' ? 'status-approved' : 'status-pending'}`}>{entry.type}</span></td>
-                <td>{entry.category || '—'}</td>
-                <td>{entry.party_name || '—'}</td>
-                <td>{formatCurrency(entry.amount)}</td>
-                <td><span className="cell-text">{entry.notes || '—'}</span></td>
-              </tr>
-            )) : <tr><td colSpan={6} className="table-empty-message">No passbook entries found</td></tr>}
-          </tbody>
-        </table>
+      <div className="passbook-listing">
+        <HubSpotListing title="Passbook entries" createLabel="Add entry" onCreate={() => setEntryModalOpen(true)} rows={entries} initialFields={[
+          { key: 'entry_date', label: 'Date' }, { key: 'type', label: 'Type', options: ['CREDIT', 'DEBIT'] },
+          { key: 'category', label: 'Category' }, { key: 'party_name', label: 'Party' },
+          { key: 'amount', label: 'Amount' }, { key: 'notes', label: 'Notes' },
+        ]} onRefresh={() => loadEntries(accountId)} renderValue={(field, value) => field === 'entry_date' ? (value ? formatDate(value) : '—') : field === 'amount' ? formatCurrency(value) : (value || '—')} />
       </div>
     </>
   );
@@ -315,7 +211,7 @@ function Passbook() {
     <div className="leads-table-container passbook-page">
       {accountId ? renderEntries() : renderAccountList()}
 
-      <Dialog open={accountModalOpen} onClose={() => setAccountModalOpen(false)} maxWidth="sm" fullWidth PaperProps={{ className: 'flowbite-card' }}>
+      <Dialog className="erp-form-drawer" open={accountModalOpen} onClose={() => setAccountModalOpen(false)} maxWidth="sm" fullWidth PaperProps={{ className: 'flowbite-card' }}>
         <DialogTitle className="dialog-title">Add Account</DialogTitle>
         <DialogContent className="dialog-content">
           <Typography className="field-label">Account Name</Typography>
@@ -331,7 +227,7 @@ function Passbook() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={entryModalOpen} onClose={() => setEntryModalOpen(false)} maxWidth="md" fullWidth PaperProps={{ className: 'flowbite-card' }}>
+      <Dialog className="erp-form-drawer" open={entryModalOpen} onClose={() => setEntryModalOpen(false)} maxWidth="md" fullWidth PaperProps={{ className: 'flowbite-card' }}>
         <DialogTitle className="dialog-title">Add Entry</DialogTitle>
         <DialogContent className="dialog-content">
           <Grid container spacing={2}>

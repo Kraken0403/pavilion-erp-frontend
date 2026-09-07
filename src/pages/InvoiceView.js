@@ -1,359 +1,48 @@
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import DOMPurify from 'dompurify';
-import { useParams } from "react-router-dom";
-import { Box, Chip, Divider, Grid, Typography, Menu, MenuItem, IconButton, ListItemIcon } from "@mui/material";
-import PictureAsPdfOutlinedIcon from "@mui/icons-material/PictureAsPdfOutlined";
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import ShareIcon from '@mui/icons-material/Share';
-import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
-import Topbar from "../components/Topbar";
-import NotificationSnackbar from "../components/ui/NotificationSnackbar";
-import PageLoader from "../components/ui/PageLoader";
-import ChannelSelectModal from "../components/ui/ChannelSelectModal";
+import { useParams } from 'react-router-dom';
+import { AddCircleOutline, PictureAsPdfOutlined, ShareOutlined } from '@mui/icons-material';
+import SingleRecordWorkspace from '../components/ui/SingleRecordWorkspace';
+import NotificationSnackbar from '../components/ui/NotificationSnackbar';
+import ChannelSelectModal from '../components/ui/ChannelSelectModal';
+import StatusUpdateModal from '../components/invoices/StatusUpdateModal';
+import { downloadInvoicePdf, getInvoiceById, sendInvoiceEmail, sendInvoiceWhatsApp } from '../services/invoiceService';
+import { formatQty, formatMoney } from '../utils/formatters';
+import '../assets/styles/QuotationDetail.scss';
 
-import {
-  getInvoiceById,
-  downloadInvoicePdf,
-} from "../services/invoiceService";
-import { sendInvoiceEmail, sendInvoiceWhatsApp } from "../services/invoiceService";
-import StatusUpdateModal from "../components/invoices/StatusUpdateModal";
-import { formatDate as formatLocalDate } from "../utils/dateFormatter";
-import { formatStatusLabel } from "../utils/statusFormatter";
-import { formatQty, formatMoney as fm } from '../utils/formatters'
+const customerName = (invoice) => [invoice?.first_name, invoice?.last_name].filter(Boolean).join(' ') || '—';
+const money = (value) => formatMoney(value);
 
-import "../assets/styles/LeadsTable.scss";
-import "../assets/styles/QuotationDetail.scss";
-
-const statusColors = {
-  draft: "default",
-  issued: "primary",
-  "part-payment": "warning",
-  paid: "success",
-  cancelled: "error",
-};
-
-function InvoiceView() {
+export default function InvoiceView() {
   const { id } = useParams();
-
   const [invoice, setInvoice] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [notification, setNotification] = useState({ open:false, message:'', severity:'success' });
+  const [shareOpen, setShareOpen] = useState(false);
+  const [receiptOpen, setReceiptOpen] = useState(false);
+  const notify = useCallback((message, severity = 'success') => setNotification({ open:true, message, severity }), []);
+  const loadInvoice = useCallback(async () => { setLoading(true); try { setInvoice(await getInvoiceById(id)); } catch (error) { setInvoice(null); notify(error?.response?.data?.error || 'Failed to load invoice', 'error'); } finally { setLoading(false); } }, [id, notify]);
+  useEffect(() => { loadInvoice(); }, [loadInvoice]);
+  const download = async () => { try { await downloadInvoicePdf(id); } catch (_) { notify('PDF download failed.', 'error'); } };
+  const share = async ({ sendEmail = true, sendWhatsApp = false }) => { try { if (sendEmail) await sendInvoiceEmail(id); if (sendWhatsApp) await sendInvoiceWhatsApp(id); notify('Invoice shared'); } catch (_) { notify('Failed to share invoice.', 'error'); } finally { setShareOpen(false); } };
 
-  const [notification, setNotification] = useState({
-    open: false,
-    message: "",
-    severity: "info",
-  });
-  const [channelModalOpen, setChannelModalOpen] = useState(false);
-  const [actionsAnchor, setActionsAnchor] = useState(null);
-  const [statusModalOpen, setStatusModalOpen] = useState(false);
-  const [statusModalInvoiceId, setStatusModalInvoiceId] = useState(null);
-  
+  const fields = useMemo(() => [
+    { key:'status', label:'Status', readOnly:true, render:(value) => <span className={`status-pill status-${String(value || '').toLowerCase()}`}>{value || 'draft'}</span> },
+    { key:'issue_date', label:'Issue date', type:'date', readOnly:true }, { key:'due_date', label:'Due date', type:'date', readOnly:true },
+    { key:'customer_name', label:'Customer', readOnly:true }, { key:'customer_email', label:'Email', readOnly:true }, { key:'customer_phone', label:'Phone', readOnly:true },
+    { key:'subtotal_display', label:'Subtotal', readOnly:true }, { key:'discount_display', label:'Discount', readOnly:true }, { key:'tax_display', label:'Tax', readOnly:true }, { key:'total_display', label:'Grand total', readOnly:true },
+  ], []);
+  const record = useMemo(() => invoice ? ({ ...invoice, customer_name:customerName(invoice), customer_email:invoice.lead?.email || invoice.billing_snapshot?.email || '—', customer_phone:invoice.lead?.phone || invoice.billing_snapshot?.phone || '—', subtotal_display:money(invoice.display_taxable_subtotal ?? invoice.subtotal), discount_display:money(invoice._computed_discount || 0), tax_display:money(Number(invoice.cgst_total || 0) + Number(invoice.sgst_total || 0) + Number(invoice.igst_total || 0)), total_display:money(invoice.grand_total) }) : null, [invoice]);
+  const cards = useMemo(() => invoice ? [
+    { id:'customer-details', title:'Customer Details', position:'left', deletable:false, editable:false, fieldKeys:['customer_name', 'customer_email', 'customer_phone'] },
+    { id:'invoice-details', title:'Invoice Details', position:'left', deletable:false, editable:false, fieldKeys:['issue_date', 'due_date'] },
+    { id:'invoice-actions', title:'Actions', position:'right', fixed:true, disableDrag:true, deletable:false, allowSettings:false, titleEditable:false, fieldKeys:[], customContent:() => <div className="record-action-buttons"><button type="button" className="hs-listing__create" title="Download PDF" aria-label="Download PDF" onClick={download}><PictureAsPdfOutlined /></button><button type="button" className="hs-listing__create" title="Generate receipt" aria-label="Generate receipt" onClick={() => setReceiptOpen(true)}><AddCircleOutline /></button><button type="button" className="hs-listing__create" title="Share invoice" aria-label="Share invoice" onClick={() => setShareOpen(true)}><ShareOutlined /></button></div> },
+    { id:'invoice-totals', title:'Invoice Totals', position:'right', deletable:false, editable:false, fieldKeys:['subtotal_display', 'discount_display', 'tax_display', 'total_display'] },
+  ] : [], [invoice]);
+  const summaryCard = useMemo(() => invoice ? ({ titleFieldKey:'invoice_number', backTo:'/invoices', backLabel:'Invoices', subtitle:customerName(invoice), fieldKeys:['status', 'issue_date', 'due_date'], editable:false, actions:[{ label:'Download PDF', icon:<PictureAsPdfOutlined />, onClick:download }, { label:'Share invoice', icon:<ShareOutlined />, onClick:() => setShareOpen(true) }] }) : null, [invoice]);
+  const lineItems = <div className="quotation-order-lines-workspace"><div className="quotation-items-section"><div className="quotation-section-heading qi-section-heading"><div><h2 className="section-title"><span className="sep" />Invoice items</h2><p className="quotation-section-subtitle">Products and billed amounts for this invoice.</p></div></div><div className="qi-table-wrap"><table className="qi-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>GST</th><th>Total</th></tr></thead><tbody>{(invoice?.items || []).length ? invoice.items.map((item) => <tr key={item.id}><td dangerouslySetInnerHTML={{ __html:DOMPurify.sanitize(String(item.description || '—')) }} /><td>{formatQty(item.quantity)}</td><td>{money(item.unit_price)}</td><td>{item.gst_rate || 0}%</td><td>{money(item.line_total)}</td></tr>) : <tr><td colSpan="5" className="empty-lines">No invoice items found.</td></tr>}</tbody></table></div></div></div>;
 
-  /* ================= FETCH ================= */
-
-  const loadInvoice = useCallback(async () => {
-    try {
-      setLoading(true);
-      const data = await getInvoiceById(id);
-      setInvoice(data);
-    } catch {
-      setNotification({
-        open: true,
-        message: "❌ Failed to load invoice.",
-        severity: "error",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [id]);
-
-  const formatMoney = (value) => fm(value)
-
-  const getShareSubtitle = () => {
-    const items = invoice?.items || []
-    if (!items.length) return ''
-    const visible = items.slice(0, 5)
-    const parts = visible.map(i => {
-      const qtyDisplay = formatQty(i.quantity)
-      return `${i.description} x${qtyDisplay} · ${fm(i.line_total || i.lineTotal || 0)}`
-    })
-    const more = items.length > 5 ? ` · +${items.length - 5} more` : ''
-    return parts.join(' · ') + more
-  }
-
-  const customerName = [invoice?.first_name, invoice?.last_name]
-    .filter(Boolean)
-    .join(" ")
-    .trim() || "—";
-
-  const customerEmail =
-    invoice?.lead?.email ||
-    invoice?.billing_snapshot?.email ||
-    "—";
-
-  const customerPhone =
-    invoice?.lead?.phone ||
-    invoice?.billing_snapshot?.phone ||
-    "—";
-
-  useEffect(() => {
-    loadInvoice();
-  }, [loadInvoice]);
-
-  /* ================= PDF ================= */
-
-  const handleExportPdf = async () => {
-    try {
-      await downloadInvoicePdf(id);
-    } catch {
-      setNotification({
-        open: true,
-        message: "❌ PDF download failed.",
-        severity: "error",
-      });
-    }
-  };
-
-  const handleSendInvoiceChannels = async ({ sendEmail = true, sendWhatsApp = false } = {}) => {
-    try {
-      if (sendEmail) await sendInvoiceEmail(id);
-      if (sendWhatsApp) await sendInvoiceWhatsApp(id);
-      setNotification({ open: true, message: '📩 Notification sent', severity: 'success' });
-    } catch (err) {
-      setNotification({ open: true, message: '❌ Failed to send notification', severity: 'error' });
-    } finally {
-      setChannelModalOpen(false);
-    }
-  };
-
-  const openActionsMenu = (e) => setActionsAnchor(e.currentTarget);
-  const closeActionsMenu = () => setActionsAnchor(null);
-
-  const handleGenerateReceipt = (e) => {
-    e.stopPropagation?.();
-    setStatusModalInvoiceId(id);
-    setStatusModalOpen(true);
-    closeActionsMenu();
-  }
-
-  const handleShareFromActions = (e) => {
-    e.stopPropagation?.();
-    setChannelModalOpen(true);
-    closeActionsMenu();
-  }
-
-  /* ================= UI ================= */
-
-  return (
-    <div className="quotation-detail-container">
-      <Topbar />
-
-      {loading ? (
-        <div className="quotation-card">
-          <PageLoader message="Loading invoice details..." minHeight={220} />
-        </div>
-      ) : !invoice ? (
-        <div className="quotation-card" style={{ padding: "60px 0", textAlign: "center" }}>
-          <Typography variant="h6">No invoice found</Typography>
-        </div>
-      ) : (
-        <>
-          <div className="quotation-header">
-            <div className="quotation-head">
-              <div className="qh-content">
-                <h2>Invoice #{invoice.invoice_number}</h2>
-              </div>
-              <div className="quotation-meta">
-                <span>Issue Date: {formatLocalDate(invoice.issue_date) || "—"}</span>
-                <span className="chip">
-                  <span>{formatStatusLabel(invoice.status)}</span>
-                </span>
-              </div>
-            </div>
-
-            <div className="quotation-actions">
-              <Chip
-                label={formatStatusLabel(invoice.status)}
-                color={statusColors[invoice.status] || "default"}
-                size="small"
-              />
-
-              <button
-                className="secondary-btn"
-                onClick={handleExportPdf}
-                style={{ display: "flex", alignItems: "center", gap: "6px" }}
-              >
-                <PictureAsPdfOutlinedIcon fontSize="small" />
-                Export PDF
-              </button>
-
-              <div>
-                <IconButton size="small" onClick={openActionsMenu}>
-                  <MoreVertIcon />
-                </IconButton>
-                <Menu
-                  anchorEl={actionsAnchor}
-                  open={Boolean(actionsAnchor)}
-                  onClose={closeActionsMenu}
-                >
-                  <MenuItem onClick={handleGenerateReceipt}>
-                    <ListItemIcon>
-                      <AddCircleOutlineIcon fontSize="small" />
-                    </ListItemIcon>
-                    Generate Receipt
-                  </MenuItem>
-                  <MenuItem onClick={handleShareFromActions}>
-                    <ListItemIcon>
-                      <ShareIcon fontSize="small" />
-                    </ListItemIcon>
-                    Share Invoice
-                  </MenuItem>
-                </Menu>
-              </div>
-            </div>
-          </div>
-
-          <div className="quotation-card">
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-              Customer Details
-            </Typography>
-
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <Typography variant="caption" sx={{ color: "text.secondary" }}>Customer</Typography>
-                <Typography variant="body1">{customerName}</Typography>
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <Typography variant="caption" sx={{ color: "text.secondary" }}>Issue Date</Typography>
-                <Typography variant="body1">{formatLocalDate(invoice.issue_date) || "—"}</Typography>
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <Typography variant="caption" sx={{ color: "text.secondary" }}>Due Date</Typography>
-                <Typography variant="body1">{formatLocalDate(invoice.due_date) || "—"}</Typography>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Typography variant="caption" sx={{ color: "text.secondary" }}>Email</Typography>
-                <Typography variant="body1">{customerEmail}</Typography>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Typography variant="caption" sx={{ color: "text.secondary" }}>Phone</Typography>
-                <Typography variant="body1">{customerPhone}</Typography>
-              </Grid>
-            </Grid>
-          </div>
-
-          <div className="quotation-card table-container">
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-              Invoice Items
-            </Typography>
-            <table className="leads-table">
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th>Qty</th>
-                  <th>Unit Price</th>
-                  <th>GST %</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {(invoice.items || []).length ? invoice.items.map((item) => (
-                  <tr key={item.id}>
-                    <td style={{ whiteSpace: 'normal', wordBreak: 'break-word' }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(String(item.description || '')) }} />
-                    <td>{formatQty(item.quantity)}</td>
-                    <td>
-                      {formatMoney(item.unit_price)}
-                    </td>
-                    <td>{item.gst_rate}%</td>
-                    <td>
-                      {formatMoney(item.line_total)}
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan={5} style={{ textAlign: "center" }}>No items found</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="quotation-card">
-            <Box sx={{ maxWidth: 360, ml: "auto" }}>
-              <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">Subtotal</Typography>
-                <Typography variant="body2">{formatMoney(invoice.display_taxable_subtotal ?? invoice.subtotal)}</Typography>
-              </Box>
-              {Number(invoice._computed_discount || 0) > 0 && (
-                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">Discount{invoice.discount_percent ? ` (${invoice.discount_percent}%)` : ''}</Typography>
-                  <Typography variant="body2">-{formatMoney(invoice._computed_discount)}</Typography>
-                </Box>
-              )}
-              {Number(invoice.cgst_total || 0) > 0 && (
-                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">CGST</Typography>
-                  <Typography variant="body2">{formatMoney(invoice.cgst_total)}</Typography>
-                </Box>
-              )}
-
-              {Number(invoice.sgst_total || 0) > 0 && (
-                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">SGST</Typography>
-                  <Typography variant="body2">{formatMoney(invoice.sgst_total)}</Typography>
-                </Box>
-              )}
-
-              {Number(invoice.igst_total || 0) > 0 && (
-                <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">IGST</Typography>
-                  <Typography variant="body2">{formatMoney(invoice.igst_total)}</Typography>
-                </Box>
-              )}
-
-              <Divider sx={{ mb: 1.5 }} />
-
-              <Box sx={{ display: "flex", justifyContent: "space-between" }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Grand Total</Typography>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{formatMoney(invoice.grand_total)}</Typography>
-              </Box>
-            </Box>
-          </div>
-        </>
-      )}
-
-      <NotificationSnackbar
-        {...notification}
-        onClose={() =>
-          setNotification((prev) => ({ ...prev, open: false }))
-        }
-      />
-
-      <ChannelSelectModal
-        open={channelModalOpen}
-        onClose={() => setChannelModalOpen(false)}
-        title={`Share Invoice ${invoice?.invoice_number || ''} with ${customerName}`}
-        subtitle={getShareSubtitle()}
-        defaultEmail
-        defaultWhatsApp={false}
-        confirmLabel="Share Invoice"
-        onConfirm={handleSendInvoiceChannels}
-      />
-
-      <StatusUpdateModal
-        open={statusModalOpen}
-        invoiceId={statusModalInvoiceId}
-        onClose={() => setStatusModalOpen(false)}
-        onSuccess={(msg) => {
-          setNotification({ open: true, message: msg || 'Success', severity: 'success' });
-          setStatusModalOpen(false);
-          loadInvoice();
-        }}
-        onError={(msg) => setNotification({ open: true, message: msg || 'Action failed', severity: 'error' })}
-      />
-    </div>
-  );
+  if (loading) return <div className="quotation-loading">Loading invoice…</div>;
+  if (!invoice) return <div className="quotation-loading">Invoice not found</div>;
+  return <><SingleRecordWorkspace storageKey={`pav-erp:record:invoice:${id}`} backTo="/invoices" backLabel="Invoices" title={invoice.invoice_number || `Invoice #${id}`} record={record} fields={fields} initialCards={cards} summaryCard={summaryCard} hidePageHeader centerLabel={`Order Lines (${invoice.items?.length || 0})`} centerContent={lineItems} /><ChannelSelectModal open={shareOpen} onClose={() => setShareOpen(false)} title={`Share Invoice ${invoice.invoice_number || ''} with ${customerName(invoice)}`} subtitle="Send this invoice by email or WhatsApp." defaultEmail defaultWhatsApp={false} confirmLabel="Share Invoice" onConfirm={share} /><StatusUpdateModal open={receiptOpen} invoiceId={id} onClose={() => setReceiptOpen(false)} onSuccess={(message) => { notify(message || 'Receipt generated'); setReceiptOpen(false); loadInvoice(); }} onError={(message) => notify(message || 'Action failed', 'error')} /><NotificationSnackbar open={notification.open} message={notification.message} severity={notification.severity} onClose={() => setNotification((current) => ({ ...current, open:false }))} /></>;
 }
-
-export default InvoiceView;

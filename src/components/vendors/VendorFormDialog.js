@@ -65,7 +65,7 @@ function VendorFormDialog({ open, onClose, vendor = null, onSaved }) {
   };
 
   return (
-    <Dialog className="flowbite-dialog" open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog className="flowbite-dialog erp-form-drawer" open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle className="dialog-title">
         {vendor?.id ? 'Edit Vendor' : 'Add Vendor'}
         <IconButton onClick={onClose} size="small"><CloseIcon /></IconButton>

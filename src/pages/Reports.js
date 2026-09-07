@@ -21,8 +21,10 @@ import {
   Chip
 } from '@mui/material';
 import {
-  Assessment,
-  PictureAsPdf
+  PictureAsPdf,
+  RefreshOutlined,
+  StarBorderOutlined,
+  TuneOutlined
 } from '@mui/icons-material';
 import * as XLSX from 'xlsx';
 import Topbar from '../components/Topbar';
@@ -37,6 +39,7 @@ import {
 } from '../services/reportService';
 import { useSettings } from '../context/SettingsContext';
 import { formatDate as formatLocalDate, toInputDateValue } from '../utils/dateFormatter';
+import '../assets/styles/Reports.scss';
 
 const Reports = () => {
   const { settings } = useSettings();
@@ -631,15 +634,15 @@ const Reports = () => {
     return (
       <>
         <Topbar />
-        <Box sx={{ background: '#f4f6f9', minHeight: '100vh', py: 4 }}>
-          <Container maxWidth="xl">
-            <Paper sx={{ p: 3, mb: 3, ...panelSx }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 3, justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                  <Assessment sx={{ fontSize: 40, color: 'primary.main', mr: 2 }} />
+        <Box className="reports-page" sx={{ background: '#f4f6f9', minHeight: '100vh', py: 4 }}>
+          <Container maxWidth="xl" className="hs-reports">
+            <Paper className="hs-reports__controls" sx={{ p: 3, mb: 3, ...panelSx }}>
+              <Box className="hubspot-reports__topbar" sx={{ display: 'flex', alignItems: 'center', mb: 3, justifyContent: 'space-between', flexWrap: 'wrap', gap: 2 }}>
+                <Box className="hubspot-reports__heading" sx={{ display: 'flex', alignItems: 'center' }}>
+                  <StarBorderOutlined />
                   <Box>
-                    <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#0f172a' }}>
-                      Reports
+                    <Typography className="hs-reports__title" variant="h4" sx={{ fontWeight: 'bold', color: '#0f172a' }}>
+                      Reports overview
                     </Typography>
                     <Typography variant="body2" sx={{ color: '#5b6b82' }}>
                       Generate analytics, exports and snapshots for your business.
@@ -647,7 +650,7 @@ const Reports = () => {
                   </Box>
                 </Box>
 
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                <Box className="hubspot-reports__actions" sx={{ display: 'flex', gap: 1 }}>
                   <Button variant="outlined" onClick={loadReportData} sx={{ fontWeight: 700 }}>
                     Generate
                   </Button>
@@ -663,7 +666,8 @@ const Reports = () => {
               <Divider sx={{ mb: 3 }} />
 
               {/* Filter Section */}
-              <Grid container spacing={2} alignItems="center">
+              <Box className="hubspot-reports__filterbar"><span>Quick filters</span><span>Date range</span><i /><span><TuneOutlined />Advanced filters</span><button type="button" title="Refresh reports" onClick={loadReportData}><RefreshOutlined /></button></Box>
+              <Grid className="hubspot-reports__filters" container spacing={2} alignItems="center">
                 <Grid item xs={12} sm={6} md={3}>
                   <TextField
                     select
@@ -810,11 +814,6 @@ const Reports = () => {
             {/* Quick Chart Placeholder (for trends, analytics) */}
             {/* You can add a chart library like recharts or chart.js here for more visuals */}
             {/* Example: <BarChart data={...} /> or <LineChart data={...} /> */}
-
-            {/* Quick Charts */}
-            {renderCharts()}
-            {/* Donut/Pie Chart Placeholder for status/source distribution */}
-            {/* Example: <PieChart data={...} /> */}
 
             {reportType === 'dashboard' && dashboardExtras && dashboardExtras.pending_invoices && (
               <Paper sx={{ p: 3, mb: 3, ...panelSx }}>

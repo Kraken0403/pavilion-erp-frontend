@@ -1,20 +1,13 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Box, Button, Typography } from '@mui/material';
-import api, { SERVER_ORIGIN } from '../../services/api.js';
+import api, { resolveBackendAssetUrl } from '../../services/api.js';
 
 function FileUploader({ label = "Upload File", fileUrl, onFileUploaded }) {
   const fileInputRef = useRef();
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
 
-  const previewUrl = useMemo(() => {
-    if (!fileUrl) return '';
-    try {
-      return new URL(fileUrl, SERVER_ORIGIN).toString();
-    } catch (_) {
-      return fileUrl;
-    }
-  }, [fileUrl]);
+  const previewUrl = useMemo(() => resolveBackendAssetUrl(fileUrl), [fileUrl]);
 
   const handleFileChange = async (e) => {
     const file = e.target.files[0];

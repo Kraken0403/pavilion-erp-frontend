@@ -22,7 +22,7 @@ import Topbar from '../components/Topbar'
 import { toInputDateValue } from '../utils/dateFormatter'
 import '../assets/styles/QuotationDetail.scss'
 
-function CreateInvoice() {
+function CreateInvoice({ onSaved }) {
   const navigate = useNavigate()
 
   /* ---------------------------------------
@@ -249,7 +249,10 @@ function CreateInvoice() {
       showNotification('✅ Invoice created successfully')
 
       // redirect to invoices list after a brief delay so the user sees the success message
-      setTimeout(() => navigate('/invoices'), 1000)
+      setTimeout(() => {
+        if (onSaved) onSaved()
+        else navigate('/invoices')
+      }, 1000)
 
     } catch (err) {
       showNotification(

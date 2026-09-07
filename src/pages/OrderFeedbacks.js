@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Box,
   Chip,
   Dialog,
   DialogContent,
@@ -8,12 +7,10 @@ import {
   Grid,
   Rating,
   Stack,
-  TextField,
   Typography,
 } from '@mui/material';
-import Topbar from '../components/Topbar';
 import NotificationSnackbar from '../components/ui/NotificationSnackbar';
-import PageLoader from '../components/ui/PageLoader';
+import HubSpotListing from '../components/ui/HubSpotListing';
 import { fetchOrderFeedbackById, fetchOrderFeedbacks } from '../services/orderFeedbackService';
 import { formatDate } from '../utils/dateFormatter';
 import '../assets/styles/LeadsTable.scss';
@@ -54,8 +51,6 @@ function OrderFeedbacks() {
   const navigate = useNavigate();
   const { getUnreadNotificationFor, markRecordNotificationsSeen } = useNotification();
   const [feedbacks, setFeedbacks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
   const [selectedFeedback, setSelectedFeedback] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
   const handledFocusRef = useRef('');
@@ -66,10 +61,9 @@ function OrderFeedbacks() {
     severity: 'info',
   });
 
-  const loadFeedbacks = async ({ isAutoRefresh = false } = {}) => {
+  const loadFeedbacks = async () => {
     try {
-      if (!isAutoRefresh) setLoading(true);
-      const data = await fetchOrderFeedbacks({ search });
+      const data = await fetchOrderFeedbacks();
       setFeedbacks(Array.isArray(data?.feedbacks) ? data.feedbacks : []);
     } catch (error) {
       setNotification({
@@ -77,17 +71,10 @@ function OrderFeedbacks() {
         message: error?.response?.data?.error || 'Failed to load feedback responses',
         severity: 'error',
       });
-    } finally {
-      if (!isAutoRefresh) setLoading(false);
-    }
+    } finally { /* The shared listing keeps the empty state stable during refreshes. */ }
   };
 
   useAutoRefresh(loadFeedbacks, { intervalMs: 20000 });
-
-  const handleSearch = async (e) => {
-    e.preventDefault();
-    await loadFeedbacks();
-  };
 
   const openDetail = useCallback(async (id) => {
     const safeId = Number(id || 0);
@@ -134,100 +121,31 @@ function OrderFeedbacks() {
   const feedback = selectedFeedback?.feedback || {};
 
   return (
-    <div className="leads-table-container">
-      <Topbar />
-
-      <Box sx={{ px: 1, pb: 2 }}>
-        <form onSubmit={handleSearch} style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
-          <TextField
-            size="small"
-            placeholder="Search by order/customer/email"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            sx={{ minWidth: 320 }}
-          />
-          <button className="secondary-btn" type="submit">Search</button>
-        </form>
-
-        {loading ? (
-          <PageLoader message="Loading feedback responses..." minHeight={260} />
-        ) : (
-          <div className="table-container">
-            <table className="leads-table">
-              <thead>
-                <tr>
-                  <th>WORK ORDER</th>
-                  <th>CUSTOMER</th>
-                  <th>EMAIL</th>
-                  <th>PHONE</th>
-                  <th>RATING</th>
-                  <th>RECOMMEND</th>
-                  <th>SUBMITTED</th>
-                  <th>ACTION</th>
-                </tr>
-              </thead>
-              <tbody>
-                {feedbacks.length ? feedbacks.map((row) => (
-                  <tr key={row.id}>
-                    <td>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8 }}>
-                        <span>{row.work_order_number || '-'}</span>
-                        {(() => {
-                          const notification = getUnreadNotificationFor('feedback', row.id);
-                          const action = String(notification?.action || '').toLowerCase();
-                          const badgeLabel = notification
-                            ? (/(create|new|added)/.test(action) ? 'NEW' : 'UPDATED')
-                            : '';
-
-                          if (!badgeLabel) return null;
-
-                          return (
-                            <Chip
-                              label={badgeLabel}
-                              size="small"
-                              color={badgeLabel === 'NEW' ? 'error' : 'warning'}
-                              sx={{ fontWeight: 700 }}
-                            />
-                          );
-                        })()}
-                      </span>
-                    </td>
-                    <td>{row.customer_name || '-'}</td>
-                    <td>{row.customer_email || '-'}</td>
-                    <td>{row.customer_phone || '-'}</td>
-                    <td>
-                      {row.overall_rating ? (
-                        <Chip
-                          size="small"
-                          color={ratingChipColor(row.overall_rating)}
-                          label={`${row.overall_rating}/5`}
-                        />
-                      ) : '-'}
-                    </td>
-                    <td>
-                      <Chip
-                        size="small"
-                        color={row.would_recommend ? 'success' : 'default'}
-                        label={row.would_recommend ? 'Yes' : 'No'}
-                      />
-                    </td>
-                    <td>{formatDate(row.submitted_at) || '-'}</td>
-                    <td>
-                      <button className="secondary-btn" onClick={() => openDetail(row.id)}>
-                        View
-                      </button>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan={8} style={{ textAlign: 'center' }}>No feedback submitted yet</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </Box>
+    <div className="leads-table-container hs-listing-page">
+      <HubSpotListing
+        title="Order feedback"
+        rows={feedbacks.map((row) => ({ ...row, recommendation: row.would_recommend ? 'Yes' : 'No' }))}
+        initialFields={[
+          { key: 'work_order_number', label: 'Work order' }, { key: 'customer_name', label: 'Customer' },
+          { key: 'customer_email', label: 'Email' }, { key: 'customer_phone', label: 'Phone' },
+          { key: 'overall_rating', label: 'Rating' }, { key: 'recommendation', label: 'Recommend', options: ['Yes', 'No'] },
+          { key: 'submitted_at', label: 'Submitted' },
+        ]}
+        onRowOpen={(row) => openDetail(row.id)}
+        onRefresh={loadFeedbacks}
+        renderValue={(field, value, row) => {
+          if (field === 'work_order_number') {
+            const unread = getUnreadNotificationFor('feedback', row.id);
+            const action = String(unread?.action || '').toLowerCase();
+            const label = unread ? (/(create|new|added)/.test(action) ? 'NEW' : 'UPDATED') : '';
+            return <span className="hs-listing__value-with-badge">{value || '—'}{label && <Chip label={label} size="small" color={label === 'NEW' ? 'error' : 'warning'} />}</span>;
+          }
+          if (field === 'overall_rating') return value ? <Chip size="small" color={ratingChipColor(value)} label={`${value}/5`} /> : '—';
+          if (field === 'recommendation') return value;
+          if (field === 'submitted_at') return formatDate(value) || '—';
+          return value ?? '—';
+        }}
+      />
 
       <Dialog open={detailOpen} onClose={() => setDetailOpen(false)} fullWidth maxWidth="md">
         <DialogTitle>

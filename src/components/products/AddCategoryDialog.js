@@ -152,7 +152,7 @@ function AddCategoryDialog({ open, onClose, category = null }) {
   return (
     <>
       <Dialog
-        className="add-product-dialog"
+        className="add-product-dialog erp-form-drawer"
         open={open}
         maxWidth="sm"
         fullWidth

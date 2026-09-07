@@ -287,7 +287,7 @@ function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
     if (!open) return null;
 
     return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        <Dialog className="erp-form-drawer" open={open} onClose={onClose} maxWidth="sm" fullWidth>
             <DialogTitle>
                 {isReadOnly ? "Invoice Status" : "Update Invoice Status"}
             </DialogTitle>

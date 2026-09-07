@@ -581,7 +581,7 @@ function DeliveryBoard() {
         onClose={() => setNotif((prev) => ({ ...prev, open: false }))}
       />
 
-      <Dialog open={notesModal.open} onClose={closeNotesModal} fullWidth maxWidth="sm">
+      <Dialog className="erp-form-drawer" open={notesModal.open} onClose={closeNotesModal} fullWidth maxWidth="sm">
         <DialogTitle sx={{ pb: 1 }}>{notesModal.title || 'Delivery Notes'}</DialogTitle>
         <DialogContent>
           <TextField
@@ -601,7 +601,7 @@ function DeliveryBoard() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={deliveryManModal.open} onClose={closeDeliveryManModal} fullWidth maxWidth="sm">
+      <Dialog className="erp-form-drawer" open={deliveryManModal.open} onClose={closeDeliveryManModal} fullWidth maxWidth="sm">
         <DialogTitle sx={{ pb: 1 }}>Delivery Man Details</DialogTitle>
         <DialogContent>
           <TextField

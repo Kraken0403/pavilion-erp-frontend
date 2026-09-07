@@ -26,6 +26,10 @@ export const getAllUsers = async () => {
   }
 };
 
+export const getMyProfile = async () => (await api.get('/users/me/profile')).data;
+export const updateMyProfile = async (profile) => (await api.put('/users/me/profile', profile)).data;
+export const changeMyPassword = async (currentPassword, newPassword) => (await api.put('/users/me/password', { currentPassword, newPassword })).data;
+
 // Get user by ID
 export const getUserById = async (userId) => {
   try {

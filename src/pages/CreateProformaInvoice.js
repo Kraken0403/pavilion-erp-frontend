@@ -21,7 +21,7 @@ import { toInputDateValue } from '../utils/dateFormatter'
 import { fetchWorkOrderById } from '../services/workOrderServices'
 import '../assets/styles/QuotationDetail.scss'
 
-function CreateProformaInvoice() {
+function CreateProformaInvoice({ onSaved }) {
   const navigate = useNavigate()
 
   const [gstPricingMode, setGstPricingMode] = useState(null)
@@ -433,7 +433,10 @@ function CreateProformaInvoice() {
       }
 
       showNotification('Proforma invoice created successfully')
-      setTimeout(() => navigate('/proforma-invoices'), 700)
+      setTimeout(() => {
+        if (onSaved) onSaved()
+        else navigate('/proforma-invoices')
+      }, 700)
     } catch (err) {
       showNotification(
         err?.response?.data?.error || err.message || 'Failed to create proforma invoice',

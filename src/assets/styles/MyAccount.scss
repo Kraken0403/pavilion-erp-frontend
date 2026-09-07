@@ -1,0 +1,14 @@
+.my-account { width: min(100%, 1050px); margin: 0 auto; color: #33475b; }
+.my-account__intro { margin-bottom: 18px; }
+.my-account__intro::before { content: 'Personal settings'; color: #7c8b9b; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.my-account__intro h1 { margin: 3px 0; color: #213343; font-size: 21px; }
+.my-account__intro p, .my-account__card p { margin: 0; color: #6b7b8d; font-size: 12px; }
+.my-account .MuiAlert-root { margin: 0 0 14px; }
+.my-account__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.my-account__card { display: grid; align-content: start; gap: 17px; padding: 19px; border: 1px solid #dfe3eb; border-radius: 6px; background: #fff; box-shadow: 0 1px 3px rgba(33, 51, 67, .035); }
+.my-account__card h2 { margin: 0; padding-bottom: 13px; border-bottom: 1px solid #e6ebf0; color: #213343; font-size: 15px; }
+.my-account__card .MuiOutlinedInput-root { border-radius: 4px; }
+.my-account__card .MuiButton-root { min-height: 35px; justify-self: end; padding: 7px 14px; border-radius: 4px; background: #ff5c35; box-shadow: none; font-size: 12px; font-weight: 700; text-transform: none; }
+.my-account__card .MuiButton-root:hover { background: #d94726; box-shadow: none; }
+
+@media(max-width:720px) { .my-account__grid { grid-template-columns: 1fr; } }

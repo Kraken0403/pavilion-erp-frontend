@@ -69,7 +69,7 @@ function WorkOrderHeader({
 
           {/* ACTIONS */}
           <button
-            className="secondary-btn"
+            className="hs-listing__create"
             onClick={(e) => setAnchorEl(e.currentTarget)}
           >
             <p>Actions</p>

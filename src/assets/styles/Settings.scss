@@ -1,0 +1,131 @@
+.global-settings-page {
+  height: 100%;
+  min-height: 0;
+  padding: 18px;
+  box-sizing: border-box;
+  overflow: hidden;
+  background: #f5f8fa;
+  color: #33475b;
+}
+
+.global-settings-card {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #dfe3eb;
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(33, 51, 67, .06);
+}
+
+.global-settings-card > header {
+  flex: 0 0 auto;
+  min-height: 92px;
+  padding: 16px 24px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #dfe3eb;
+}
+
+.global-settings-card > header span,
+.settings-module-heading > span {
+  color: #7c8b9b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.global-settings-card > header h1 { margin: 2px 0 1px; color: #213343; font-size: 23px; line-height: 1.2; }
+.global-settings-card > header p,
+.settings-module-heading p { margin: 0; color: #6b7b8d; font-size: 12px; }
+
+.global-settings-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 226px minmax(0, 1fr);
+}
+
+.global-settings-nav {
+  min-height: 0;
+  padding: 18px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-right: 1px solid #dfe3eb;
+  background: #f8fafc;
+}
+
+.global-settings-nav > strong { padding: 0 10px 8px; color: #7c8b9b; font-size: 10px; letter-spacing: .07em; text-transform: uppercase; }
+.global-settings-nav button { width: 100%; min-height: 57px; padding: 9px 10px; display: grid; grid-template-columns: 24px minmax(0, 1fr); align-items: center; gap: 8px; border: 1px solid transparent; border-radius: 5px; background: transparent; color: #425b76; text-align: left; cursor: pointer; }
+.global-settings-nav button:hover { background: #edf3f8; }
+.global-settings-nav button.is-active { border-color: #b9d6ee; background: #eaf4fb; color: #0b66c3; }
+.global-settings-nav button > svg { font-size: 20px; }
+.global-settings-nav button > span { min-width: 0; display: grid; gap: 2px; }
+.global-settings-nav button b { font-size: 12px; }
+.global-settings-nav button small { overflow: hidden; color: #75879a; font-size: 10px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+
+.global-settings-panel { min-height: 0; padding: 26px 30px 32px; overflow: auto; background: #f5f8fa; }
+.global-settings-panel.is-listing { padding: 0; overflow: hidden; background: #fff; }
+
+.settings-module-page { width: min(100%, 1050px); margin: 0 auto; }
+.settings-module-heading { margin-bottom: 18px; }
+.settings-module-heading h2 { margin: 3px 0; color: #213343; font-size: 21px; }
+.settings-sections-form { display: flex; flex-direction: column; gap: 14px; }
+
+.settings-section-card { padding: 19px; border: 1px solid #dfe3eb; border-radius: 6px; background: #fff; box-shadow: 0 1px 3px rgba(33, 51, 67, .035); }
+.settings-section-card > header { margin-bottom: 18px; padding-bottom: 13px; display: flex; align-items: center; justify-content: space-between; gap: 18px; border-bottom: 1px solid #e6ebf0; }
+.settings-section-card > header h3 { margin: 0 0 3px; color: #213343; font-size: 15px; }
+.settings-section-card > header p { margin: 0; color: #6b7b8d; font-size: 11px; }
+
+.settings-field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px 16px; }
+.settings-field-wide { grid-column: 1 / -1; }
+.settings-logo-row { margin-bottom: 20px; padding: 12px; display: flex; align-items: center; gap: 16px; border: 1px dashed #b7c4d1; border-radius: 5px; background: #f8fafc; }
+.settings-logo-row img { width: 118px; height: 58px; object-fit: contain; border-radius: 4px; background: #fff; }
+.settings-upload-field { min-width: 0; padding: 12px; border: 1px solid #e1e7ed; border-radius: 5px; background: #f8fafc; }
+
+.settings-editor-stack { display: grid; gap: 19px; }
+.settings-editor-stack > label { display: grid; gap: 7px; width: 100%;}
+.settings-editor-stack > label > span { color: #425b76; font-size: 12px; font-weight: 700; }
+
+.settings-form-footer { position: sticky; bottom: -32px; z-index: 3; margin: 2px -30px -32px; padding: 13px 30px; display: flex; justify-content: flex-end; border-top: 1px solid #dfe3eb; background: rgba(255, 255, 255, .97); box-shadow: 0 -3px 10px rgba(33, 51, 67, .04); }
+.settings-form-footer .MuiButton-root,
+.settings-logo-row .MuiButton-root { min-height: 35px; padding: 7px 14px; border-radius: 4px; background: #ff5c35; box-shadow: none; font-size: 12px; font-weight: 700; text-transform: none; }
+.settings-form-footer .MuiButton-root:hover,
+.settings-logo-row .MuiButton-root:hover { background: #d94726; box-shadow: none; }
+
+.settings-section-card .MuiOutlinedInput-root { border-radius: 4px; background: #fff; }
+.settings-section-card .MuiInputLabel-root { font-size: 13px; }
+.settings-module-loading { min-height: 240px; display: grid; place-content: center; justify-items: center; gap: 10px; color: #6b7b8d; font-size: 12px; }
+
+.settings-user-list { height: 100%; }
+.settings-user-list .hs-listing { border: 0; border-radius: 0; }
+.user-list-actions { display: flex; gap: 6px; }
+.user-list-actions button { padding: 5px 8px; display: flex; align-items: center; gap: 4px; border: 1px solid #899bb0; border-radius: 5px; background: #fff; font-size: 11px; }
+.user-list-actions svg { font-size: 15px; }
+.user-list-actions button:disabled { opacity: .4; cursor: not-allowed; }
+.settings-user-form { height: 100%; display: flex; flex-direction: column; gap: 18px; }
+.settings-user-form footer { position: sticky; bottom: -24px; margin: auto -24px -24px; padding: 16px 24px; display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid #d8e0e7; background: #fff; }
+.settings-user-form footer button { padding: 9px 14px; border: 1px solid #899bb0; border-radius: 5px; background: #fff; font-weight: 700; }
+.settings-user-form footer .primary { border-color: #ff5c35; background: #ff5c35; color: #fff; }
+
+@media (max-width: 900px) {
+  .global-settings-page { padding: 10px; }
+  .global-settings-body { grid-template-columns: 76px minmax(0, 1fr); }
+  .global-settings-nav { padding: 12px 8px; }
+  .global-settings-nav > strong,
+  .global-settings-nav button small,
+  .global-settings-nav button b { display: none; }
+  .global-settings-nav button { grid-template-columns: 1fr; place-items: center; padding: 8px; }
+  .global-settings-panel { padding: 20px; }
+  .settings-form-footer { bottom: -20px; margin: 2px -20px -20px; padding: 12px 20px; }
+}
+
+@media (max-width: 640px) {
+  .settings-field-grid { grid-template-columns: 1fr; }
+  .settings-field-wide { grid-column: auto; }
+}

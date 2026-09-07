@@ -1,212 +1,52 @@
-import React, { useState, useEffect } from 'react';
-import { signup } from '../services/authService';
-import { getAllUsers, deleteUser } from '../services/userServices';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, MenuItem, Snackbar, TextField } from '@mui/material';
+import { Add, AdminPanelSettingsOutlined, DeleteOutline } from '@mui/icons-material';
 import { jwtDecode } from 'jwt-decode';
-import {
-  Button,
-  TextField,
-  MenuItem,
-  Select,
-  InputLabel,
-  FormControl,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  IconButton,
-  Box,
-  Chip
-} from '@mui/material';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { signup } from '../services/authService';
+import { deleteUser, getAllUsers } from '../services/userServices';
+import EntityFormDrawer from './ui/EntityFormDrawer';
+import HubSpotListing from './ui/HubSpotListing';
+import UserPermissionsDialog from './UserPermissionsDialog';
 
 function SignUp() {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'salesperson',
-  });
-
-  const [users, setUsers] = useState([]); // Store registered users
-  const [isFormVisible, setIsFormVisible] = useState(false); // Toggle form visibility
-  const [currentUserId, setCurrentUserId] = useState(null);
-  const [loggedInUser, setLoggedInUser] = useState(null);
-
-  // Fetch all users on component load
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      const decoded = jwtDecode(token);
-      setCurrentUserId(decoded.id); // Replace 'id' with the appropriate field from your token payload
-      setLoggedInUser(decoded)
-    }
-    fetchUsers();
+  const [form, setForm] = useState({ name: '', email: '', password: '', role: 'salesperson' });
+  const [users, setUsers] = useState([]);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [permissionUser, setPermissionUser] = useState(null);
+  const [notice, setNotice] = useState({ open: false, message: '', severity: 'success' });
+  const tokenUser = useMemo(() => {
+    try { return jwtDecode(localStorage.getItem('token') || ''); } catch (_) { return {}; }
   }, []);
+  const loadUsers = async () => {
+    try { setUsers(await getAllUsers()); }
+    catch (_) { setNotice({ open: true, message: 'Failed to load users.', severity: 'error' }); }
+  };
+  useEffect(() => { loadUsers(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const fetchUsers = async () => {
+  const createUser = async (event) => {
+    event.preventDefault();
     try {
-      const data = await getAllUsers();
-      setUsers(data);
-    } catch (error) {
-      alert('Failed to fetch users.');
-    }
+      await signup(form); await loadUsers(); setDrawerOpen(false);
+      setForm({ name: '', email: '', password: '', role: 'salesperson' });
+      setNotice({ open: true, message: 'User created successfully.', severity: 'success' });
+    } catch (error) { setNotice({ open: true, message: error.message || 'Failed to create user.', severity: 'error' }); }
+  };
+  const removeUser = async (event, user) => {
+    event.stopPropagation();
+    if (!window.confirm(`Delete ${user.name || user.email}?`)) return;
+    try { await deleteUser(user.id); await loadUsers(); setNotice({ open: true, message: 'User deleted.', severity: 'success' }); }
+    catch (_) { setNotice({ open: true, message: 'Failed to delete user.', severity: 'error' }); }
+  };
+  const renderValue = (field, value, user) => {
+    if (field === 'status') return user.id === tokenUser.id ? 'You' : 'Active';
+    if (field === 'actions') return tokenUser.role === 'admin' ? <div className="user-list-actions"><button onClick={(event) => { event.stopPropagation(); setPermissionUser(user); }}><AdminPanelSettingsOutlined />Access</button><button disabled={user.role === 'admin' || user.id === tokenUser.id || user.email === tokenUser.email} onClick={(event) => removeUser(event, user)}><DeleteOutline />Delete</button></div> : '—';
+    return value || '—';
   };
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  const handleSignup = async (e) => {
-    e.preventDefault();
-    try {
-      const response = await signup(formData);
-      alert(response.message);
-      fetchUsers(); // Refresh users list after signup
-      setFormData({ name: '', email: '', password: '', role: 'salesperson' });
-      setIsFormVisible(false);
-    } catch (error) {
-      alert(error.message);
-    }
-  };
-
-  const handleDelete = async (userId) => {
-    if (window.confirm('Are you sure you want to delete this user?')) {
-      try {
-        await deleteUser(userId);
-        alert('User deleted successfully.');
-        fetchUsers(); // Refresh users list after deletion
-      } catch (error) {
-        alert('Failed to delete user.');
-      }
-    }
-  };
-
-  const toggleForm = () => {
-    setIsFormVisible(!isFormVisible);
-  };
-
-  return (
-    <Box sx={{ maxWidth: '600px', margin: 'auto', padding: '20px' }}>
-      <h2>User Management</h2>
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={toggleForm}
-        sx={{ marginBottom: '20px' }}
-      >
-        {isFormVisible ? 'Close Form' : 'Add User'}
-      </Button>
-
-      {isFormVisible && (
-        <Box
-          sx={{
-            border: '1px solid #ccc',
-            borderRadius: '8px',
-            padding: '20px',
-            marginBottom: '20px',
-          }}
-        >
-          <h3>Sign Up</h3>
-          <form onSubmit={handleSignup}>
-            <TextField
-              label="Name"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              fullWidth
-              sx={{ marginBottom: '10px' }}
-            />
-            <TextField
-              label="Email"
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              fullWidth
-              sx={{ marginBottom: '10px' }}
-            />
-            <TextField
-              label="Password"
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-              fullWidth
-              sx={{ marginBottom: '10px' }}
-            />
-            <FormControl fullWidth sx={{ marginBottom: '10px' }}>
-              <InputLabel id="role-label">Role</InputLabel>
-              <Select
-                labelId="role-label"
-                id="role"
-                name="role"
-                value={formData.role}
-                onChange={handleChange}
-              >
-                <MenuItem value="salesperson">Salesperson</MenuItem>
-                <MenuItem value="supervisor">Supervisor</MenuItem>
-                <MenuItem value="admin">Admin</MenuItem>
-              </Select>
-            </FormControl>
-            <Button type="submit" variant="contained" color="success" fullWidth>
-              Sign Up
-            </Button>
-          </form>
-        </Box>
-      )}
-
-      <Box>
-        <h3>Registered Users</h3>
-        {users.length > 0 ? (
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell><strong>Name</strong></TableCell>
-                  <TableCell><strong>Email</strong></TableCell>
-                  <TableCell><strong>Role</strong></TableCell>
-                  <TableCell><strong>Actions</strong></TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                                
-                {users.map((user) => (
-                <TableRow key={user.id}>
-                    <TableCell>
-                    {user.name}
-                    {user.id === currentUserId && (
-                        <Chip label="You" color="primary" size="small" style={{ marginLeft: '8px' }} />
-                    )}
-                    </TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>{user.role}</TableCell>
-                    <TableCell>
-                    <IconButton
-                        color="error"
-                        onClick={() => handleDelete(user.id)}
-                        disabled={user.role === 'admin' || user.email === loggedInUser.email}
-                    >
-                        <DeleteIcon />
-                    </IconButton>
-                    </TableCell>
-                </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        ) : (
-          <p>No users registered yet.</p>
-        )}
-      </Box>
-    </Box>
-  );
+  return <div className="settings-user-list"><HubSpotListing title="Users" createLabel="Add user" createIcon={<Add />} onCreate={() => setDrawerOpen(true)} rows={users.map((user) => ({ ...user, status: user.id === tokenUser.id ? 'You' : 'Active', actions: '' }))} initialFields={[{ key: 'name', label: 'Name' }, { key: 'email', label: 'Email' }, { key: 'role', label: 'Role' }, { key: 'status', label: 'Status' }, { key: 'actions', label: 'Actions' }]} onRefresh={loadUsers} onRowOpen={tokenUser.role === 'admin' ? (user) => setPermissionUser(user) : undefined} renderValue={renderValue} />
+    <EntityFormDrawer open={drawerOpen} title="Add user" onClose={() => setDrawerOpen(false)}><form className="settings-user-form" onSubmit={createUser}><TextField required label="Name" value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} /><TextField required type="email" label="Email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} /><TextField required type="password" label="Password" value={form.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} /><TextField select label="Role" value={form.role} onChange={(event) => setForm((current) => ({ ...current, role: event.target.value }))}><MenuItem value="salesperson">Salesperson</MenuItem><MenuItem value="supervisor">Supervisor</MenuItem><MenuItem value="admin">Admin</MenuItem></TextField><footer><button type="button" onClick={() => setDrawerOpen(false)}>Cancel</button><button className="primary" type="submit">Create user</button></footer></form></EntityFormDrawer>
+    <UserPermissionsDialog user={permissionUser} open={Boolean(permissionUser)} onClose={() => setPermissionUser(null)} />
+    <Snackbar open={notice.open} autoHideDuration={5000} onClose={() => setNotice((current) => ({ ...current, open: false }))}><Alert severity={notice.severity}>{notice.message}</Alert></Snackbar>
+  </div>;
 }
-
 export default SignUp;

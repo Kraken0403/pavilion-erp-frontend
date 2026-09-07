@@ -1,14 +1,12 @@
 // src/components/settings/SettingsForm.js
 import React, { useState, useEffect } from "react";
+import { resolveBackendAssetUrl } from "../../services/api";
 import {
-  Grid,
   TextField,
   Button,
-  Typography,
   MenuItem,
   Switch,
-  FormControlLabel,
-  Divider
+  FormControlLabel
 } from "@mui/material";
 
 export default function SettingsForm({ settings, onSubmit }) {
@@ -30,6 +28,7 @@ export default function SettingsForm({ settings, onSubmit }) {
     gst_state_code: "",
 
     currency_code: "INR",
+    date_format: "DD/MM/YYYY",
     company_logo: null,
   });
 
@@ -59,11 +58,12 @@ export default function SettingsForm({ settings, onSubmit }) {
       gst_state_code: settings.gst_state_code || "",
 
       currency_code: settings.currency_code || "INR",
+      date_format: settings.date_format || "DD/MM/YYYY",
       company_logo: null,
     });
 
     if (settings.company_logo) {
-      setLogoPreview(`http://localhost:5000${settings.company_logo}`);
+      setLogoPreview(resolveBackendAssetUrl(settings.company_logo));
     }
   }, [settings]);
 
@@ -96,36 +96,24 @@ export default function SettingsForm({ settings, onSubmit }) {
      UI
   --------------------------------------- */
   return (
-    <>
-      <Typography variant="h5" mb={2}>
-        Company & GST Settings
-      </Typography>
-
-      <form onSubmit={handleSubmit}>
-        <Grid container spacing={2}>
-
-          {/* LOGO */}
-          <Grid item xs={12}>
-            <Typography variant="body1" mb={1}>
-              Company Logo
-            </Typography>
-
+    <div className="settings-module-page">
+      <div className="settings-module-heading"><span>General settings</span><h2>Company & GST</h2><p>Keep your company identity, regional formats and tax preferences consistent across Pav ERP.</p></div>
+      <form className="settings-sections-form" onSubmit={handleSubmit}>
+        <section className="settings-section-card settings-logo-section">
+          <header><div><h3>Company identity</h3><p>Used on documents, emails and customer-facing pages.</p></div></header>
+          <div className="settings-logo-row">
             {logoPreview && (
               <img
                 src={logoPreview}
                 alt="Logo Preview"
-                style={{ width: 120, marginBottom: 16, borderRadius: 6 }}
               />
             )}
-
             <Button variant="contained" component="label">
               Upload Logo
               <input hidden type="file" accept="image/*" onChange={handleLogoChange} />
             </Button>
-          </Grid>
-
-          {/* COMPANY INFO */}
-          <Grid item xs={12} sm={6}>
+          </div>
+          <div className="settings-field-grid">
             <TextField
               label="Company Name"
               name="company_name"
@@ -133,9 +121,6 @@ export default function SettingsForm({ settings, onSubmit }) {
               value={form.company_name}
               onChange={handleChange}
             />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
             <TextField
               label="Email"
               name="company_email"
@@ -143,9 +128,6 @@ export default function SettingsForm({ settings, onSubmit }) {
               value={form.company_email}
               onChange={handleChange}
             />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
             <TextField
               label="Phone"
               name="company_phone"
@@ -153,9 +135,6 @@ export default function SettingsForm({ settings, onSubmit }) {
               value={form.company_phone}
               onChange={handleChange}
             />
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
             <TextField
               select
               label="Currency"
@@ -170,15 +149,18 @@ export default function SettingsForm({ settings, onSubmit }) {
               <MenuItem value="GBP">£ GBP</MenuItem>
               <MenuItem value="AED">د.إ AED</MenuItem>
             </TextField>
-          </Grid>
+            <TextField select label="Date format" name="date_format" value={form.date_format} fullWidth onChange={handleChange} helperText="Used across date inputs, filters and displayed dates">
+              <MenuItem value="DD/MM/YYYY">DD/MM/YYYY</MenuItem>
+              <MenuItem value="MM/DD/YYYY">MM/DD/YYYY</MenuItem>
+              <MenuItem value="YYYY-MM-DD">YYYY-MM-DD</MenuItem>
+            </TextField>
+          </div>
+        </section>
 
-          <Grid item xs={12}>
-            <Divider sx={{ my: 2 }} />
-            <Typography variant="h6">Company Address</Typography>
-          </Grid>
-
-          {/* ADDRESS */}
-          <Grid item xs={12}>
+        <section className="settings-section-card">
+          <header><div><h3>Company address</h3><p>The registered address shown on generated documents.</p></div></header>
+          <div className="settings-field-grid">
+            <div className="settings-field-wide">
             <TextField
               label="Address Line 1"
               name="company_address_line1"
@@ -186,9 +168,8 @@ export default function SettingsForm({ settings, onSubmit }) {
               value={form.company_address_line1}
               onChange={handleChange}
             />
-          </Grid>
-
-          <Grid item xs={12}>
+            </div>
+            <div className="settings-field-wide">
             <TextField
               label="Address Line 2"
               name="company_address_line2"
@@ -196,9 +177,7 @@ export default function SettingsForm({ settings, onSubmit }) {
               value={form.company_address_line2}
               onChange={handleChange}
             />
-          </Grid>
-
-          <Grid item xs={12} sm={4}>
+            </div>
             <TextField
               label="City"
               name="company_city"
@@ -206,9 +185,6 @@ export default function SettingsForm({ settings, onSubmit }) {
               value={form.company_city}
               onChange={handleChange}
             />
-          </Grid>
-
-          <Grid item xs={12} sm={4}>
             <TextField
               label="State"
               name="company_state"
@@ -216,9 +192,6 @@ export default function SettingsForm({ settings, onSubmit }) {
               value={form.company_state}
               onChange={handleChange}
             />
-          </Grid>
-
-          <Grid item xs={12} sm={4}>
             <TextField
               label="Pincode"
               name="company_pincode"
@@ -226,15 +199,11 @@ export default function SettingsForm({ settings, onSubmit }) {
               value={form.company_pincode}
               onChange={handleChange}
             />
-          </Grid>
+          </div>
+        </section>
 
-          <Grid item xs={12}>
-            <Divider sx={{ my: 2 }} />
-            <Typography variant="h6">GST Settings</Typography>
-          </Grid>
-
-          {/* GST ENABLE */}
-          <Grid item xs={12}>
+        <section className="settings-section-card">
+          <header><div><h3>GST settings</h3><p>Control whether prices include GST and the tax identifiers used in documents.</p></div>
             <FormControlLabel
               control={
                 <Switch
@@ -244,12 +213,9 @@ export default function SettingsForm({ settings, onSubmit }) {
               }
               label="GST Enabled"
             />
-          </Grid>
-
-          {/* GST DETAILS */}
+          </header>
           {form.gst_enabled && (
-            <>
-              <Grid item xs={12} sm={6}>
+            <div className="settings-field-grid">
                 <TextField
                   label="GST Number (GSTIN)"
                   name="gst_number"
@@ -257,9 +223,6 @@ export default function SettingsForm({ settings, onSubmit }) {
                   value={form.gst_number}
                   onChange={handleChange}
                 />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
                 <TextField
                   label="GST State Code"
                   name="gst_state_code"
@@ -267,9 +230,6 @@ export default function SettingsForm({ settings, onSubmit }) {
                   value={form.gst_state_code}
                   onChange={handleChange}
                 />
-              </Grid>
-
-              <Grid item xs={12} sm={6}>
                 <TextField
                   select
                   label="GST Pricing Mode"
@@ -281,19 +241,16 @@ export default function SettingsForm({ settings, onSubmit }) {
                   <MenuItem value="INCLUSIVE">Inclusive</MenuItem>
                   <MenuItem value="EXCLUSIVE">Exclusive</MenuItem>
                 </TextField>
-              </Grid>
-            </>
+            </div>
           )}
+        </section>
 
-          {/* SAVE */}
-          <Grid item xs={12} mt={2}>
+          <footer className="settings-form-footer">
             <Button variant="contained" color="primary" type="submit">
               Save Settings
             </Button>
-          </Grid>
-
-        </Grid>
+          </footer>
       </form>
-    </>
+    </div>
   );
 }

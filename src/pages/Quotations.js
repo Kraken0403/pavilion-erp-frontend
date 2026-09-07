@@ -56,12 +56,6 @@ function Quotations() {
       <Topbar />
       <QuotationsTable
         quotations={quotations}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        sortValue={sortValue}
-        setSortValue={setSortValue}
-        dateFilter={dateFilter}
-        setDateFilter={setDateFilter}
         reload={loadQuotations}
       />
 

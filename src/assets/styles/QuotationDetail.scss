@@ -342,3 +342,181 @@
     grid-template-columns: 1fr;
   }
 }
+
+.quotation-view-page {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: rgb(240, 240, 240);
+}
+
+.quotation-view-page > .single-record-workspace {
+  height: 100%;
+}
+
+/* Invoice and proforma detail pages use the same card and table language as single records. */
+.finance-document-detail { min-height:100%; padding:0 12px 20px; background:#f0f0f0; }
+.finance-document-detail > .topbar { margin:0 -12px 12px; }
+.finance-document-detail .quotation-header, .finance-document-detail .quotation-card { border-color:#ccc; border-radius:7px; box-shadow:none; }
+.finance-document-detail .quotation-header { min-height:74px; padding:16px; background:#fff; }
+.finance-document-detail .quotation-card { margin-bottom:10px; padding:16px; background:#fff; }
+.finance-document-detail .quotation-actions { gap:8px; }
+.finance-document-detail .quotation-meta .chip span, .finance-document-detail .status-chip { text-transform:uppercase; }
+.finance-document-detail .leads-table { width:100%; }
+
+.quotation-order-lines-workspace {
+  min-height: 100%;
+  background: #fff;
+}
+
+.quotation-order-lines-workspace .quotation-items-section {
+  min-width: 0;
+}
+
+.quotation-order-lines-workspace .qi-section-heading {
+  padding: 13px 16px;
+  border-color: rgb(204, 204, 204);
+}
+
+.quotation-order-lines-workspace .section-title {
+  color: #213343 !important;
+  font-size: 14px !important;
+}
+
+.quotation-order-lines-workspace .section-title .sep {
+  background: #00a4bd;
+}
+
+.quotation-order-lines-workspace .add-item-btn,
+.quotation-order-lines-workspace .primary-btn {
+  min-height: 34px;
+  border-color: #ff5c35;
+  border-radius: 4px;
+  background: #ff5c35;
+  color: #fff;
+  font-size: 12px;
+}
+
+.quotation-order-lines-workspace .add-item-btn:hover,
+.quotation-order-lines-workspace .primary-btn:hover {
+  border-color: #e94f2b;
+  background: #e94f2b;
+}
+
+.quotation-order-lines-workspace .qi-table th {
+  border-color: rgb(204, 204, 204);
+  background: #f5f8fa;
+  color: #516f90;
+}
+
+/* Align the editable order lines with the listing-table typography and control sizing. */
+.quotation-order-lines-workspace .qi-table { border-collapse:separate; border-spacing:0; }
+.quotation-order-lines-workspace .qi-table th { padding:12px 14px; color:#516f90; font-size:10px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
+.quotation-order-lines-workspace .qi-table td { padding:10px 12px; border-bottom:1px solid #edf1f5; font-size:13px; vertical-align:middle; }
+.quotation-order-lines-workspace .qi-table .MuiInputBase-root { min-height:34px; border-radius:4px; background:#fff; font-size:13px; }
+.quotation-order-lines-workspace .qi-table .MuiInputBase-input { padding:7px 8px; }
+
+.quotation-order-summary-card {
+  margin: 12px;
+  overflow: hidden;
+  border: 1px solid rgb(204, 204, 204);
+  border-radius: 7px;
+  background: #fff;
+}
+
+.quotation-order-summary-card .quotation-summary {
+  padding: 16px;
+}
+
+.quotation-order-summary-card .quotation-footer {
+  box-sizing: border-box;
+  padding: 12px 16px;
+  border-color: rgb(204, 204, 204);
+}
+
+.quotation-link-card {
+  display: grid;
+  gap: 10px;
+}
+
+.quotation-link-card > a {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  color: #007a8c;
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  text-decoration: none;
+}
+
+.quotation-link-card > a svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 15px;
+}
+
+.quotation-link-card > div:last-of-type {
+  display: flex;
+  gap: 7px;
+}
+
+.record-related-documents { display:grid; gap:7px; }
+.record-related-documents a { display:grid; grid-template-columns:18px 1fr; column-gap:7px; align-items:center; padding:9px; border:1px solid #dfe7ef; border-radius:5px; color:#007a8c; text-decoration:none; }
+.record-related-documents a:hover { background:#f5fafb; border-color:#9ccbd3; }
+.record-related-documents a svg { grid-row:1 / span 2; font-size:17px; }
+.record-related-documents a span { color:#516f90; font-size:10px; text-transform:uppercase; letter-spacing:.03em; }
+.record-related-documents a strong { color:#213343; font-size:12px; }
+.record-related-documents small { color:#516f90; font-size:11px; line-height:1.45; }
+
+.quotation-link-card button {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border: 1px solid #899bb0;
+  border-radius: 4px;
+  background: #fff;
+  color: #213343;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.quotation-link-card button svg {
+  font-size: 15px;
+}
+
+.quotation-link-card button:disabled {
+  opacity: .45;
+}
+
+.quotation-link-card small {
+  color: #516f90;
+  font-size: 11px;
+}
+
+.quotation-view-state {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #7c6a22;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.quotation-view-state span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f5c26b;
+}
+
+.quotation-view-state.is-viewed {
+  color: #087f5b;
+}
+
+.quotation-view-state.is-viewed span {
+  background: #28a745;
+}

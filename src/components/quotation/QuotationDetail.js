@@ -1,817 +1,367 @@
-import React, { useEffect, useState, useCallback } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-
-import Topbar from '../Topbar'
-import NotificationSnackbar from '../ui/NotificationSnackbar'
-import QuotationContactSection from './QuotationContactSection'
-import QuotationItemsSection from './QuotationItemsSection'
-import AddLeadDialog from '../leads/AddLeadDialog'
-import AddProductDialog from '../products/AddProductDialog'
-import { createWorkOrderFromQuotation } from '../../services/workOrderServices'
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
 import {
-  fetchQuotationById,
+  Add, CheckCircleOutline, ContentCopyOutlined, FileCopyOutlined, LinkOutlined,
+  OpenInNewOutlined, PictureAsPdfOutlined, SaveOutlined, WorkOutlineOutlined,
+} from '@mui/icons-material';
+import { useNavigate, useParams } from 'react-router-dom';
+import SingleRecordWorkspace from '../ui/SingleRecordWorkspace';
+import NotificationSnackbar from '../ui/NotificationSnackbar';
+import AddLeadDialog from '../leads/AddLeadDialog';
+import QuotationItemsSection from './QuotationItemsSection';
+import QuotationSummary from './QuotationSummary';
+import QuotationProductPickerDrawer from './QuotationProductPickerDrawer';
+import { createWorkOrderFromQuotation } from '../../services/workOrderServices';
+import {
+  createPublicQuotationLink,
   createQuotation,
+  fetchQuotationById,
+  generateQuotationPdf,
   updateQuotation,
+  updateQuotationItems,
   updateQuotationStatus,
-  updateQuotationItems
-} from '../../services/quotationService'
-import { fetchLeads } from '../../services/leadService'
-import { useSettings } from '../../context/SettingsContext'
-import { calculateQuotationTotals } from '../../utils/quotationCalculator'
-import QuotationSummary from './QuotationSummary'
-import QuotationFooterSection from './QuotationFooterSection'
-import QuotationHeader from './QuotationHeader'
+} from '../../services/quotationService';
+import { fetchLeads } from '../../services/leadService';
+import { fetchAllProducts } from '../../services/productServices';
+import { useSettings } from '../../context/SettingsContext';
+import { calculateQuotationTotals } from '../../utils/quotationCalculator';
+import { displayCurrency } from '../../utils/currencyUtils';
+import { formatDateTime } from '../../utils/dateFormatter';
+import '../../assets/styles/QuotationDetail.scss';
 
-import { 
-  fetchAllProducts,  
-  createProduct,
-  updateProduct
-} from '../../services/productServices'
+const COST_PRICING_MODES = ['absolute', 'percentage'];
+const normalizeCostMode = (mode) => COST_PRICING_MODES.includes(mode) ? mode : 'absolute';
+const leadName = (lead) => lead?.name || `${lead?.first_name || ''} ${lead?.last_name || ''}`.trim() || lead?.email || (lead?.id ? `Contact #${lead.id}` : '');
+const productName = (product) => product?.name || product?.product_name || product?.title || product?.label || `Product #${product?.id}`;
 
-import '../../assets/styles/QuotationDetail.scss'
+const formatMoney = (value, currencyCode = 'INR') => {
+  const code = String(currencyCode || 'INR').trim() || 'INR';
+  try {
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: code.length === 3 ? code.toUpperCase() : 'INR', maximumFractionDigits: 2 }).format(Number(value || 0));
+  } catch (_) {
+    return `${displayCurrency(code)} ${Number(value || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
+  }
+};
 
-import '../../assets/styles/LeadsTable.scss'
+export default function QuotationDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { settings } = useSettings() || {};
+  const currencyCode = settings?.currency_code || 'INR';
+  const currencyLabel = displayCurrency(currencyCode);
+  const money = useCallback((value) => formatMoney(value, currencyCode), [currencyCode]);
 
-/* ---------------------------------------
-   CONSTANTS — MUST MATCH DB ENUMS
---------------------------------------- */
-const COST_PRICING_MODES = ['absolute', 'percentage']
+  const [quotation, setQuotation] = useState(null);
+  const [leads, setLeads] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [items, setItems] = useState([]);
+  const [overallDiscount, setOverallDiscount] = useState(0);
+  const [pax, setPax] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
+  const [leadDialogOpen, setLeadDialogOpen] = useState(false);
+  const [publicLinkDialogOpen, setPublicLinkDialogOpen] = useState(false);
+  const [publicAccessCode, setPublicAccessCode] = useState('');
+  const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
 
-const statusColors = {
-  pending: 'status-warning',
-  approved: 'status-success',
-  rejected: 'status-error',
-  converted: 'status-info'
-}
+  const showNotification = useCallback((message, severity = 'success') => {
+    setNotification({ open: true, message, severity });
+  }, []);
 
-function QuotationDetail() {
-  const { id } = useParams()
-  const navigate = useNavigate()
+  const normalizeItems = useCallback((rows, availableProducts) => (rows || []).map((item) => {
+    const product = availableProducts.find((row) => String(row.id) === String(item.product_id));
+    return {
+      ...product,
+      ...item,
+      product: product || (item.product_id ? { id: item.product_id, name: item.product_name } : null),
+      product_id: item.product_id ?? product?.id ?? null,
+      product_name: item.product_name || productName(product),
+      variant_id: item.variant_id ?? null,
+      variant_sku: item.variant_sku || '',
+      quantity: Number(item.quantity) || 1,
+      cost_price: Number(item.cost_price ?? product?.cost_price ?? 0) || 0,
+      cost_price_qty: Number(item.cost_price_qty ?? product?.cost_price_qty ?? 1) || 1,
+      cost_price_unit: item.cost_price_unit || product?.cost_price_unit || 'unit',
+      cost_unit: item.cost_unit || item.cost_price_unit || product?.cost_price_unit || 'unit',
+      cost_pricing_mode: normalizeCostMode(item.cost_pricing_mode || product?.cost_pricing_mode),
+      cost_discount_percent: Number(item.cost_discount_percent ?? product?.cost_discount_percent ?? 0) || 0,
+      selling_price: Number(item.selling_price ?? product?.selling_price ?? product?.price ?? 0) || 0,
+      selling_price_qty: Number(item.selling_price_qty ?? product?.selling_price_qty ?? 1) || 1,
+      selling_price_unit: item.selling_price_unit || product?.selling_price_unit || 'unit',
+      gst_rate: Number(item.gst_rate ?? product?.gst_rate ?? 0) || 0,
+      attributes_json: item.attributes_json || {},
+      packaging_json: item.packaging_json || {},
+      discount: Number(item.discount) || 0,
+      tax: Number(item.tax) || 0,
+    };
+  }), []);
 
-  const { settings } = useSettings()
-  const currency = settings?.currency_code || '₹'
-  const [products, setProducts] = useState([])
-  const [overallDiscount, setOverallDiscount] = useState(0)
-
-  const [quotation, setQuotation] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [editMode, setEditMode] = useState(false)
-  const [pax, setPax] = useState(1)
-  const [leads, setLeads] = useState([])
-  const [openAddLeadDialog, setOpenAddLeadDialog] = useState(false)
-  const [prefillLeadName, setPrefillLeadName] = useState('')
-
-  const loadLeads = async () => {
+  const loadQuotation = useCallback(async () => {
+    setLoading(true);
     try {
-      const res = await fetchLeads()
-      const leadsArray =
-        Array.isArray(res?.leads) ? res.leads :
-        Array.isArray(res?.data) ? res.data :
-        []
-  
-      setLeads(leadsArray)
-    } catch (err) {
-      console.error('Failed to load leads', err)
-    }
-  }
-  
-
-  const [cateringMeta, setCateringMeta] = useState({
-    event_name: '',
-    event_date: '',
-    event_time: '',
-    event_location: ''
-  })
-  
-
-  const [headerForm, setHeaderForm] = useState({
-    lead_id: '',
-    quotation_date: '',
-    valid_until: '',
-    notes: ''
-  })
-
-  const isLocked = quotation?.is_locked === 1
-
-
-  const [items, setItems] = useState([])
-  const [openProductDialog, setOpenProductDialog] = useState(false)
-
-  const [notif, setNotif] = useState({
-    open: false,
-    message: '',
-    severity: 'success'
-  })
-
-  const [selectedLead, setSelectedLead] = useState(null)
-  const handleLeadIdChange = useCallback((leadId) => {
-    setHeaderForm((prev) => {
-      const current = prev.lead_id ?? ''
-      const next = leadId ?? ''
-      if (String(current) === String(next)) return prev
-      return { ...prev, lead_id: next }
-    })
-  }, [])
-
-
-  /* ---------------------------------------
-     HELPERS
-  --------------------------------------- */
-  const showNotification = (message, severity = 'success') => {
-    setNotif({ open: true, message, severity })
-  }
-
-  const normalizeCostMode = (mode) =>
-    COST_PRICING_MODES.includes(mode) ? mode : 'absolute'
-
-  /**
-   * ✅ Single source of truth for UPDATE / VERSION payload
-   * Backend expects FULL snapshot fields always.
-   */
-  const buildSnapshotItemsPayload = useCallback(() => {
-    return (items || [])
-      .map((i) => {
-        const product_id = i.product_id ?? i.product?.id ?? null
-        const product_name =
-          i.product_name ||
-          i.product?.name ||
-          i.product?.label ||
-          i.product?.title ||
-          '[Unnamed Product]'
-
-          return {
-            product_id,
-            product_name,
-          
-            variant_id: i.variant_id ?? null,
-            variant_sku: i.variant_sku || '',
-          
-            quantity: Number(i.quantity) || 0,
-          
-            // COST SNAPSHOT
-            cost_price: Number(i.cost_price) || 0,
-            cost_price_qty: Number(i.cost_price_qty) || 1,
-            cost_price_unit: i.cost_price_unit || 'unit',
-            cost_unit: i.cost_unit || i.cost_price_unit || 'unit',
-            cost_pricing_mode: normalizeCostMode(i.cost_pricing_mode),
-            cost_discount_percent: Number(i.cost_discount_percent) || 0,
-          
-            // SELLING SNAPSHOT
-            unit_price: Number(i.selling_price) || 0,
-            discount: Number(i.discount) || 0,
-            tax: Number(i.tax) || 0,
-          
-            // JSON SNAPSHOTS
-            attributes_json: i.attributes_json || {},
-            packaging_json: i.packaging_json || {}
-          }
-          
-      })
-      // ✅ Keep only valid rows (backend will reject otherwise)
-      .filter((i) => i.product_id && i.product_name && i.quantity > 0)
-  }, [items])
-
-  /* ---------------------------------------
-     PRODUCT → QUOTATION SNAPSHOT
-  --------------------------------------- */
-  const handleProductSelect = (index, product) => {
-    if (!product) {
-      updateItem(index, {
-        product: null,
-        product_id: null,
-        product_name: '',
-        variant_id: null,
-        variant_sku: '',
-        selling_price: 0,
-        selling_price_qty: 1,
-        selling_price_unit: 'unit',
-        cost_price: 0,
-        cost_price_qty: 1,
-        cost_price_unit: 'unit',
-        cost_unit: 'unit',
-        cost_pricing_mode: 'absolute',
-        cost_discount_percent: 0,
-        attributes_json: {},
-        packaging_json: {}
-      })
-      return
-    }
-
-    const productId = product.id ?? product.product_id ?? null
-    const productName = product.name ?? product.label ?? product.title ?? ''
-    const sellingPrice = Number(product.selling_price ?? product.price ?? 0) || 0
-    const costPrice = Number(product.cost_price ?? product.cost ?? 0) || 0
-
-    const variantId =
-      product.variant_id ??
-      product.variantId ??
-      product.variant?.id ??
-      null
-
-    const variantSku =
-      product.variant_sku ??
-      product.sku ??
-      product.variant?.sku ??
-      ''
-
-    updateItem(index, {
-      product,
-      product_id: productId,
-      product_name: productName || '[Unnamed Product]',
-
-      // COST SNAPSHOT
-      cost_price: costPrice,
-      cost_price_qty: Number(product.cost_price_qty ?? 1) || 1,
-      cost_price_unit: product.cost_price_unit || 'unit',
-      cost_unit: product.cost_unit || product.cost_price_unit || 'unit',
-      cost_pricing_mode: normalizeCostMode(product.cost_pricing_mode),
-      cost_discount_percent: Number(product.cost_discount_percent ?? 0) || 0,
-
-      // SELLING SNAPSHOT
-      selling_price: sellingPrice,
-      selling_price_qty: Number(product.selling_price_qty ?? 1) || 1,
-      selling_price_unit: product.selling_price_unit || 'unit',
-
-      // IDENTITY SNAPSHOT
-      variant_id: variantId,
-      variant_sku: variantSku,
-      attributes_json: product.attributes_json || {},
-      packaging_json: product.packaging_json || {}
-    })
-  }
-
-  /* ---------------------------------------
-     LOAD QUOTATION
-  --------------------------------------- */
-  useEffect(() => {
-    loadQuotation()
-    loadLeads()
-  }, [id])
-
-  useEffect(() => {
-    fetchAllProducts()
-      .then(res => {
-        const list =
-          Array.isArray(res) ? res :
-          Array.isArray(res?.data) ? res.data :
-          Array.isArray(res?.products) ? res.products : []
-        setProducts(list)
-      })
-      .catch(err => console.error('Failed to load products', err))
-  }, [])
-
-  useEffect(() => {
-    if (quotation) {
-      setOverallDiscount(
-        Number(quotation.quotation_discount_amount || 0)
-      )
-    }
-  }, [quotation])
-  
-
-
-  const loadQuotation = async () => {
-    try {
-      setLoading(true)
-      const data = await fetchQuotationById(id)
-      setQuotation(data)
-      if (data.quotation_mode === 'CATERING') {
-        setPax(Number(data.pax) || 1)
-        setCateringMeta({
-          event_name: data.event_name || '',
-          event_date: data.event_date?.substring(0, 10) || '',
-          event_time: data.event_time || '',
-          event_location: data.event_location || ''
-        })
-      }
-      // HEADER
-      setHeaderForm({
-        lead_id: data.lead_id ?? '',
-        quotation_date: data.quotation_date?.substring(0, 10) ?? '',
-        valid_until: data.valid_until?.substring(0, 10) ?? '',
-        notes: data.notes ?? ''
-      })
-
-      // ITEMS (STRICT NORMALIZATION)
-      const normalizedItems = (data.items || []).map((item) => ({
-        ...item,
-
-        product: item.product_id
-          ? { id: item.product_id, name: item.product_name }
-          : null,
-
-        product_id: item.product_id ?? null,
-        product_name: item.product_name || (item.product_id ? '[Unnamed Product]' : ''),
-
-        variant_id: item.variant_id ?? null,
-        variant_sku: item.variant_sku || '',
-
-        quantity: Number(item.quantity) || 1,
-
-        cost_price: Number(item.cost_price) || 0,
-        cost_price_qty: Number(item.cost_price_qty) || 1,
-        cost_price_unit: item.cost_price_unit || 'unit',
-        cost_unit: item.cost_unit || item.cost_price_unit || 'unit',
-        cost_pricing_mode: normalizeCostMode(item.cost_pricing_mode),
-        cost_discount_percent: Number(item.cost_discount_percent) || 0,
-
-        selling_price: Number(item.selling_price) || 0,
-        selling_price_qty: Number(item.selling_price_qty) || 1,
-        selling_price_unit: item.selling_price_unit || 'unit',
-
-        attributes_json: item.attributes_json || {},
-        packaging_json: item.packaging_json || {},
-
-        discount: Number(item.discount) || 0,
-        tax: Number(item.tax) || 0
-      }))
-
-      setItems(normalizedItems)
-
-      // LEAD
-      if (data.lead_id) {
-        const leadsRes = await fetchLeads()
-        const leads = Array.isArray(leadsRes?.leads)
-          ? leadsRes.leads
-          : Array.isArray(leadsRes?.data)
-          ? leadsRes.data
-          : []
-
-        setSelectedLead(
-          leads.find((l) => String(l.id) === String(data.lead_id)) || null
-        )
-      }
-    } catch (err) {
-      console.error(err)
-      showNotification('Failed to load quotation', 'error')
+      const [quotationData, leadData, productData] = await Promise.all([fetchQuotationById(id), fetchLeads(), fetchAllProducts()]);
+      const leadRows = Array.isArray(leadData?.leads) ? leadData.leads : Array.isArray(leadData?.data) ? leadData.data : [];
+      const productRows = Array.isArray(productData) ? productData : Array.isArray(productData?.products) ? productData.products : [];
+      setLeads(leadRows);
+      setProducts(productRows);
+      setQuotation(quotationData);
+      setItems(normalizeItems(quotationData?.items, productRows));
+      setOverallDiscount(Number(quotationData?.quotation_discount_amount || 0));
+      setPax(Number(quotationData?.pax) || 1);
+      setPublicAccessCode(quotationData?.public_access_code_display || '');
+    } catch (error) {
+      console.error(error);
+      setQuotation(null);
+      showNotification(error?.response?.data?.error || 'Failed to load quotation', 'error');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  }, [id, normalizeItems, showNotification]);
 
-  /* ---------------------------------------
-     HEADER SAVE
-  --------------------------------------- */
-  const handleSaveHeader = async () => {
+  useEffect(() => { loadQuotation(); }, [loadQuotation]);
+
+  useEffect(() => {
+    if (!quotation?.public_token || quotation?.public_viewed_at) return undefined;
+    let active = true;
+    const checkViewedState = async () => {
+      if (document.visibilityState === 'hidden') return;
+      try {
+        const latest = await fetchQuotationById(id);
+        if (active && latest?.public_viewed_at) {
+          setQuotation((current) => current ? { ...current, public_viewed_at: latest.public_viewed_at } : current);
+        }
+      } catch (_) { /* keep the current card state and retry */ }
+    };
+    const interval = window.setInterval(checkViewedState, 20000);
+    window.addEventListener('focus', checkViewedState);
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', checkViewedState);
+    };
+  }, [id, quotation?.public_token, quotation?.public_viewed_at]);
+
+  const selectedLead = useMemo(() => leads.find((lead) => String(lead.id) === String(quotation?.lead_id)) || null, [leads, quotation?.lead_id]);
+  const isLocked = Number(quotation?.is_locked || 0) === 1;
+  const publicUrl = quotation?.public_token ? `${window.location.origin}/public/quotations/${quotation.public_token}` : '';
+  const updateItem = (index, updates) => setItems((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, ...updates } : item));
+  const reorderItems = (from, to) => {
+    if (from === to || from == null || to == null) return;
+    setItems((current) => { const next = [...current]; const [moving] = next.splice(from, 1); next.splice(to, 0, moving); return next; });
+  };
+
+  const addProducts = (selectedProducts) => {
+    const additions = selectedProducts.map((product) => ({
+      ...product,
+      product,
+      product_id: product.id,
+      product_name: productName(product),
+      variant_id: product.variant_id ?? null,
+      variant_sku: product.variant_sku || product.sku || '',
+      quantity: 1,
+      cost_price: Number(product.cost_price || 0),
+      cost_price_qty: Number(product.cost_price_qty || 1),
+      cost_price_unit: product.cost_price_unit || 'unit',
+      cost_unit: product.cost_price_unit || 'unit',
+      cost_pricing_mode: normalizeCostMode(product.cost_pricing_mode),
+      cost_discount_percent: Number(product.cost_discount_percent || 0),
+      selling_price: Number(product.selling_price ?? product.price ?? 0),
+      selling_price_qty: Number(product.selling_price_qty || 1),
+      selling_price_unit: product.selling_price_unit || 'unit',
+      gst_rate: Number(product.gst_rate || 0),
+      attributes_json: product.attributes_json || {},
+      packaging_json: product.packaging_json || {},
+      discount: 0,
+      tax: 0,
+    }));
+    setItems((current) => [...current, ...additions]);
+    setProductPickerOpen(false);
+  };
+
+  const buildSnapshotItemsPayload = useCallback(() => items.map((item) => ({
+    product_id: item.product_id ?? item.product?.id ?? null,
+    product_name: item.product_name || productName(item.product),
+    variant_id: item.variant_id ?? null,
+    variant_sku: item.variant_sku || '',
+    quantity: Number(item.quantity) || 0,
+    cost_price: Number(item.cost_price) || 0,
+    cost_price_qty: Number(item.cost_price_qty) || 1,
+    cost_price_unit: item.cost_price_unit || 'unit',
+    cost_unit: item.cost_unit || item.cost_price_unit || 'unit',
+    cost_pricing_mode: normalizeCostMode(item.cost_pricing_mode),
+    cost_discount_percent: Number(item.cost_discount_percent) || 0,
+    unit_price: Number(item.selling_price) || 0,
+    discount: Number(item.discount) || 0,
+    gst_rate: Number(item.gst_rate) || 0,
+    tax: Number(item.tax) || 0,
+    attributes_json: item.attributes_json || {},
+    packaging_json: item.packaging_json || {},
+  })).filter((item) => item.product_id && item.product_name && item.quantity > 0), [items]);
+
+  const totals = useMemo(() => calculateQuotationTotals({ items, overallDiscount, pax, quotationMode: quotation?.quotation_mode, gstPricingMode: settings?.gst_pricing_mode || 'EXCLUSIVE' }), [items, overallDiscount, pax, quotation?.quotation_mode, settings?.gst_pricing_mode]);
+
+  const saveQuotation = async () => {
+    const payloadItems = buildSnapshotItemsPayload();
+    if (!payloadItems.length) return showNotification('Add at least one valid item', 'warning');
     try {
-      await updateQuotation(id, headerForm)
-      showNotification('Quotation updated')
-      setEditMode(false)
-      loadQuotation()
-    } catch (err) {
-      console.error(err)
-      showNotification('Failed to update quotation', 'error')
+      await updateQuotationItems(id, payloadItems);
+      await updateQuotation(id, { quotation_discount_type: 'FLAT', quotation_discount_value: Number(overallDiscount || 0), ...(quotation?.quotation_mode === 'CATERING' ? { pax } : {}) });
+      showNotification('Quotation updated successfully');
+      await loadQuotation();
+    } catch (error) {
+      showNotification(error?.response?.data?.error || 'Failed to save quotation', 'error');
     }
-  }
+  };
 
-  /* ---------------------------------------
-     ITEMS
-  --------------------------------------- */
-  const addItem = () => {
-    setItems((prev) => [
-      ...prev,
-      {
-        product: null,
-        product_id: null,
-        product_name: '',
-        variant_id: null,
-        variant_sku: '',
+  const saveFields = async (patch) => {
+    if (isLocked) throw new Error('Locked quotations cannot be edited');
+    const nextPatch = { ...patch };
+    if (Object.prototype.hasOwnProperty.call(nextPatch, 'status')) { await updateQuotationStatus(id, nextPatch.status); delete nextPatch.status; }
+    if (Object.keys(nextPatch).length) await updateQuotation(id, nextPatch);
+    await loadQuotation();
+  };
 
-        quantity: 1,
+  const changeStatus = useCallback(async (status, successMessage = 'Quotation status updated') => {
+    try { await updateQuotationStatus(id, status); showNotification(successMessage); await loadQuotation(); }
+    catch (error) { showNotification(error?.response?.data?.error || 'Failed to update quotation status', 'error'); }
+  }, [id, loadQuotation, showNotification]);
 
-        cost_price: 0,
-        cost_price_qty: 1,
-        cost_price_unit: 'unit',
-        cost_unit: 'unit',
-        cost_pricing_mode: 'absolute',
-        cost_discount_percent: 0,
-
-        selling_price: 0,
-        selling_price_qty: 1,
-        selling_price_unit: 'unit',
-
-        attributes_json: {},
-        packaging_json: {},
-
-        discount: 0,
-        tax: 0
-      }
-    ])
-  }
-
-  const updateItem = (index, updates) => {
-    setItems((prev) => {
-      const copy = [...prev]
-      copy[index] = { ...copy[index], ...updates }
-      return copy
-    })
-  }
-
-  /**
-   * ✅ Update items (FULL SNAPSHOT ONLY)
-   */
-   const handleSaveItems = async () => {
+  const createVersion = useCallback(async () => {
+    const payloadItems = buildSnapshotItemsPayload();
+    if (!payloadItems.length) return showNotification('Add at least one valid item', 'warning');
     try {
-      const payloadItems = buildSnapshotItemsPayload()
-  
-      if (!payloadItems.length) {
-        return showNotification('Add at least one valid item', 'warning')
-      }
-  
-      // ✅ 1. Save ITEMS
-      await updateQuotationItems(id, payloadItems)
-  
-      // ✅ 2. Save PAX (ONLY if catering)
-      if (quotation.quotation_mode === 'CATERING') {
-        await updateQuotation(id, {
-          pax,
-          ...cateringMeta
-        })
-      }
-  
-      showNotification('Items & PAX updated successfully')
-      loadQuotation()
-    } catch (err) {
-      console.error(err)
-      showNotification(
-        err?.response?.data?.error || 'Failed to update items',
-        'error'
-      )
-    }
-  }
-  const handleSubmit = async () => {
-    try {
-      if (!headerForm.lead_id) {
-        return showNotification('Lead is required', 'warning')
-      }
-      if (!headerForm.quotation_date) {
-        return showNotification('Quotation date is required', 'warning')
-      }
-  
-      if (quotation?.quotation_mode === 'CATERING' && (!pax || pax < 1)) {
-        return showNotification('PAX is required for catering', 'warning')
-      }
-  
-      const payloadItems = buildSnapshotItemsPayload()
-      if (!payloadItems.length) {
-        return showNotification('Add at least one valid item', 'warning')
-      }
-  
-      // 1) Save items snapshot
-      await updateQuotationItems(id, payloadItems)
-  
-      // 2) Save header + discount + totals (+ catering meta)
-      await updateQuotation(id, {
-        ...headerForm,
-      
+      let lineColumns = [];
+      try { lineColumns = JSON.parse(quotation.quotation_line_columns_json || '[]'); } catch (_) { lineColumns = []; }
+      const result = await createQuotation({
+        parent_id: quotation.parent_id || quotation.id,
+        lead_id: quotation.lead_id,
+        quotation_date: quotation.quotation_date,
+        valid_until: quotation.valid_until || null,
+        notes: quotation.notes || null,
+        items: payloadItems,
         quotation_discount_type: 'FLAT',
         quotation_discount_value: Number(overallDiscount || 0),
-      
-        ...(quotation?.quotation_mode === 'CATERING' && {
-          pax,
-          ...cateringMeta
-        })
-      })
-      
-  
-      showNotification('✅ Quotation updated successfully')
-      loadQuotation()
-    } catch (err) {
-      console.error(err)
-      showNotification(
-        err?.response?.data?.error || 'Failed to save quotation',
-        'error'
-      )
-    }
-  }
-  
-  
+        company_id: quotation.company_id || null,
+        quotation_template: quotation.quotation_template || null,
+        quotation_type: quotation.quotation_type || null,
+        cover_letter_html: quotation.cover_letter_html || null,
+        terms_conditions_html: quotation.terms_conditions_html || null,
+        company_logo_url: quotation.company_logo_url || null,
+        payment_terms: quotation.payment_terms || null,
+        line_columns: lineColumns,
+        group_items_by_top_category: Boolean(Number(quotation.group_items_by_top_category || 0)),
+        issuer_company_name: quotation.issuer_company_name || null,
+        issuer_company_email: quotation.issuer_company_email || null,
+        issuer_company_phone: quotation.issuer_company_phone || null,
+        issuer_company_address: quotation.issuer_company_address || null,
+        issuer_company_gst_number: quotation.issuer_company_gst_number || null,
+        ...(quotation.quotation_mode === 'CATERING' ? { pax, event_name: quotation.event_name, event_date: quotation.event_date || null, event_start_time: quotation.event_start_time || null, event_end_date: quotation.event_end_date || null, event_end_time: quotation.event_end_time || null, event_location: quotation.event_location || null } : {}),
+      });
+      navigate(`/quotations/${result.id || result.quotationId}`);
+    } catch (error) { showNotification(error?.response?.data?.error || 'Failed to create version', 'error'); }
+  }, [buildSnapshotItemsPayload, navigate, overallDiscount, pax, quotation, showNotification]);
 
-  /* ---------------------------------------
-     VERSION
-  --------------------------------------- */
-  const handleCreateVersion = async () => {
+  const createWorkOrder = useCallback(async () => {
+    if (quotation.status !== 'approved') return showNotification('Work Order can only be created from approved quotations', 'warning');
     try {
-      const payloadItems = buildSnapshotItemsPayload()
-  
-      if (!payloadItems.length) {
-        return showNotification('Add at least one valid item', 'warning')
-      }
-  
-      // const nextVersion = Number(quotation.version || 1) + 1
-  
-      const payload = {
-        parent_id: quotation.parent_id || quotation.id,
-        lead_id: headerForm.lead_id,
-        quotation_date: headerForm.quotation_date,
-        valid_until: headerForm.valid_until || null,
-        notes: headerForm.notes || null,
-        items: payloadItems,
-        ...(quotation.quotation_mode === 'CATERING' && {
-          pax,
-          event_name: cateringMeta.event_name,
-          event_date: cateringMeta.event_date || null,
-          event_time: cateringMeta.event_time || null,
-          event_location: cateringMeta.event_location || null
-        })
-      }
-      
-  
-      const res = await createQuotation(payload)
-  
-      showNotification(`New Version created`)
-      navigate(`/quotations/${res.id}`)
-    } catch (err) {
-      console.error(err)
-      showNotification(
-        err?.response?.data?.error || 'Failed to create version',
-        'error'
-      )
-    }
-  }
-  
+      const result = await createWorkOrderFromQuotation(quotation.id);
+      await updateQuotationStatus(quotation.id, 'converted');
+      const workOrderId = result?.id || result?.work_order_id || result?.data?.id;
+      if (!workOrderId) throw new Error('Work order created but ID not returned');
+      navigate(`/workorders/${workOrderId}`);
+    } catch (error) { showNotification(error?.response?.data?.error || error.message || 'Failed to create work order', 'error'); }
+  }, [navigate, quotation, showNotification]);
 
-  const handleCreateWorkOrder = async () => {
+  const copyPublicLink = useCallback(async () => {
+    if (!publicUrl) { setPublicLinkDialogOpen(true); return; }
+    await navigator.clipboard?.writeText(publicUrl);
+    showNotification('Client quotation link copied to clipboard');
+  }, [publicUrl, showNotification]);
+
+  const savePublicLink = async () => {
+    if (publicAccessCode && !/^\d{6}$/.test(publicAccessCode)) return showNotification('Access code must contain exactly six digits', 'error');
     try {
-      if (quotation.status !== 'approved') {
-        return showNotification(
-          'Work Order can only be created from approved quotations',
-          'warning'
-        )
-      }
-  
-      const payload = {
-        quotation_id: quotation.id
-      }
+      const result = await createPublicQuotationLink(quotation.id, { accessCode: publicAccessCode, acceptanceEnabled: true });
+      await navigator.clipboard?.writeText(`${window.location.origin}${result.publicUrl}`);
+      setPublicLinkDialogOpen(false);
+      await loadQuotation();
+      showNotification('Client quotation link saved and copied');
+    } catch (error) { showNotification(error?.response?.data?.error || 'Unable to create client quotation link', 'error'); }
+  };
 
-      console.log('🔥 Creating WO for quotation ID:', payload)
+  const fields = useMemo(() => {
+    const leadOptions = leads.map((lead) => ({ value: lead.id, label: [leadName(lead), lead.company_name].filter(Boolean).join(' · ') }));
+    return [
+      { key: 'quotation_number', label: 'Quotation number', readOnly: true },
+      { key: 'version', label: 'Version', readOnly: true, render: (value) => value ? `Version ${value}` : '—' },
+      { key: 'status', label: 'Status', type: 'select', options: ['pending', 'rejected'], readOnly: isLocked || ['approved', 'converted'].includes(String(quotation?.status || '').toLowerCase()) },
+      { key: 'quotation_date', label: 'Quotation date', type: 'date', readOnly: isLocked },
+      { key: 'valid_until', label: 'Expiration date', type: 'date', readOnly: isLocked },
+      { key: 'lead_id', label: 'Contact', type: 'autocomplete', options: leadOptions, readOnly: isLocked, render: () => leadName(selectedLead) || '—' },
+      { key: 'company_name', label: 'Company', readOnly: true },
+      { key: 'customer_email', label: 'Email', readOnly: true },
+      { key: 'customer_phone', label: 'Phone', readOnly: true },
+      { key: 'customer_gst', label: 'GST number', readOnly: true },
+      { key: 'notes', label: 'Notes', type: 'html', readOnly: isLocked },
+      { key: 'quotation_mode', label: 'Quotation mode', readOnly: true },
+      { key: 'quotation_type', label: 'Quotation type', readOnly: true, render: (value) => String(value || '—').replace(/_/g, ' ') },
+      { key: 'quotation_template', label: 'Template', readOnly: true },
+      { key: 'subtotal_display', label: 'Subtotal', readOnly: true },
+      { key: 'discount_display', label: 'Total discount', readOnly: true },
+      { key: 'tax_display', label: 'Tax', readOnly: true },
+      { key: 'total_display', label: 'Grand total', readOnly: true },
+      { key: 'event_name', label: 'Event name', readOnly: isLocked },
+      { key: 'event_date', label: 'Event date', type: 'date', readOnly: isLocked },
+      { key: 'event_start_time', label: 'Start time', readOnly: isLocked },
+      { key: 'event_end_time', label: 'End time', readOnly: isLocked },
+      { key: 'event_location', label: 'Location', readOnly: isLocked },
+      { key: 'pax', label: 'PAX', type: 'number', readOnly: isLocked },
+    ];
+  }, [isLocked, leads, quotation?.status, selectedLead]);
 
-  
-      const res = await createWorkOrderFromQuotation(payload.quotation_id)
-  
-      showNotification('Work Order created successfully')
-  
-      // 🔒 Lock quotation + mark converted
-      await updateQuotationStatus(quotation.id, 'converted')
-  
-      loadQuotation()
-
-      const workOrderId =
-        res?.id ||
-        res?.work_order_id ||
-        res?.data?.id
-
-      if (!workOrderId) {
-        throw new Error('Work order created but ID not returned')
-      }
-
-      navigate(`/workorders/${workOrderId}`)
-
-  
-      // 🔀 Navigate to Work Order detail
-      // navigate(`/workorders/${res.id}`)
-    } catch (err) {
-      console.error(err)
-      showNotification(
-        err?.response?.data?.error || 'Failed to create work order',
-        'error'
-      )
-    }
-  }
-  
-  const reorderItems = (from, to) => {
-    if (from === to || from == null || to == null) return
-  
-    setItems(prev => {
-      const copy = [...prev]
-      const [moved] = copy.splice(from, 1)
-      copy.splice(to, 0, moved)
-      return copy
-    })
-  }
-  
-  
-
-  /* ---------------------------------------
-     TOTALS
-  --------------------------------------- */
-  const totals = calculateQuotationTotals({
-    items,
-    overallDiscount, // ✅ state
+  const record = useMemo(() => quotation ? {
+    ...quotation,
+    company_name: selectedLead?.company_name || '',
+    customer_email: selectedLead?.email || '',
+    customer_phone: selectedLead?.phone_number || selectedLead?.phone || '',
+    customer_gst: selectedLead?.gst_number || '',
+    subtotal_display: money(totals.subtotal),
+    discount_display: money(totals.totalDiscount),
+    tax_display: money(totals.totalTax),
+    total_display: money(totals.grandTotal),
     pax,
-    quotationMode: quotation?.quotation_mode,
-    gstPricingMode: settings?.gst_pricing_mode || 'EXCLUSIVE'
-  })
-  
-  
+  } : null, [money, pax, quotation, selectedLead, totals]);
 
-  /* ---------------------------------------
-     UI
-  --------------------------------------- */
-  if (loading) {
-    return (
-      <>
-        <Topbar />
-        <div className="quotation-loading">Loading…</div>
-      </>
-    )
-  }
+  const cards = useMemo(() => quotation ? [
+    { id: 'client-details', title: 'Client Details', position: 'left', deletable: false, editable: !isLocked, fieldKeys: ['lead_id', 'company_name', 'customer_email', 'customer_phone', 'customer_gst'], headerActions: () => !isLocked ? <button type="button" className="record-card-header-link" title="Add contact" onClick={() => setLeadDialogOpen(true)}><Add /></button> : null },
+    { id: 'quotation-details', title: 'Quotation Details', position: 'left', deletable: false, editable: !isLocked, fieldKeys: ['quotation_date', 'valid_until', 'quotation_mode', 'quotation_type', 'quotation_template'] },
+    { id: 'notes', title: 'Notes', position: 'left', editable: !isLocked, fieldKeys: ['notes'] },
+    ...(quotation.quotation_mode === 'CATERING' ? [{ id: 'event-details', title: 'Event Details', position: 'left', editable: !isLocked, fieldKeys: ['event_name', 'event_date', 'event_start_time', 'event_end_time', 'event_location', 'pax'] }] : []),
+    { id: 'quotation-actions', title: 'Actions', position: 'right', fixed: true, disableDrag: true, deletable: false, allowSettings: false, titleEditable: false, fieldKeys: [], customContent: () => <div className="record-action-buttons"><button type="button" className="hs-listing__create" title="Save quotation" aria-label="Save quotation" disabled={isLocked} onClick={saveQuotation}><SaveOutlined /></button><button type="button" className="hs-listing__create" title="Download PDF" aria-label="Download PDF" onClick={() => generateQuotationPdf(quotation.id)}><PictureAsPdfOutlined /></button><button type="button" className="hs-listing__create" title={publicUrl ? 'Copy client link' : 'Create client link'} aria-label={publicUrl ? 'Copy client link' : 'Create client link'} onClick={copyPublicLink}><LinkOutlined /></button>{quotation.status === 'pending' && !isLocked && <button type="button" className="hs-listing__create" title="Approve quotation" aria-label="Approve quotation" onClick={() => changeStatus('approved', 'Quotation approved')}><CheckCircleOutline /></button>}{quotation.status === 'approved' && <button type="button" className="hs-listing__create" title="Create work order" aria-label="Create work order" onClick={createWorkOrder}><WorkOutlineOutlined /></button>}</div> },
+    { id: 'client-link', title: 'Client Link', position: 'right', deletable: false, fieldKeys: [], customContent: () => <div className="quotation-link-card"><div className={`quotation-view-state ${quotation.public_viewed_at ? 'is-viewed' : ''}`}><span />{quotation.public_viewed_at ? `Viewed ${formatDateTime(quotation.public_viewed_at)}` : publicUrl ? 'Not viewed yet' : 'No client link created'}</div>{publicUrl && <a href={publicUrl} target="_blank" rel="noreferrer">{publicUrl}<OpenInNewOutlined /></a>}<div><button type="button" onClick={copyPublicLink} disabled={!publicUrl}><ContentCopyOutlined />Copy</button><button type="button" onClick={() => setPublicLinkDialogOpen(true)}><LinkOutlined />{publicUrl ? 'Update link' : 'Create link'}</button></div>{quotation.public_access_code_display && <small>Access code: <b>{quotation.public_access_code_display}</b></small>}<small>Online acceptance: <b>{Number(quotation.public_acceptance_enabled || 0) ? 'Enabled' : 'Disabled'}</b></small></div> },
+    { id: 'related-documents', title: 'Related documents', position: 'right', deletable: false, editable: false, fieldKeys: [], customContent: () => <div className="record-related-documents">{quotation.related_documents?.work_orders?.map((workOrder) => <a key={`work-order-${workOrder.id}`} href={`/workorders/${workOrder.id}`}><WorkOutlineOutlined /><span>Work order</span><strong>{workOrder.work_order_number || `#${workOrder.id}`}</strong></a>)}{quotation.related_documents?.invoices?.map((invoice) => <a key={`invoice-${invoice.id}`} href={`/invoices/${invoice.id}`}><PictureAsPdfOutlined /><span>{String(invoice.source_type || '').toUpperCase() === 'PROFORMA' ? 'Proforma invoice' : 'Invoice'}</span><strong>{invoice.invoice_number || `#${invoice.id}`}</strong></a>)}{!quotation.related_documents?.work_orders?.length && !quotation.related_documents?.invoices?.length && <small>No work orders, invoices, or receipts have been created yet.</small>}</div> },
+    { id: 'totals', title: 'Quotation Totals', position: 'right', deletable: false, editable: false, fieldKeys: ['subtotal_display', 'discount_display', 'tax_display', 'total_display'] },
+  ] : [], [changeStatus, copyPublicLink, createWorkOrder, isLocked, publicUrl, quotation, saveQuotation]);
 
-  if (!quotation) {
-    return (
-      <>
-        <Topbar />
-        <div className="quotation-loading">Quotation not found</div>
-      </>
-    )
-  }
+  const summaryCard = useMemo(() => quotation ? {
+    titleFieldKey: 'quotation_number', backTo: '/quotations', backLabel: 'Quotations', subtitle: [leadName(selectedLead), quotation.version ? `Version ${quotation.version}` : null].filter(Boolean).join(' · '), fieldKeys: ['status', 'quotation_date', 'valid_until'], editable: !isLocked,
+    actions: [
+      { label: 'Download PDF', icon: <PictureAsPdfOutlined />, onClick: () => generateQuotationPdf(quotation.id) },
+      { label: publicUrl ? 'Copy client link' : 'Create client link', icon: <LinkOutlined />, onClick: copyPublicLink },
+      ...(quotation.status === 'pending' && !isLocked ? [{ label: 'Approve quotation', icon: <CheckCircleOutline />, onClick: () => changeStatus('approved', 'Quotation approved') }] : []),
+      ...(quotation.status === 'approved' ? [{ label: 'Create work order', icon: <WorkOutlineOutlined />, onClick: createWorkOrder }] : []),
+      ...(quotation.status !== 'converted' && quotation.status !== 'rejected' ? [{ label: 'Create new version', icon: <FileCopyOutlined />, onClick: createVersion }] : []),
+    ],
+  } : null, [changeStatus, copyPublicLink, createVersion, createWorkOrder, isLocked, publicUrl, quotation, selectedLead]);
 
-  return (
-    <>
-      <Topbar />
+  if (loading) return <div className="quotation-loading">Loading quotation…</div>;
+  if (!quotation) return <div className="quotation-loading">Quotation not found</div>;
 
-      <div className="quotation-detail-container">
-      <QuotationHeader
-        quotation={quotation}
-        isLocked={isLocked}
-        onStatusChange={async (newStatus) => {
-          try {
-            await updateQuotationStatus(quotation.id, newStatus)
-            setQuotation(prev => ({ ...prev, status: newStatus }))
-            showNotification('Status updated')
-          } catch {
-            showNotification('Failed to update status', 'error')
-          }
-        }}
-        onApprove={async () => {
-          try {
-            await updateQuotationStatus(quotation.id, 'approved')
-            setQuotation(prev => ({ ...prev, status: 'approved' }))
-            showNotification('Quotation approved')
-          } catch {
-            showNotification('Failed to approve quotation', 'error')
-          }
-        }}
-        onCreateWorkOrder={handleCreateWorkOrder}
-        onCreateVersion={handleCreateVersion}
-      />
-
-
-
-        <div className="quotation-card">
-        <QuotationContactSection
-          isLocked={isLocked}
-          leads={leads}
-          leadId={headerForm.lead_id}
-          setLeadId={handleLeadIdChange}
-          selectedLead={selectedLead}
-          setSelectedLead={setSelectedLead}
-          quotationDate={headerForm.quotation_date}
-          setQuotationDate={(v) =>
-            setHeaderForm((p) => ({ ...p, quotation_date: v }))
-          }
-          validUntil={headerForm.valid_until}
-          setValidUntil={(v) =>
-            setHeaderForm((p) => ({ ...p, valid_until: v }))
-          }
-          notes={headerForm.notes}
-          setNotes={(v) => setHeaderForm((p) => ({ ...p, notes: v }))}
-          openAddLeadDialog={() => setOpenAddLeadDialog(true)}
-          setPrefillLeadName={setPrefillLeadName}
-        />
-
-
-
-          {editMode && !isLocked && (
-            <button className="btn-primary mt" onClick={handleSaveHeader}>
-              Save Header
-            </button>
-          )}
-        </div>
-
-        {quotation.quotation_mode === 'CATERING' && (
-            <div className="quotation-card catering-meta">
-              <h3>Event Details</h3>
-
-              <div className="grid">
-                <input disabled={isLocked}
-                  placeholder="Event Name"
-                  value={cateringMeta.event_name}
-                  onChange={(e) =>
-                    setCateringMeta(p => ({ ...p, event_name: e.target.value }))
-                  }
-                />
-
-                <input disabled={isLocked}
-                  type="date"
-                  value={cateringMeta.event_date}
-                  onChange={(e) =>
-                    setCateringMeta(p => ({ ...p, event_date: e.target.value }))
-                  }
-                />
-
-                <input disabled={isLocked}
-                  placeholder="Event Time (e.g. 7 PM – 11 PM)"
-                  value={cateringMeta.event_time}
-                  onChange={(e) =>
-                    setCateringMeta(p => ({ ...p, event_time: e.target.value }))
-                  }
-                />
-
-                <input disabled={isLocked}
-                  placeholder="Event Location / Venue"
-                  value={cateringMeta.event_location}
-                  onChange={(e) =>
-                    setCateringMeta(p => ({ ...p, event_location: e.target.value }))
-                  }
-                />
-
-                <input disabled={isLocked}
-                  type="number"
-                  min={1}
-                  placeholder="PAX"
-                  value={pax}
-                  onChange={(e) => setPax(Number(e.target.value) || 1)}
-                />
-              </div>
-            </div>
-          )}
-
-
-
-        <div className="quotation-card">
-          <QuotationItemsSection
-            items={items}
-            setItems={setItems}
-            updateItem={updateItem}
-            handleProductSelect={handleProductSelect}
-            addItem={addItem}
-            reorderItems={reorderItems}
-            openProductDialog={openProductDialog}
-            setOpenProductDialog={setOpenProductDialog}
-            quotationMode={quotation.quotation_mode}
-            pax={pax}
-            isLocked={isLocked}
-            products={products}
-          />
-
-        </div>
-
-
-        <div className='quotation-card'>
-
-
-        <QuotationSummary
-          totals={totals}
-          overallDiscount={overallDiscount}
-          setOverallDiscount={setOverallDiscount}
-          currency={currency}
-          isLocked={isLocked}
-        />
-
-        <QuotationFooterSection
-          total={Number(totals.grandTotal || 0)}
-          handleSubmit={handleSubmit}
-          currency={currency}
-          disabled={isLocked}
-        />
-      </div>
-
-
-          {/* {!isLocked && (
-            <button className="btn-primary mt" onClick={handleSaveItems}>
-              Save Items
-            </button>
-          )} */}
-
-      </div>
-
-
-
-
-      <AddProductDialog
-        open={openProductDialog}
-        onClose={() => setOpenProductDialog(false)}
-      />
-
-      <NotificationSnackbar
-        open={notif.open}
-        message={notif.message}
-        severity={notif.severity}
-        onClose={() => setNotif({ ...notif, open: false })}
-      />
-      <AddLeadDialog
-        open={openAddLeadDialog}
-        onClose={() => setOpenAddLeadDialog(false)}
-        prefillName={prefillLeadName}
-        onLeadCreated={(lead) => {
-          setLeads((p) => [...p, lead])
-          setSelectedLead(lead)
-          setHeaderForm((p) => ({ ...p, lead_id: lead.id }))
-        }}
-      />
-    </>
-  )
+  return <>
+    <SingleRecordWorkspace storageKey={`pav-erp:record:quotation:${id}`} backTo="/quotations" backLabel="Quotations" title={quotation.quotation_number || `Quotation #${id}`} record={record} fields={fields} initialCards={cards} summaryCard={summaryCard} hidePageHeader onSaveFields={saveFields} centerLabel={`Order Lines (${items.length})`} centerContent={<div className="quotation-order-lines-workspace"><QuotationItemsSection items={items} setItems={setItems} updateItem={updateItem} reorderItems={reorderItems} onAddProducts={() => setProductPickerOpen(true)} isLocked={isLocked} products={products} /><div className="quotation-order-summary-card"><QuotationSummary totals={totals} overallDiscount={overallDiscount} setOverallDiscount={setOverallDiscount} currency={currencyLabel} isLocked={isLocked} /></div></div>} />
+    <QuotationProductPickerDrawer open={productPickerOpen} products={products} onClose={() => setProductPickerOpen(false)} onAdd={addProducts} />
+    <AddLeadDialog open={leadDialogOpen} onClose={() => setLeadDialogOpen(false)} onLeadCreated={async (lead) => { setLeads((current) => [...current, lead]); setLeadDialogOpen(false); try { await updateQuotation(id, { lead_id: lead.id }); await loadQuotation(); } catch (error) { showNotification(error?.response?.data?.error || 'Unable to update contact', 'error'); } }} />
+    <Dialog open={publicLinkDialogOpen} onClose={() => setPublicLinkDialogOpen(false)} fullWidth maxWidth="xs"><DialogTitle>{publicUrl ? 'Update client quotation link' : 'Create client quotation link'}</DialogTitle><DialogContent><p>Set an optional six-digit access code. Leave it blank for an open link.</p><TextField autoFocus fullWidth label="Access code" value={publicAccessCode} onChange={(event) => setPublicAccessCode(event.target.value.replace(/\D/g, '').slice(0, 6))} inputProps={{ inputMode: 'numeric', maxLength: 6 }} /></DialogContent><DialogActions><Button onClick={() => setPublicLinkDialogOpen(false)}>Cancel</Button><Button variant="contained" onClick={savePublicLink}>Save and copy link</Button></DialogActions></Dialog>
+    <NotificationSnackbar open={notification.open} message={notification.message} severity={notification.severity} onClose={() => setNotification((current) => ({ ...current, open: false }))} />
+  </>;
 }
-
-export default QuotationDetail

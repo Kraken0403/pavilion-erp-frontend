@@ -1,7 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 // Topbar is rendered by the Layout; avoid duplicating it here
-import UtilsBar from '../UtilsBar'
-import PaginationBar from '../ui/PaginationBar'
+import HubSpotListing from '../ui/HubSpotListing'
 import ConfirmDialog from '../ui/ConfirmDialog'
 import NotificationSnackbar from '../ui/NotificationSnackbar'
 import '../../assets/styles/LeadsTable.scss'
@@ -21,13 +20,9 @@ import { fetchCouponsAdmin, createCouponAdmin, updateCouponAdmin, deleteCouponAd
 import EditIcon from '@mui/icons-material/Edit'
 import { formatDate } from '../../utils/dateFormatter'
 
-const ITEMS_PER_PAGE = 20
-
 export default function CouponList() {
   const [coupons, setCoupons] = useState([])
   const [loading, setLoading] = useState(true)
-  const [search, setSearch] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [toDeleteId, setToDeleteId] = useState(null)
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' })
@@ -128,83 +123,36 @@ export default function CouponList() {
     }
   }
 
-  const filtered = useMemo(() => {
-    const q = String(search || '').trim().toLowerCase()
-    if (!q) return coupons
-    return coupons.filter(c => (String(c.code || '').toLowerCase().includes(q) || String(c.description || '').toLowerCase().includes(q)))
-  }, [coupons, search])
-
-  const totalItems = filtered.length
-  const start = (currentPage - 1) * ITEMS_PER_PAGE
-  const pageItems = filtered.slice(start, start + ITEMS_PER_PAGE)
-
   return (
     <div className="leads-table-container">
-      <div style={{ padding: 12 }}>
-        <UtilsBar
-          buttonLabel="New Coupon"
-          onButtonClick={() => setShowCreate(true)}
-          searchValue={search}
-          onSearchChange={setSearch}
-          sortValue="latest"
-          onSortChange={() => {}}
+      <div style={{ height: '100%' }}>
+        <HubSpotListing
+          title="Coupons"
+          createLabel="Add coupon"
+          rows={loading ? [] : coupons.map((coupon) => ({ ...coupon, active_label: coupon.active ? 'Yes' : 'No' }))}
+          initialFields={[
+            { key: 'code', label: 'Code' }, { key: 'type', label: 'Type', options: ['flat', 'percent'] },
+            { key: 'value', label: 'Value' }, { key: 'min_order_amount', label: 'Minimum order' },
+            { key: 'starts_at', label: 'Starts at' }, { key: 'ends_at', label: 'Ends at' },
+            { key: 'times_used', label: 'Times used' }, { key: 'active_label', label: 'Active', options: ['Yes', 'No'] },
+            { key: '_actions', label: 'Actions' },
+          ]}
+          onCreate={() => { setEditingId(null); setShowCreate(true); }}
+          onRowOpen={onEdit}
+          onRefresh={load}
+          renderValue={(field, value, coupon) => {
+            if (field === 'value') return coupon.type === 'percent' ? `${Number(value || 0).toFixed(2)} %` : `₹ ${Number(value || 0).toFixed(2)}`;
+            if (field === 'min_order_amount') return `₹ ${Number(value || 0).toFixed(2)}`;
+            if (field === 'starts_at' || field === 'ends_at') return formatDate(value) || '—';
+            if (field === 'active_label') return value;
+            if (field === '_actions') return <span className="hs-listing__row-actions" onClick={(event) => event.stopPropagation()}><IconButton aria-label="edit coupon" onClick={() => onEdit(coupon)} size="small"><EditIcon fontSize="small" /></IconButton><IconButton aria-label="delete coupon" color="error" onClick={() => confirmDelete(coupon.id)} size="small"><DeleteIcon fontSize="small" /></IconButton></span>;
+            return value ?? '—';
+          }}
         />
 
-        <div className="table-container" style={{ marginTop: 12 }}>
-          <table className="leads-table">
-            <thead>
-              <tr>
-                <th>Code</th>
-                <th>Type</th>
-                <th>Value</th>
-                <th>Min Order</th>
-                <th>Starts At</th>
-                <th>Ends At</th>
-                <th>Usage</th>
-                <th>Active</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {loading ? (
-                <tr><td colSpan={9} style={{ padding: 20, textAlign: 'center' }}>Loading...</td></tr>
-              ) : (pageItems.length ? pageItems.map(c => (
-                <tr key={c.id} className="clickable-row">
-                  <td><span className="cell-text">{c.code}</span></td>
-                  <td>{c.type}</td>
-                  <td>{c.type === 'percent' ? `${Number(c.value || 0).toFixed(2)} %` : `₹ ${Number(c.value || 0).toFixed(2)}`}</td>
-                  <td>₹ {Number(c.min_order_amount || 0).toFixed(2)}</td>
-                  <td>{formatDate(c.starts_at)}</td>
-                  <td>{formatDate(c.ends_at)}</td>
-                  <td>{c.times_used || 0}{c.usage_limit ? ` / ${c.usage_limit}` : ''}</td>
-                  <td>{c.active ? 'Yes' : 'No'}</td>
-                  <td>
-                    <IconButton aria-label="edit-coupon" color="primary" onClick={() => onEdit(c)} size="small">
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                    <IconButton aria-label="delete-coupon" color="error" onClick={() => confirmDelete(c.id)} size="small">
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </td>
-                </tr>
-              )) : (
-                <tr><td colSpan={9} className="table-empty-message">No coupons found</td></tr>
-              ))}
-            </tbody>
-          </table>
-
-          <PaginationBar
-            currentPage={currentPage}
-            totalItems={totalItems}
-            itemsPerPage={ITEMS_PER_PAGE}
-            onPageChange={(p) => setCurrentPage(p)}
-          />
-        </div>
-
-        <Dialog open={showCreate} onClose={() => setShowCreate(false)} fullWidth maxWidth="sm">
+        <Dialog className="erp-form-drawer" open={showCreate} onClose={() => setShowCreate(false)} fullWidth maxWidth="sm">
           <DialogTitle>
-            Create Coupon
+            {editingId ? 'Edit Coupon' : 'Create Coupon'}
             <IconButton
               aria-label="close"
               onClick={() => setShowCreate(false)}

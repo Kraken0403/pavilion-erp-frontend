@@ -1,9 +1,6 @@
 // src/pages/InvoiceSettings.js
 import React, { useCallback, useState, useEffect } from 'react'
 import {
-  Container,
-  Paper,
-  Typography,
   TextField,
   Button,
   MenuItem
@@ -15,7 +12,6 @@ import {
   getInvoiceSettings,
   saveInvoiceSettings
 } from '../services/invoiceService'
-import Topbar from '../components/Topbar'
 import PageLoader from '../components/ui/PageLoader'
 
 const numberingModes = [
@@ -83,23 +79,16 @@ function InvoiceSettings() {
   }
 
   return (
-    <Container>
-      <Topbar />
-
-      <Paper sx={{ p: 3 }}>
-        {loading ? (
-          <PageLoader message="Loading invoice settings..." minHeight={220} />
-        ) : (
-          <>
-            {/* Numbering Section */}
-            <Typography variant="h6" mt={2}>
-              Invoice Numbering
-            </Typography>
-
+    <div className="settings-module-page">
+      <div className="settings-module-heading"><span>Document settings</span><h2>Invoices</h2><p>Manage numbering for invoices, proformas and receipts, plus reusable document content.</p></div>
+      {loading ? <PageLoader message="Loading invoice settings..." minHeight={220} /> : (
+        <div className="settings-sections-form">
+          <section className="settings-section-card">
+            <header><div><h3>Invoice numbering</h3><p>Define the sequence used for issued invoices.</p></div></header>
+            <div className="settings-field-grid">
             <TextField
               label="Prefix"
               fullWidth
-              sx={{ mt: 2 }}
               value={settings.prefix}
               onChange={(e) =>
                 setSettings({ ...settings, prefix: e.target.value })
@@ -110,7 +99,6 @@ function InvoiceSettings() {
               label="Sequence Start"
               type="number"
               fullWidth
-              sx={{ mt: 2 }}
               value={settings.sequence_start}
               onChange={(e) =>
                 setSettings({
@@ -123,7 +111,6 @@ function InvoiceSettings() {
             <TextField
               label="Number Format"
               fullWidth
-              sx={{ mt: 2 }}
               helperText="Available tags: {prefix} {year} {month} {seq}"
               value={settings.number_format}
               onChange={(e) =>
@@ -135,7 +122,6 @@ function InvoiceSettings() {
               label="Numbering Mode"
               select
               fullWidth
-              sx={{ mt: 2 }}
               value={settings.numbering_mode}
               onChange={(e) =>
                 setSettings({ ...settings, numbering_mode: e.target.value })
@@ -147,16 +133,15 @@ function InvoiceSettings() {
                 </MenuItem>
               ))}
             </TextField>
+            </div>
+          </section>
 
-            {/* Proforma Numbering Section */}
-            <Typography variant="h6" mt={4}>
-              Proforma Numbering
-            </Typography>
-
+          <section className="settings-section-card">
+            <header><div><h3>Proforma numbering</h3><p>Keep proforma documents on their own independent sequence.</p></div></header>
+            <div className="settings-field-grid">
             <TextField
               label="Proforma Prefix"
               fullWidth
-              sx={{ mt: 2 }}
               value={settings.proforma_prefix || ''}
               onChange={(e) => setSettings({ ...settings, proforma_prefix: e.target.value })}
             />
@@ -164,7 +149,6 @@ function InvoiceSettings() {
             <TextField
               label="Proforma Number Format"
               fullWidth
-              sx={{ mt: 2 }}
               helperText="Available tags: {prefix} {year} {month} {seq}"
               value={settings.proforma_number_format || ''}
               onChange={(e) => setSettings({ ...settings, proforma_number_format: e.target.value })}
@@ -174,7 +158,6 @@ function InvoiceSettings() {
               label="Proforma Sequence Start"
               type="number"
               fullWidth
-              sx={{ mt: 2 }}
               value={settings.proforma_sequence_start}
               onChange={(e) => setSettings({ ...settings, proforma_sequence_start: Number(e.target.value) })}
             />
@@ -183,7 +166,6 @@ function InvoiceSettings() {
               label="Proforma Numbering Mode"
               select
               fullWidth
-              sx={{ mt: 2 }}
               value={settings.proforma_numbering_mode || 'continuous'}
               onChange={(e) => setSettings({ ...settings, proforma_numbering_mode: e.target.value })}
             >
@@ -193,16 +175,15 @@ function InvoiceSettings() {
                 </MenuItem>
               ))}
             </TextField>
+            </div>
+          </section>
 
-            {/* Receipt Numbering Section */}
-            <Typography variant="h6" mt={4}>
-              Receipt Numbering
-            </Typography>
-
+          <section className="settings-section-card">
+            <header><div><h3>Receipt numbering</h3><p>Configure the identifiers created for payment receipts.</p></div></header>
+            <div className="settings-field-grid">
             <TextField
               label="Receipt Prefix"
               fullWidth
-              sx={{ mt: 2 }}
               value={settings.receipt_prefix || ''}
               onChange={(e) =>
                 setSettings({ ...settings, receipt_prefix: e.target.value })
@@ -213,7 +194,6 @@ function InvoiceSettings() {
               label="Receipt Sequence Start"
               type="number"
               fullWidth
-              sx={{ mt: 2 }}
               value={settings.receipt_sequence_start}
               onChange={(e) =>
                 setSettings({
@@ -226,7 +206,6 @@ function InvoiceSettings() {
             <TextField
               label="Receipt Number Format"
               fullWidth
-              sx={{ mt: 2 }}
               helperText="Available tags: {prefix} {year} {month} {seq}"
               value={settings.receipt_number_format || ''}
               onChange={(e) =>
@@ -238,7 +217,6 @@ function InvoiceSettings() {
               label="Receipt Numbering Mode"
               select
               fullWidth
-              sx={{ mt: 2 }}
               value={settings.receipt_numbering_mode || 'continuous'}
               onChange={(e) =>
                 setSettings({ ...settings, receipt_numbering_mode: e.target.value })
@@ -250,53 +228,21 @@ function InvoiceSettings() {
                 </MenuItem>
               ))}
             </TextField>
+            </div>
+          </section>
 
-            {/* Cover Letter */}
-            <Typography variant="h6" mt={4}>
-              Cover Letter / Introduction
-            </Typography>
+          <section className="settings-section-card">
+            <header><div><h3>Reusable content</h3><p>Default copy included in newly created invoice documents.</p></div></header>
+            <div className="settings-editor-stack">
+              <label><span>Cover letter / introduction</span><WgiymEditor value={settings.cover_letter_html || ''} onChange={(val) => setSettings({ ...settings, cover_letter_html: val })} /></label>
+              <label><span>Terms & conditions</span><WgiymEditor value={settings.terms_conditions_html} onChange={(val) => setSettings({ ...settings, terms_conditions_html: val })} /></label>
+              <label><span>Footer notes</span><WgiymEditor value={settings.footer_notes_html} onChange={(val) => setSettings({ ...settings, footer_notes_html: val })} /></label>
+            </div>
+          </section>
 
-            <WgiymEditor
-              value={settings.cover_letter_html || ''}
-              onChange={(val) =>
-                setSettings({ ...settings, cover_letter_html: val })
-              }
-            />
-
-            {/* Terms */}
-            <Typography variant="h6" mt={4}>
-              Terms & Conditions
-            </Typography>
-
-            <WgiymEditor
-              value={settings.terms_conditions_html}
-              onChange={(val) =>
-                setSettings({ ...settings, terms_conditions_html: val })
-              }
-            />
-
-            {/* Footer */}
-            <Typography variant="h6" mt={4}>
-              Footer Notes
-            </Typography>
-
-            <WgiymEditor
-              value={settings.footer_notes_html}
-              onChange={(val) =>
-                setSettings({ ...settings, footer_notes_html: val })
-              }
-            />
-
-            <Button
-              variant="contained"
-              sx={{ mt: 4 }}
-              onClick={handleSave}
-            >
-              Save Settings
-            </Button>
-          </>
-        )}
-      </Paper>
+          <footer className="settings-form-footer"><Button variant="contained" onClick={handleSave}>Save invoice settings</Button></footer>
+        </div>
+      )}
 
       <NotificationSnackbar
         open={notif.open}
@@ -306,7 +252,7 @@ function InvoiceSettings() {
           setNotif(prev => ({ ...prev, open: false }))
         }
       />
-    </Container>
+    </div>
   )
 }
 

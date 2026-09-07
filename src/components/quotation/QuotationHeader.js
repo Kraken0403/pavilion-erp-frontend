@@ -89,7 +89,7 @@ function QuotationHeader({
 
           {/* ACTIONS BUTTON */}
           <button
-            className="secondary-btn"
+            className="hs-listing__create"
             onClick={(e) => {
               e.preventDefault()
               setActionsAnchorEl(e.currentTarget)

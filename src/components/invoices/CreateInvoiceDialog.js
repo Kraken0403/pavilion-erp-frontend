@@ -100,7 +100,7 @@ function CreateInvoiceDialog({ open, onClose, onSuccess }) {
   };
 
   return (
-    <Dialog open={open} maxWidth="md" fullWidth>
+    <Dialog className="erp-form-drawer" open={open} maxWidth="md" fullWidth>
       <DialogTitle className="dialog-title">
         Create Invoice
         <IconButton onClick={handleClose} size="small">

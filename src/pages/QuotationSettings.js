@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Container,
-  Paper,
-  Typography,
   TextField,
   Button,
   MenuItem,
@@ -14,11 +11,6 @@ import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import WgiymEditor from '../components/ui/WgiymEditor';
 import FileUploader from '../components/ui/FileUploader';
 
-const layoutOptions = [
-  { value: 'minimal', label: 'Minimal' },
-  { value: 'classic', label: 'Classic' },
-  { value: 'modern', label: 'Modern' },
-];
 
 const numberingModes = [
   { value: 'continuous', label: 'Continuous (Never resets)' },
@@ -28,7 +20,7 @@ const numberingModes = [
 
 function QuotationSettings() {
   const [settings, setSettings] = useState({
-    layout_option: 'minimal',
+    layout_option: 'builder',
     logo_url: '',
     terms_conditions_html: '',
     cover_letter_html: '',
@@ -37,7 +29,10 @@ function QuotationSettings() {
     sequence_start: 1,
     number_format: '{prefix}/{year}/{seq}',
     numbering_mode: 'continuous',
-    quotation_mode: 'GENERAL'
+    quotation_mode: 'GENERAL',
+    default_payment_terms: '',
+    signature_url: '',
+    header_notes_html: ''
   });
 
   const [loading, setLoading] = useState(false);
@@ -59,7 +54,7 @@ function QuotationSettings() {
     setLoading(true);
     try {
       const data = await getQuotationSettings();
-      setSettings(data);
+      setSettings({ ...data, layout_option: 'builder' });
     } catch (err) {
       console.error("Failed to load settings:", err);
       showNotification("Failed to load settings", "error");
@@ -69,7 +64,7 @@ function QuotationSettings() {
 
   const handleSave = async () => {
     try {
-      await saveQuotationSettings(settings);
+      await saveQuotationSettings({ ...settings, layout_option: 'builder' });
       showNotification("✅ Quotation settings saved!");
     } catch (err) {
       console.error("Failed to save settings:", err);
@@ -78,37 +73,17 @@ function QuotationSettings() {
   };
 
   return (
-    <Container>
-      <Typography variant="h4" gutterBottom>
-        Quotation Settings
-      </Typography>
-
-      <Paper sx={{ p: 3 }}>
-        {loading ? (
-          <CircularProgress />
-        ) : (
-          <>
-            {/* Layout */}
-            <TextField
-              label="Quotation Layout"
-              select
-              fullWidth
-              sx={{ mb: 3 }}
-              value={settings.layout_option}
-              onChange={(e) => setSettings({ ...settings, layout_option: e.target.value })}
-            >
-              {layoutOptions.map(op => (
-                <MenuItem key={op.value} value={op.value}>
-                  {op.label}
-                </MenuItem>
-              ))}
-            </TextField>
-
+    <div className="settings-module-page">
+      <div className="settings-module-heading"><span>Document settings</span><h2>Quotations</h2><p>Set quotation defaults, numbering and reusable customer-facing content.</p></div>
+      {loading ? <div className="settings-module-loading"><CircularProgress size={26} /><span>Loading quotation settings…</span></div> : (
+        <div className="settings-sections-form">
+          <section className="settings-section-card">
+            <header><div><h3>Document defaults</h3><p>Set the assets and defaults used for new quotations. Template layout is managed only from the Quotation Template Builder.</p></div></header>
+            <div className="settings-field-grid">
             <TextField
                 select
                 label="Quotation Mode"
                 fullWidth
-                sx={{ mb: 3 }}
                 value={settings.quotation_mode || 'GENERAL'}
                 onChange={(e) => setSettings({ ...settings, quotation_mode: e.target.value })}
               >
@@ -117,23 +92,18 @@ function QuotationSettings() {
                 <MenuItem value="FUSION_BOX">Fusion Box</MenuItem>
                 <MenuItem value="MEAL_BOX">Chef’s Meal Box</MenuItem> */}
               </TextField>
+              <div className="settings-upload-field"><FileUploader label="Company Logo" fileUrl={settings.logo_url} onFileUploaded={(url) => setSettings({ ...settings, logo_url: url })} /></div>
+              <div className="settings-upload-field"><FileUploader label="Authorized e-signature" fileUrl={settings.signature_url} onFileUploaded={(url) => setSettings({ ...settings, signature_url: url })} /></div>
+              <div className="settings-field-wide"><TextField label="Default payment terms" fullWidth multiline minRows={3} value={settings.default_payment_terms || ''} onChange={(e) => setSettings({ ...settings, default_payment_terms: e.target.value })} /></div>
+            </div>
+          </section>
 
-
-            {/* Logo */}
-            <FileUploader
-              label="Company Logo"
-              fileUrl={settings.logo_url}
-              onFileUploaded={(url) => setSettings({ ...settings, logo_url: url })}
-            />
-
-            <Typography variant="h6" mt={4}>
-              Quotation Numbering
-            </Typography>
-
+          <section className="settings-section-card">
+            <header><div><h3>Quotation numbering</h3><p>Define how unique quotation numbers are generated.</p></div></header>
+            <div className="settings-field-grid">
             <TextField
               label="Prefix"
               fullWidth
-              sx={{ mt: 2 }}
               value={settings.prefix}
               onChange={(e) => setSettings({ ...settings, prefix: e.target.value })}
             />
@@ -142,7 +112,6 @@ function QuotationSettings() {
               label="Sequence Start"
               type="number"
               fullWidth
-              sx={{ mt: 2 }}
               value={settings.sequence_start}
               onChange={(e) => setSettings({ ...settings, sequence_start: Number(e.target.value) })}
             />
@@ -150,7 +119,6 @@ function QuotationSettings() {
             <TextField
               label="Number Format"
               fullWidth
-              sx={{ mt: 2 }}
               helperText="Available tags: {prefix} {year} {month} {seq}"
               value={settings.number_format}
               onChange={(e) => setSettings({ ...settings, number_format: e.target.value })}
@@ -160,7 +128,6 @@ function QuotationSettings() {
               label="Numbering Mode"
               select
               fullWidth
-              sx={{ mt: 2 }}
               value={settings.numbering_mode}
               onChange={(e) => setSettings({ ...settings, numbering_mode: e.target.value })}
             >
@@ -170,31 +137,22 @@ function QuotationSettings() {
                 </MenuItem>
               ))}
             </TextField>
+            </div>
+          </section>
 
-            <Typography variant="h6" mt={4}>Cover Letter / Introduction</Typography>
-            <WgiymEditor
-              value={settings.cover_letter_html}
-              onChange={(val) => setSettings({ ...settings, cover_letter_html: val })}
-            />
+          <section className="settings-section-card">
+            <header><div><h3>Reusable content</h3><p>These blocks populate new quotations and can still be edited per quotation.</p></div></header>
+            <div className="settings-editor-stack">
+              <label><span>Cover letter / introduction</span><WgiymEditor value={settings.cover_letter_html} onChange={(val) => setSettings({ ...settings, cover_letter_html: val })} /></label>
+              <label><span>Header notes</span><WgiymEditor value={settings.header_notes_html || ''} onChange={(val) => setSettings({ ...settings, header_notes_html: val })} /></label>
+              <label><span>Terms & conditions</span><WgiymEditor value={settings.terms_conditions_html} onChange={(val) => setSettings({ ...settings, terms_conditions_html: val })} /></label>
+              <label><span>Footer notes</span><WgiymEditor value={settings.footer_notes_html} onChange={(val) => setSettings({ ...settings, footer_notes_html: val })} /></label>
+            </div>
+          </section>
 
-            <Typography variant="h6" mt={4}>Terms & Conditions</Typography>
-            <WgiymEditor
-              value={settings.terms_conditions_html}
-              onChange={(val) => setSettings({ ...settings, terms_conditions_html: val })}
-            />
-
-            <Typography variant="h6" mt={4}>Footer Notes (Optional)</Typography>
-            <WgiymEditor
-              value={settings.footer_notes_html}
-              onChange={(val) => setSettings({ ...settings, footer_notes_html: val })}
-            />
-
-            <Button variant="contained" sx={{ mt: 4 }} onClick={handleSave}>
-              Save Settings
-            </Button>
-          </>
-        )}
-      </Paper>
+          <footer className="settings-form-footer"><Button variant="contained" onClick={handleSave}>Save quotation settings</Button></footer>
+        </div>
+      )}
 
       <NotificationSnackbar
         open={notif.open}
@@ -202,7 +160,7 @@ function QuotationSettings() {
         severity={notif.severity}
         onClose={() => setNotif({ ...notif, open: false })}
       />
-    </Container>
+    </div>
   );
 }
 

@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { Box } from '@mui/material';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import Topbar from './Topbar';
@@ -19,15 +18,15 @@ const Layout = () => {
 
   return (
     <LayoutProvider value={contextValue}>
-      <Box className="erp-layout-shell">
-        <aside className={`sidebar-container ${sidebarOpen ? '' : 'collapsed'}`}>
-          <Sidebar />
-        </aside>
-        <main className={`main-container ${sidebarOpen ? '' : 'expanded'}`}>
-          <Topbar layoutTopbar />
-          <Outlet />
+      <div className={`erp-layout-shell ${sidebarOpen ? '' : 'erp-layout-shell--collapsed'}`}>
+        <Topbar layoutTopbar />
+        <div className="erp-layout-body">
+        <Sidebar />
+        <main className="main-container">
+          <div className="erp-page-content"><Outlet /></div>
         </main>
-      </Box>
+        </div>
+      </div>
     </LayoutProvider>
   );
 };

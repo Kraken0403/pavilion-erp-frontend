@@ -7,15 +7,19 @@ import {
   InputAdornment,
   Checkbox,
   FormControlLabel,
-  Button
+  Button,
+  IconButton
 } from '@mui/material';
 import EmailIcon from '@mui/icons-material/Email';
 import LockIcon from '@mui/icons-material/Lock';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import '../assets/styles/Login.scss';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
 
@@ -61,10 +65,8 @@ const Login = () => {
   return (
     <div className="login">
       <div className="login-wrapper">
-        <h2>
-          Login to <span>Zoans LMS!</span>
-        </h2>
-        <hr />
+        <div className="login-brand-mark">P</div>
+        <div className="login-heading"><span>Welcome back</span><h2>Sign in to Pavilion ERP</h2><p>Manage your sales, operations, and finance from one workspace.</p></div>
 
         <form className="login-form" onSubmit={handleLogin}>
           <TextField
@@ -86,7 +88,7 @@ const Login = () => {
 
           <TextField
             label="Password"
-            type="password"
+            type={showPassword ? 'text' : 'password'}
             variant="outlined"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -96,6 +98,13 @@ const Login = () => {
               startAdornment: (
                 <InputAdornment position="start">
                   <LockIcon />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton aria-label={showPassword ? 'Hide password' : 'Show password'} edge="end" onClick={() => setShowPassword((current) => !current)} onMouseDown={(event) => event.preventDefault()}>
+                    {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                  </IconButton>
                 </InputAdornment>
               ),
             }}
@@ -114,7 +123,7 @@ const Login = () => {
           />
 
           <Button type="submit" variant="contained" fullWidth>
-            Login
+            Sign in
           </Button>
 
           {error && <p className="error-message">{error}</p>}

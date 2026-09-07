@@ -24,6 +24,15 @@ export const createQuotation = async (quotationData) => {
   }
 };
 
+export const previewQuotationDocument = async (quotationData) => {
+  try {
+    const res = await api.post('/quotations/preview', quotationData);
+    return res.data?.html || '';
+  } catch (error) {
+    handleError(error, 'Failed to preview quotation');
+  }
+};
+
 /**
  * Update quotation status
  */
@@ -33,6 +42,24 @@ export const updateQuotationStatus = async (id, status) => {
     return res.data;
   } catch (error) {
     handleError(error, `Failed to update status for quotation ${id}`);
+  }
+};
+
+export const createPublicQuotationLink = async (id, options = {}) => {
+  try {
+    const res = await api.post(`/quotations/${id}/public-link`, options);
+    return res.data;
+  } catch (error) {
+    handleError(error, `Failed to create public link for quotation ${id}`);
+  }
+};
+
+export const sendQuotationEmail = async (id) => {
+  try {
+    const res = await api.post(`/quotations/${id}/send-email`);
+    return res.data;
+  } catch (error) {
+    handleError(error, `Failed to send quotation ${id}`);
   }
 };
 

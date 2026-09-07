@@ -1,14 +1,40 @@
 // src/pages/Settings.js
-import React, { useEffect, useState } from "react";
-import { Container, Paper } from "@mui/material";
-import Topbar from "../components/Topbar";
+import React, { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import {
+  BusinessOutlined,
+  DescriptionOutlined,
+  GroupOutlined,
+  PersonOutline,
+  ReceiptLongOutlined,
+  WorkOutline,
+} from "@mui/icons-material";
 import NotificationSnackbar from "../components/ui/NotificationSnackbar";
 
 import SettingsForm from "../components/settings/SettingsForm";
 import { getSettings, updateSettings } from "../services/settingsService";
+import { useSettings } from "../context/SettingsContext";
+import QuotationSettings from "./QuotationSettings";
+import InvoiceSettings from "./InvoiceSettings";
+import WorkOrderSettings from "./WorkOrderSettings";
+import SignUp from "../components/SignUp";
+import MyAccount from "./MyAccount";
+import "../assets/styles/Settings.scss";
+
+const settingsTabs = [
+  { value:"general", label:"General", description:"Company, tax and display", icon:BusinessOutlined },
+  { value:"quotation", label:"Quotations", description:"Templates and numbering", icon:DescriptionOutlined },
+  { value:"work-orders", label:"Work orders", description:"Document defaults", icon:WorkOutline },
+  { value:"invoice", label:"Invoices", description:"Invoice and receipt setup", icon:ReceiptLongOutlined },
+  { value:"user-settings", label:"My account", description:"Profile and password", icon:PersonOutline },
+  { value:"users", label:"User management", description:"Access and permissions", icon:GroupOutlined },
+];
 
 export default function Settings() {
   const [settings, setSettings] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const { reloadSettings } = useSettings() || {};
+  const activeTab = searchParams.get('tab') || 'general';
 
   const [notif, setNotif] = useState({
     open: false,
@@ -20,14 +46,10 @@ export default function Settings() {
     setNotif({ open: true, message, severity });
   };
 
-  useEffect(() => {
-    loadSettings();
-  }, []);
-
   /* ---------------------------------------
      LOAD SETTINGS
   --------------------------------------- */
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       const data = await getSettings();
       setSettings(data);
@@ -35,7 +57,11 @@ export default function Settings() {
       console.error("❌ Failed to load settings", err);
       showNotif("Failed to load settings", "error");
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
   /* ---------------------------------------
      SUBMIT SETTINGS (UPDATED)
@@ -64,6 +90,7 @@ export default function Settings() {
 
     // Currency
     formData.append("currency_code", form.currency_code || "INR");
+    formData.append("date_format", form.date_format || "DD/MM/YYYY");
 
     // Logo
     if (form.company_logo) {
@@ -73,7 +100,8 @@ export default function Settings() {
     try {
       await updateSettings(formData);
       showNotif("Settings updated successfully!", "success");
-      loadSettings(); // reload updated values
+      await loadSettings();
+      await reloadSettings?.();
     } catch (err) {
       console.error("❌ Failed to update settings:", err);
       showNotif(
@@ -83,17 +111,27 @@ export default function Settings() {
     }
   };
 
-  if (!settings) return null;
-
   return (
     <>
-      <Topbar />
-
-      <Container>
-        <Paper sx={{ p: 3 }}>
-          <SettingsForm settings={settings} onSubmit={handleSubmit} />
-        </Paper>
-      </Container>
+      <div className="global-settings-page">
+        <section className="global-settings-card">
+          <header><div><span>Account & system</span><h1>Settings</h1><p>Manage company-wide document, user and display preferences.</p></div></header>
+          <div className="global-settings-body">
+            <nav className="global-settings-nav" aria-label="Settings sections">
+              <strong>Settings</strong>
+              {settingsTabs.map(({ value, label, description, icon:Icon }) => <button key={value} type="button" className={activeTab === value ? 'is-active' : ''} onClick={() => setSearchParams({ tab:value })}><Icon /><span><b>{label}</b><small>{description}</small></span></button>)}
+            </nav>
+          <div className={`global-settings-panel ${activeTab === 'users' ? 'is-listing' : ''}`}>
+            {activeTab === 'general' && (settings ? <SettingsForm settings={settings} onSubmit={handleSubmit} /> : <div className="settings-module-loading">Loading general settings…</div>)}
+            {activeTab === 'quotation' && <QuotationSettings embedded />}
+            {activeTab === 'work-orders' && <WorkOrderSettings />}
+            {activeTab === 'invoice' && <InvoiceSettings embedded />}
+            {activeTab === 'user-settings' && <MyAccount />}
+            {activeTab === 'users' && <SignUp />}
+          </div>
+          </div>
+        </section>
+      </div>
 
       <NotificationSnackbar
         open={notif.open}

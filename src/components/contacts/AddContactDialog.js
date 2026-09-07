@@ -1,132 +1,143 @@
 import React, { useEffect, useState } from 'react';
-import {
-  Dialog, DialogTitle, DialogContent, DialogActions,
-  TextField, Grid, Button
-} from '@mui/material';
 import { createContact } from '../../services/contactService';
 import CompanyAutocomplete from '../company/CompanyAutocomplete';
 import AddCompanyDialog from '../company/AddCompanyDialog';
 import NotificationSnackbar from '../ui/NotificationSnackbar';
+import EntityFormDrawer from '../ui/EntityFormDrawer';
+import '../../assets/styles/EditForm.scss';
+
+const emptyContact = {
+  first_name: '',
+  last_name: '',
+  email: '',
+  phone: '',
+  address: '',
+};
+
+const Field = ({ label, required = false, wide = false, children }) => (
+  <label className={wide ? 'lead-field lead-field--wide' : 'lead-field'}>
+    <span>{label}{required && <b className="lead-field__required">*</b>}</span>
+    {children}
+  </label>
+);
 
 function AddContactDialog({ open, onClose, onContactCreated, prefillName = '' }) {
-  const [first_name, setFirstName] = useState('');
-  const [last_name, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
+  const [form, setForm] = useState(emptyContact);
   const [selectedCompany, setSelectedCompany] = useState(null);
   const [openAddCompany, setOpenAddCompany] = useState(false);
+  const [companyPrefill, setCompanyPrefill] = useState('');
+  const [formTab, setFormTab] = useState(0);
+  const [saving, setSaving] = useState(false);
   const [notif, setNotif] = useState({ open: false, message: '', severity: 'success' });
 
   useEffect(() => {
-    if (open && typeof prefillName === 'string') {
-      const words = prefillName.trim().split(' ');
-      setFirstName(words[0] || '');
-      setLastName(words.slice(1).join(' ') || '');
-    }
+    if (!open) return;
+    const words = typeof prefillName === 'string' ? prefillName.trim().split(/\s+/).filter(Boolean) : [];
+    setForm({ ...emptyContact, first_name: words[0] || '', last_name: words.slice(1).join(' ') });
+    setSelectedCompany(null);
+    setFormTab(0);
   }, [open, prefillName]);
 
   const showNotification = (message, severity = 'success') => {
     setNotif({ open: true, message, severity });
   };
 
-  const handleSubmit = async () => {
-    if (!first_name.trim() || !last_name.trim()) {
+  const setField = (key, value) => setForm((current) => ({ ...current, [key]: value }));
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!form.first_name.trim() || !form.last_name.trim()) {
+      setFormTab(0);
       return showNotification('First and Last name are required', 'warning');
     }
 
     try {
+      setSaving(true);
       const contact = await createContact({
-        first_name,
-        last_name,
-        email,
-        phone,
-        address,
-        company_id: selectedCompany?.id || null
+        ...form,
+        first_name: form.first_name.trim(),
+        last_name: form.last_name.trim(),
+        company_id: selectedCompany?.id || null,
       });
 
-      const newContact = {
-        id: contact.contactId,
-        first_name,
-        last_name,
-        email,
-        phone,
-        company_name: selectedCompany?.name || ''
-      };
-
-      onContactCreated(newContact);
-      showNotification('✅ Contact added successfully!');
+      onContactCreated?.({
+        id: contact.contactId || contact.id,
+        ...form,
+        first_name: form.first_name.trim(),
+        last_name: form.last_name.trim(),
+        company_name: selectedCompany?.name || '',
+      });
+      showNotification('Contact added successfully!');
       onClose();
     } catch (err) {
       console.error('❌ Failed to create contact:', err);
-      showNotification('❌ Failed to create contact', 'error');
+      showNotification(err.response?.data?.error || 'Failed to create contact', 'error');
+    } finally {
+      setSaving(false);
     }
   };
 
   return (
     <>
-      <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-        <DialogTitle>Add Contact</DialogTitle>
-        <DialogContent>
-          <Grid container spacing={2} mt={1}>
-            <Grid item xs={6}>
-              <TextField
-                label="First Name"
-                fullWidth
-                value={first_name}
-                onChange={(e) => setFirstName(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Last Name"
-                fullWidth
-                value={last_name}
-                onChange={(e) => setLastName(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <CompanyAutocomplete
-                value={selectedCompany}
-                onChange={setSelectedCompany}
-                onAddCompany={(name) => {
-                  setOpenAddCompany(true);
-                }}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Email"
-                fullWidth
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={6}>
-              <TextField
-                label="Phone"
-                fullWidth
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                label="Address"
-                fullWidth
-                multiline
-                rows={2}
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-              />
-            </Grid>
-          </Grid>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={onClose}>Cancel</Button>
-          <Button variant="contained" onClick={handleSubmit}>Add Contact</Button>
-        </DialogActions>
-      </Dialog>
+      <EntityFormDrawer open={open} title="Add contact" onClose={onClose}>
+        <form className="contact-editor quick-contact-editor" onSubmit={handleSubmit}>
+          <nav>
+            <button type="button" className={formTab === 0 ? 'is-active' : ''} onClick={() => setFormTab(0)}>1. Contact details</button>
+            <button type="button" className={formTab === 1 ? 'is-active' : ''} onClick={() => setFormTab(1)}>2. Company</button>
+          </nav>
+
+          <div className="contact-editor__body">
+            {formTab === 0 && (
+              <section>
+                <h3>Contact details</h3>
+                <p>Add the contact information used on quotations and customer records.</p>
+                <div className="lead-form-grid">
+                  <Field label="First name" required><input required value={form.first_name} onChange={(e) => setField('first_name', e.target.value)} /></Field>
+                  <Field label="Last name" required><input required value={form.last_name} onChange={(e) => setField('last_name', e.target.value)} /></Field>
+                  <Field label="Email"><input type="email" value={form.email} onChange={(e) => setField('email', e.target.value)} /></Field>
+                  <Field label="Phone"><input type="tel" value={form.phone} onChange={(e) => setField('phone', e.target.value)} /></Field>
+                </div>
+                <Field label="Address" wide><textarea rows="4" value={form.address} onChange={(e) => setField('address', e.target.value)} /></Field>
+              </section>
+            )}
+
+            {formTab === 1 && (
+              <section>
+                <div className="contact-editor__section-head">
+                  <div><h3>Company</h3><p>Link this contact to an existing company or create a new one.</p></div>
+                </div>
+                <Field label="Linked company" wide>
+                  <div className="quick-entity-autocomplete">
+                    <CompanyAutocomplete
+                      value={selectedCompany}
+                      onChange={setSelectedCompany}
+                      onAddCompany={(name) => {
+                        setCompanyPrefill(name || '');
+                        setOpenAddCompany(true);
+                      }}
+                    />
+                  </div>
+                </Field>
+                {selectedCompany && (
+                  <div className="selected-company">
+                    <strong>{selectedCompany.name}</strong>
+                    <span>{selectedCompany.email || 'No company email'}</span>
+                    <span>{selectedCompany.phone || 'No company phone'}</span>
+                  </div>
+                )}
+              </section>
+            )}
+          </div>
+
+          <footer>
+            <button type="button" onClick={() => formTab === 0 ? onClose() : setFormTab(0)}>{formTab === 0 ? 'Cancel' : 'Back'}</button>
+            <span />
+            {formTab === 0
+              ? <button type="button" className="primary" onClick={() => setFormTab(1)}>Next</button>
+              : <button type="submit" className="primary" disabled={saving}>{saving ? 'Saving…' : 'Add contact'}</button>}
+          </footer>
+        </form>
+      </EntityFormDrawer>
 
       <AddCompanyDialog
         open={openAddCompany}
@@ -134,16 +145,16 @@ function AddContactDialog({ open, onClose, onContactCreated, prefillName = '' })
         onCompanyCreated={(company) => {
           setSelectedCompany(company);
           setOpenAddCompany(false);
-          showNotification('✅ Company added successfully!');
+          showNotification('Company added successfully!');
         }}
-        prefillName=""
+        prefillName={companyPrefill}
       />
 
       <NotificationSnackbar
         open={notif.open}
         message={notif.message}
         severity={notif.severity}
-        onClose={() => setNotif({ ...notif, open: false })}
+        onClose={() => setNotif((current) => ({ ...current, open: false }))}
       />
     </>
   );

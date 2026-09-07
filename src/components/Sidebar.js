@@ -1,305 +1,112 @@
 import React, { useMemo, useState } from 'react';
-import {
-  Avatar,
-  Box,
-  Collapse,
-  Divider,
-  Drawer,
-  List,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Typography,
-} from '@mui/material';
-import DashboardIcon from '@mui/icons-material/Dashboard';
-import PeopleIcon from '@mui/icons-material/People';
-import GroupsIcon from '@mui/icons-material/Groups';
-import ArticleIcon from '@mui/icons-material/Article';
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong';
-import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
-import PaymentsIcon from '@mui/icons-material/Payments';
-import NotificationsActiveIcon from '@mui/icons-material/NotificationsActive';
-import AssessmentIcon from '@mui/icons-material/Assessment';
-import Inventory2Icon from '@mui/icons-material/Inventory2';
-import KitchenIcon from '@mui/icons-material/Kitchen';
-import LocalShippingIcon from '@mui/icons-material/LocalShipping';
-import ReviewsIcon from '@mui/icons-material/Reviews';
-import SettingsIcon from '@mui/icons-material/Settings';
-import LogoutIcon from '@mui/icons-material/Logout';
-import ExpandLess from '@mui/icons-material/ExpandLess';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-import CategoryIcon from '@mui/icons-material/Category';
-import TuneIcon from '@mui/icons-material/Tune';
-import ConfirmationNumberIcon from '@mui/icons-material/ConfirmationNumber';
-import StorefrontIcon from '@mui/icons-material/Storefront';
-import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import { Avatar, List, ListItemButton, ListItemIcon, ListItemText, Popover, Tooltip, Typography } from '@mui/material';
+import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
+import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
+import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
+import ArticleOutlinedIcon from '@mui/icons-material/ArticleOutlined';
+import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
+import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined';
+import PaymentsOutlinedIcon from '@mui/icons-material/PaymentsOutlined';
+import NotificationsActiveOutlinedIcon from '@mui/icons-material/NotificationsActiveOutlined';
+import AssessmentOutlinedIcon from '@mui/icons-material/AssessmentOutlined';
+import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
+import KitchenOutlinedIcon from '@mui/icons-material/KitchenOutlined';
+import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
+import ReviewsOutlinedIcon from '@mui/icons-material/ReviewsOutlined';
+import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
+import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
+import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
+import ConfirmationNumberOutlinedIcon from '@mui/icons-material/ConfirmationNumberOutlined';
+import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined';
+import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalanceWalletOutlined';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLayout } from '../context/LayoutContext';
 import { useSettings } from '../context/SettingsContext';
 import '../assets/styles/Sidebar.scss';
 
-const drawerWidth = 248;
-const collapsedDrawerWidth = 68;
-
 const navGroups = [
-  {
-    key: 'dashboard',
-    module: 'dashboard',
-    label: 'Dashboard',
-    icon: DashboardIcon,
-    path: '/dashboard',
-  },
-  {
-    key: 'crm',
-    module: 'leads',
-    label: 'CRM',
-    icon: PeopleIcon,
-    children: [
-      { label: 'Leads', path: '/leads', icon: PeopleIcon, module: 'leads' },
-      { label: 'Customers', path: '/customers', icon: GroupsIcon, module: 'customers' },
-      { label: 'Lead Settings', path: '/leads/settings', icon: SettingsIcon, module: 'leads' },
-    ],
-  },
-  {
-    key: 'sales',
-    module: 'quotations',
-    label: 'Sales',
-    icon: RequestQuoteIcon,
-    children: [
-      { label: 'Quotations', path: '/quotations', icon: ArticleIcon, module: 'quotations' },
-      { label: 'Quotation Settings', path: '/quotations-settings', icon: SettingsIcon, module: 'quotations' },
-      { label: 'Work Orders', path: '/workorders', icon: Inventory2Icon, module: 'work_orders' },
-    ],
-  },
-  {
-    key: 'invoices',
-    module: 'invoices',
-    label: 'Invoices',
-    icon: ReceiptLongIcon,
-    children: [
-      { label: 'Proforma Invoices', path: '/proforma-invoices', icon: RequestQuoteIcon, module: 'invoices' },
-      { label: 'Invoices', path: '/invoices', icon: ReceiptLongIcon, module: 'invoices' },
-      { label: 'Settings', path: '/invoice-settings', icon: SettingsIcon, module: 'invoices' },
-    ],
-  },
-  {
-    key: 'payments',
-    module: 'payments',
-    label: 'Payments',
-    icon: PaymentsIcon,
-    children: [
-      { label: 'Pending Payments', path: '/payments', icon: PaymentsIcon, module: 'payments' },
-      { label: 'Payment History', path: '/payments/history', icon: ReceiptLongIcon, module: 'payments' },
-      { label: 'Passbook', path: '/passbook', icon: AccountBalanceWalletIcon, module: 'passbook' },
-    ],
-  },
-  {
-    key: 'payment-reminders',
-    module: 'payment_reminders',
-    label: 'Payment Reminders',
-    icon: NotificationsActiveIcon,
-    children: [
-      { label: 'Pending Payments', path: '/payment-reminders', icon: NotificationsActiveIcon, module: 'payment_reminders' },
-      { label: 'Settings', path: '/payment-reminders/settings', icon: SettingsIcon, module: 'payment_reminders' },
-    ],
-  },
-  {
-    key: 'catalog',
-    module: 'products',
-    label: 'Catalog',
-    icon: Inventory2Icon,
-    children: [
-      { label: 'Products', path: '/products/list', icon: Inventory2Icon, module: 'products' },
-      { label: 'Vendors', path: '/vendors', icon: StorefrontIcon, module: 'vendors' },
-      { label: 'Categories', path: '/products/categories', icon: CategoryIcon, module: 'products' },
-      { label: 'Attributes', path: '/products/attributes', icon: TuneIcon, module: 'products' },
-      { label: 'Coupons', path: '/coupons', icon: ConfirmationNumberIcon, module: 'settings', cateringOnly: true },
-    ],
-  },
-  {
-    key: 'operations',
-    module: 'kots',
-    cateringOnly: true,
-    label: 'Operations',
-    icon: KitchenIcon,
-    children: [
-      { label: 'KOT Board', path: '/kots', icon: KitchenIcon, module: 'kots' },
-      { label: 'KOT Settings', path: '/kots/settings', icon: SettingsIcon, module: 'kots' },
-      { label: 'Deliveries', path: '/deliveries', icon: LocalShippingIcon, module: 'deliveries' },
-      { label: 'Order Feedbacks', path: '/order-feedbacks', icon: ReviewsIcon, module: 'reports' },
-      { label: 'Feedback Settings', path: '/order-feedbacks/settings', icon: SettingsIcon, module: 'reports' },
-    ],
-  },
-  {
-    key: 'reports',
-    module: 'reports',
-    label: 'Reports',
-    icon: AssessmentIcon,
-    path: '/reports',
-  },
-  {
-    key: 'admin',
-    module: 'settings',
-    label: 'Admin',
-    icon: SettingsIcon,
-    children: [
-      { label: 'Users', path: '/users', icon: PeopleIcon, module: 'users' },
-      { label: 'Settings', path: '/settings', icon: SettingsIcon, module: 'settings' },
-    ],
-  },
+  { key: 'home', module: 'dashboard', label: 'Home', icon: HomeOutlinedIcon, path: '/dashboard' },
+  { key: 'crm', module: 'leads', label: 'CRM', icon: PeopleOutlineIcon, children: [
+    { label: 'Contacts', path: '/leads', icon: PeopleOutlineIcon, module: 'leads' },
+    { label: 'Companies', path: '/companies', icon: StorefrontOutlinedIcon, module: 'leads' },
+    { label: 'Customers', path: '/customers', icon: GroupsOutlinedIcon, module: 'customers' },
+    { label: 'Contact settings', path: '/leads/settings', icon: SettingsOutlinedIcon, module: 'leads' },
+  ] },
+  { key: 'sales', module: 'quotations', label: 'Sales', icon: RequestQuoteOutlinedIcon, children: [
+    { label: 'Quotations', path: '/quotations', icon: ArticleOutlinedIcon, module: 'quotations' },
+    { label: 'Work orders', path: '/workorders', icon: Inventory2OutlinedIcon, module: 'work_orders' },
+  ] },
+  { key: 'billing', module: 'invoices', label: 'Billing', icon: ReceiptLongOutlinedIcon, children: [
+    { label: 'Invoices', path: '/invoices', icon: ReceiptLongOutlinedIcon, module: 'invoices' },
+    { label: 'Proforma invoices', path: '/proforma-invoices', icon: RequestQuoteOutlinedIcon, module: 'invoices' },
+  ] },
+  { key: 'payments', module: 'payments', label: 'Payments', icon: PaymentsOutlinedIcon, children: [
+    { label: 'Pending payments', path: '/payments', icon: PaymentsOutlinedIcon, module: 'payments' },
+    { label: 'Payment history', path: '/payments/history', icon: ReceiptLongOutlinedIcon, module: 'payments' },
+    { label: 'Passbook', path: '/passbook', icon: AccountBalanceWalletOutlinedIcon, module: 'passbook' },
+    { label: 'Reminders', path: '/payment-reminders', icon: NotificationsActiveOutlinedIcon, module: 'payment_reminders' },
+  ] },
+  { key: 'catalog', module: 'products', label: 'Catalog', icon: Inventory2OutlinedIcon, children: [
+    { label: 'Products', path: '/products/list', icon: Inventory2OutlinedIcon, module: 'products' },
+    { label: 'Vendors', path: '/vendors', icon: StorefrontOutlinedIcon, module: 'vendors' },
+    { label: 'Categories', path: '/products/categories', icon: CategoryOutlinedIcon, module: 'products' },
+    { label: 'Attributes', path: '/products/attributes', icon: TuneOutlinedIcon, module: 'products' },
+    { label: 'Coupons', path: '/coupons', icon: ConfirmationNumberOutlinedIcon, module: 'settings', cateringOnly: true },
+  ] },
+  { key: 'operations', module: 'kots', cateringOnly: true, label: 'Operations', icon: KitchenOutlinedIcon, children: [
+    { label: 'KOT board', path: '/kots', icon: KitchenOutlinedIcon, module: 'kots' },
+    { label: 'Deliveries', path: '/deliveries', icon: LocalShippingOutlinedIcon, module: 'deliveries' },
+    { label: 'Order feedbacks', path: '/order-feedbacks', icon: ReviewsOutlinedIcon, module: 'reports' },
+  ] },
+  { key: 'reports', module: 'reports', label: 'Reports', icon: AssessmentOutlinedIcon, path: '/reports' },
+  { key: 'more', module: 'settings', label: 'More', icon: SettingsOutlinedIcon, children: [
+    { label: 'Settings', path: '/settings', icon: SettingsOutlinedIcon, module: 'settings' },
+    { label: 'My companies', path: '/my-companies', icon: SettingsOutlinedIcon, module: 'settings' },
+  ] },
 ];
 
-function isActivePath(currentPath, targetPath) {
-  if (!targetPath) return false;
-  return currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
-}
-
-function groupContainsPath(group, currentPath) {
-  if (group.path && isActivePath(currentPath, group.path)) return true;
-  return Array.isArray(group.children) && group.children.some((item) => isActivePath(currentPath, item.path));
-}
+const isActivePath = (currentPath, targetPath) => currentPath === targetPath || currentPath.startsWith(`${targetPath}/`);
+const isActiveGroup = (group, pathname) => group.path ? isActivePath(pathname, group.path) : group.children?.some((item) => isActivePath(pathname, item.path));
 
 const Sidebar = () => {
-  const { logout, currentUser, canAccessModule } = useAuth();
-  const { sidebarOpen } = useLayout();
+  const { currentUser, canAccessModule } = useAuth();
+  const { sidebarOpen, toggleSidebar } = useLayout();
   const { settings } = useSettings() || {};
-  const businessType = String(settings?.business_type || 'GENERAL').toUpperCase();
-  const showCateringModules = businessType === 'CATERING' || businessType === 'HYBRID';
+  const [menu, setMenu] = useState({ anchor: null, group: null });
   const navigate = useNavigate();
   const location = useLocation();
+  const showCateringModules = ['CATERING', 'HYBRID'].includes(String(settings?.business_type || 'GENERAL').toUpperCase());
 
-  const initialOpen = useMemo(() => {
-    return navGroups.reduce((acc, group) => {
-      acc[group.key] = groupContainsPath(group, location.pathname);
-      return acc;
-    }, {});
-  }, [location.pathname]);
+  const visibleGroups = useMemo(() => navGroups.filter((group) => !group.cateringOnly || showCateringModules).map((group) => {
+    if (!group.children) return canAccessModule(group.module) ? group : null;
+    const children = group.children.filter((item) => (!item.cateringOnly || showCateringModules) && canAccessModule(item.module));
+    return children.length ? { ...group, children } : null;
+  }).filter(Boolean), [canAccessModule, showCateringModules]);
 
-  const [openGroups, setOpenGroups] = useState(initialOpen);
-
-  const toggleGroup = (key) => {
-    setOpenGroups((prev) => ({ ...prev, [key]: !prev[key] }));
+  const openGroup = (event, group) => {
+    if (!group.children) return navigate(group.path);
+    return setMenu({ anchor: event.currentTarget, group });
   };
+  const chooseItem = (path) => { setMenu({ anchor: null, group: null }); navigate(path); };
 
-  const handleLogout = () => {
-    logout();
-    navigate('/');
-  };
-
-  const canSee = (moduleKey) => {
-    if (!moduleKey || typeof canAccessModule !== 'function') return true;
-    return canAccessModule(moduleKey);
-  };
-
-  const visibleGroups = navGroups
-    .filter((group) => !group.cateringOnly || showCateringModules)
-    .map((group) => {
-      const visibleChildren = Array.isArray(group.children)
-        ? group.children.filter((item) => (!item.cateringOnly || showCateringModules) && canSee(item.module || group.module))
-        : null;
-
-      if (Array.isArray(group.children) && !visibleChildren.length) return null;
-      if (!Array.isArray(group.children) && !canSee(group.module)) return null;
-
-      return visibleChildren ? { ...group, children: visibleChildren } : group;
-    })
-    .filter(Boolean);
-
-  const renderNavItem = (item, nested = false) => {
-    const Icon = item.icon || ArticleIcon;
-    const active = isActivePath(location.pathname, item.path);
-
-    return (
-      <ListItemButton
-        key={item.path || item.label}
-        onClick={() => navigate(item.path)}
-        className={active ? 'erp-sidebar-link active' : 'erp-sidebar-link'}
-        sx={{ pl: nested ? 4.25 : 2 }}
-      >
-        <ListItemIcon className="erp-sidebar-icon"><Icon /></ListItemIcon>
-        <ListItemText primary={item.label} />
-      </ListItemButton>
-    );
-  };
-
-  const activeDrawerWidth = sidebarOpen ? drawerWidth : collapsedDrawerWidth;
-
-  return (
-    <Drawer
-      className={`erp-sidebar-drawer ${sidebarOpen ? '' : 'collapsed'}`}
-      variant="permanent"
-      anchor="left"
-      sx={{
-        width: activeDrawerWidth,
-        flexShrink: 0,
-        '& .MuiDrawer-paper': {
-          width: activeDrawerWidth,
-          boxSizing: 'border-box',
-          borderRight: '1px solid #e5e7eb',
-          borderRadius: 0,
-          background: '#ffffff',
-        },
-      }}
-    >
-      <Box className="erp-sidebar-brand">
-        <Avatar className="erp-sidebar-logo">P</Avatar>
-        <Box>
-          <Typography className="erp-sidebar-title">Pav ERP</Typography>
-          <Typography className="erp-sidebar-subtitle">Business Console</Typography>
-        </Box>
-      </Box>
-
-      <List className="erp-sidebar-list">
-        {visibleGroups.map((group) => {
-          const Icon = group.icon || ArticleIcon;
-          const hasChildren = Array.isArray(group.children) && group.children.length > 0;
-          const active = groupContainsPath(group, location.pathname);
-
-          if (!hasChildren) {
-            return renderNavItem(group);
-          }
-
-          return (
-            <Box key={group.key} className="erp-sidebar-group">
-              <ListItemButton
-                onClick={() => toggleGroup(group.key)}
-                className={active ? 'erp-sidebar-link active parent' : 'erp-sidebar-link parent'}
-              >
-                <ListItemIcon className="erp-sidebar-icon"><Icon /></ListItemIcon>
-                <ListItemText primary={group.label} />
-                {openGroups[group.key] ? <ExpandLess className="erp-sidebar-chevron" /> : <ExpandMore className="erp-sidebar-chevron" />}
-              </ListItemButton>
-              <Collapse in={Boolean(openGroups[group.key] || active)} timeout="auto" unmountOnExit>
-                <List component="div" disablePadding className="erp-sidebar-children">
-                  {group.children.map((item) => renderNavItem(item, true))}
-                </List>
-              </Collapse>
-            </Box>
-          );
-        })}
-      </List>
-
-      <Box className="erp-sidebar-footer">
-        <Divider />
-        <Box className="erp-sidebar-user">
-          <Avatar className="erp-sidebar-user-avatar">
-            {String(currentUser?.name || currentUser?.email || 'U').charAt(0).toUpperCase()}
-          </Avatar>
-          <Box className="erp-sidebar-user-copy">
-            <Typography className="erp-sidebar-user-name">
-              {currentUser?.name || currentUser?.email || 'ERP User'}
-            </Typography>
-            <Typography className="erp-sidebar-user-role">Signed in</Typography>
-          </Box>
-        </Box>
-        <ListItemButton onClick={handleLogout} className="erp-sidebar-link logout">
-          <ListItemIcon className="erp-sidebar-icon"><LogoutIcon /></ListItemIcon>
-          <ListItemText primary="Logout" />
-        </ListItemButton>
-      </Box>
-    </Drawer>
-  );
+  return <aside className={`hub-sidebar ${sidebarOpen ? '' : 'hub-sidebar--collapsed'}`} aria-label="Main navigation">
+    <List className="hub-sidebar__nav" disablePadding>
+      {visibleGroups.map((group) => {
+        const Icon = group.icon;
+        return <Tooltip key={group.key} title={sidebarOpen ? '' : group.label} placement="right"><ListItemButton className={`hub-sidebar__item ${isActiveGroup(group, location.pathname) ? 'is-active' : ''}`} onClick={(event) => openGroup(event, group)} aria-haspopup={Boolean(group.children)} aria-expanded={menu.group?.key === group.key}>
+          <ListItemIcon><Icon /></ListItemIcon>{sidebarOpen && <ListItemText primary={group.label} />}{sidebarOpen && group.children && <ChevronRightIcon className="hub-sidebar__chevron" />}
+        </ListItemButton></Tooltip>;
+      })}
+    </List>
+    <Tooltip title={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'} placement="right"><button className="hub-sidebar__collapse" type="button" onClick={toggleSidebar} aria-label={sidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}>{sidebarOpen ? <ChevronLeftIcon /> : <ChevronRightIcon />}{sidebarOpen && <span>Collapse sidebar</span>}</button></Tooltip>
+    <div className="hub-sidebar__account"><Avatar>{String(currentUser?.name || currentUser?.email || 'U').charAt(0).toUpperCase()}</Avatar>{sidebarOpen && <span>{currentUser?.name || currentUser?.email || 'My account'}</span>}</div>
+    <Popover open={Boolean(menu.anchor)} anchorEl={menu.anchor} onClose={() => setMenu({ anchor: null, group: null })} anchorOrigin={{ vertical: 'top', horizontal: 'right' }} transformOrigin={{ vertical: 'top', horizontal: 'left' }} slotProps={{ paper: { className: 'hub-sidebar__flyout' } }}>
+      <Typography className="hub-sidebar__flyout-title">{menu.group?.label}</Typography><List disablePadding>{menu.group?.children?.map((item) => { const Icon = item.icon; return <ListItemButton key={item.path} onClick={() => chooseItem(item.path)} className={isActivePath(location.pathname, item.path) ? 'is-active' : ''}><ListItemIcon><Icon /></ListItemIcon><ListItemText primary={item.label} /></ListItemButton>; })}</List>
+    </Popover>
+  </aside>;
 };
 
 export default Sidebar;

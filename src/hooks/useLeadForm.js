@@ -11,7 +11,7 @@ import { getUserById } from '../services/userServices';
 import { sendEmail } from '../services/spEmailServices';
 
 
-const useLeadForm = (initialLeadData, isEdit = false, leadId = null) => {
+const useLeadForm = (initialLeadData, isEdit = false, leadId = null, onSaved) => {
     const navigate = useNavigate();
 
     // main form data
@@ -155,7 +155,8 @@ const useLeadForm = (initialLeadData, isEdit = false, leadId = null) => {
                 });
             }
 
-            navigate('/leads');
+            if (onSaved) onSaved();
+            else navigate('/leads');
 
         } catch (err) {
             console.error("❌ Error saving lead:", err);

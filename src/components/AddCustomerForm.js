@@ -136,7 +136,7 @@ const AddCustomerForm = ({ open, onClose, onSuccess }) => {
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+    <Dialog className="erp-form-drawer" open={open} onClose={handleClose} maxWidth="sm" fullWidth>
       <DialogTitle>Add New Customer</DialogTitle>
       <DialogContent sx={{ pt: 2 }}>
         {error && (

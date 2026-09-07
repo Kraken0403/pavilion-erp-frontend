@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   getNotesByLead,
   createNote,
@@ -14,6 +14,7 @@ import ConfirmDialog from "../ui/ConfirmDialog";
 import NotificationSnackbar from "../ui/NotificationSnackbar";
 
 import "../../assets/styles/NotesTab.scss";
+import { formatDateTime } from "../../utils/dateFormatter";
 
 const NotesTab = ({ leadId }) => {
   const [notes, setNotes] = useState([]);
@@ -30,14 +31,14 @@ const NotesTab = ({ leadId }) => {
     severity: "info"
   });
 
-  useEffect(() => {
-    if (leadId) fetchNotes();
-  }, [leadId]);
-
-  const fetchNotes = async () => {
+  const fetchNotes = useCallback(async () => {
     const data = await getNotesByLead(leadId);
     setNotes(Array.isArray(data) ? data : []);
-  };
+  }, [leadId]);
+
+  useEffect(() => {
+    if (leadId) fetchNotes();
+  }, [leadId, fetchNotes]);
 
   /* -------------------------
      ADD NOTE
@@ -127,15 +128,6 @@ const NotesTab = ({ leadId }) => {
     }
   };
 
-  /* -------------------------
-     DATE FORMATTER (SAFE)
-  ------------------------- */
-  const formatDate = (date) => {
-    if (!date) return "Just now";
-    const d = new Date(date);
-    return isNaN(d.getTime()) ? "Just now" : d.toLocaleString();
-  };
-
   return (
     <div className="notes-tab">
 
@@ -199,7 +191,7 @@ const NotesTab = ({ leadId }) => {
                   <p>{n.note_text}</p>
 
                   <div className="note-footer">
-                    <small>{formatDate(n.created_at)}</small>
+                    <small>{formatDateTime(n.created_at) || 'Just now'}</small>
 
                     <div className="note-actions">
                       <EditOutlinedIcon

@@ -314,3 +314,70 @@ export const deleteCategory = async (id) => {
     throw error;
   }
 };
+
+/* =======================
+   PRODUCT UNITS
+======================= */
+
+export const getProductUnits = async () => {
+  try {
+    const res = await api.get('/product-units');
+    return res.data || [];
+  } catch (error) {
+    handleError(error, 'Failed to fetch product units');
+  }
+};
+
+export const createProductUnit = async (name) => {
+  try {
+    const res = await api.post('/product-units', { name });
+    return res.data;
+  } catch (error) {
+    handleError(error, 'Failed to create product unit');
+  }
+};
+
+/* =======================
+   PRODUCT VENDORS / ANALYTICS
+======================= */
+
+export const getProductVendors = async (productId) => {
+  try {
+    const res = await api.get(`/products/${productId}/vendors`);
+    const payload = res.data;
+    if (Array.isArray(payload)) return payload;
+    if (Array.isArray(payload?.data)) return payload.data;
+    if (Array.isArray(payload?.vendors)) return payload.vendors;
+    return [];
+  } catch (error) {
+    handleError(error, `Failed to fetch vendors for product ${productId}`);
+  }
+};
+
+export const addProductVendor = async (productId, vendorId) => {
+  try {
+    const res = await api.post(`/products/${productId}/vendors`, { vendor_id: vendorId });
+    return res.data;
+  } catch (error) {
+    handleError(error, `Failed to add vendor to product ${productId}`);
+  }
+};
+
+export const removeProductVendor = async (productId, vendorId) => {
+  try {
+    const res = await api.delete(`/products/${productId}/vendors/${vendorId}`);
+    return res.data;
+  } catch (error) {
+    handleError(error, `Failed to remove vendor from product ${productId}`);
+  }
+};
+
+export const getProductAnalytics = async (productId) => {
+  try {
+    const res = await api.get(`/products/${productId}/analytics`);
+    return res.data;
+  } catch (error) {
+    handleError(error, `Failed to fetch analytics for product ${productId}`);
+  }
+};
+
