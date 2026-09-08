@@ -1,339 +1,132 @@
-import React, { useCallback, useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { Box, Chip, Divider, Grid, Typography, Menu, MenuItem, IconButton, ListItemIcon } from '@mui/material'
-import MoreVertIcon from '@mui/icons-material/MoreVert'
-import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
-import ShareIcon from '@mui/icons-material/Share'
-import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined'
-import ChannelSelectModal from '../components/ui/ChannelSelectModal'
-import { formatQty } from '../utils/formatters'
-import { sendProformaEmail, sendProformaWhatsApp } from '../services/invoiceService'
-import Topbar from '../components/Topbar'
-import NotificationSnackbar from '../components/ui/NotificationSnackbar'
-import PageLoader from '../components/ui/PageLoader'
-import DetailBackLink from '../components/ui/DetailBackLink'
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import DOMPurify from 'dompurify';
+import { useNavigate, useParams } from 'react-router-dom';
+import { PictureAsPdfOutlined, ReceiptLongOutlined, RequestQuoteOutlined, ShareOutlined, WorkOutlineOutlined } from '@mui/icons-material';
+import SingleRecordWorkspace from '../components/ui/SingleRecordWorkspace';
+import RecordFinancialSummary from '../components/ui/RecordFinancialSummary';
+import ChannelSelectModal from '../components/ui/ChannelSelectModal';
+import NotificationSnackbar from '../components/ui/NotificationSnackbar';
 import {
-  getProformaInvoiceById,
   createTaxInvoiceFromProforma,
-  
-} from '../services/invoiceService'
-import { formatDate as formatLocalDate } from '../utils/dateFormatter'
-import { formatStatusLabel } from '../utils/statusFormatter'
-import '../assets/styles/LeadsTable.scss'
-import '../assets/styles/QuotationDetail.scss'
+  downloadProformaPdf,
+  getProformaInvoiceById,
+  sendProformaEmail,
+  sendProformaWhatsApp,
+} from '../services/invoiceService';
+import { useSettings } from '../context/SettingsContext';
+import { displayCurrency } from '../utils/currencyUtils';
+import { formatMoney, formatQty } from '../utils/formatters';
+import '../assets/styles/QuotationDetail.scss';
 
-const statusColors = {
-  draft: 'default',
-  issued: 'primary',
-  'part-payment': 'warning',
-  paid: 'success',
-  cancelled: 'error',
-}
+const customerName = (invoice) => [invoice?.first_name, invoice?.last_name].filter(Boolean).join(' ').trim() || invoice?.billing_snapshot?.name || '—';
 
-function ProformaInvoiceView() {
-  const { id } = useParams()
-  const navigate = useNavigate()
-
-  const [invoice, setInvoice] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [taxInvoiceId, setTaxInvoiceId] = useState(null)
-  const [creatingTax, setCreatingTax] = useState(false)
-  
-  const [notification, setNotification] = useState({
-    open: false,
-    message: '',
-    severity: 'info',
-  })
-  const [channelModalOpen, setChannelModalOpen] = useState(false)
-  const [actionsAnchor, setActionsAnchor] = useState(null)
-
-  const getShareSubtitle = () => {
-    const items = invoice?.items || []
-    if (!items.length) return ''
-    const visible = items.slice(0, 5)
-    const parts = visible.map(i => `${i.description} x${formatQty(i.quantity)} · ${formatMoney(i.line_total || i.lineTotal || 0)}`)
-    const more = items.length > 5 ? ` · +${items.length - 5} more` : ''
-    return parts.join(' · ') + more
-  }
+export default function ProformaInvoiceView() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { settings } = useSettings() || {};
+  const currency = displayCurrency(settings?.currency_code || 'INR');
+  const money = useCallback((value) => formatMoney(value, currency), [currency]);
+  const [invoice, setInvoice] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [shareOpen, setShareOpen] = useState(false);
+  const [creatingTax, setCreatingTax] = useState(false);
+  const [notification, setNotification] = useState({ open:false, message:'', severity:'success' });
+  const notify = useCallback((message, severity = 'success') => setNotification({ open:true, message, severity }), []);
 
   const loadInvoice = useCallback(async () => {
-    try {
-      setLoading(true)
-      const data = await getProformaInvoiceById(id)
-      setInvoice(data)
-      setTaxInvoiceId(data?.tax_invoice_id || null)
-    } catch {
-      setNotification({
-        open: true,
-        message: 'Failed to load proforma invoice.',
-        severity: 'error',
-      })
-    } finally {
-      setLoading(false)
+    setLoading(true);
+    try { setInvoice(await getProformaInvoiceById(id)); }
+    catch (error) { setInvoice(null); notify(error?.response?.data?.error || 'Failed to load proforma invoice', 'error'); }
+    finally { setLoading(false); }
+  }, [id, notify]);
+
+  useEffect(() => { loadInvoice(); }, [loadInvoice]);
+
+  const download = async () => {
+    try { await downloadProformaPdf(id); }
+    catch (_) { notify('PDF download failed.', 'error'); }
+  };
+
+  const createTaxInvoice = async () => {
+    if (invoice?.tax_invoice_id) {
+      navigate(`/invoices/${invoice.tax_invoice_id}`);
+      return;
     }
-  }, [id])
-
-  useEffect(() => {
-    loadInvoice()
-  }, [loadInvoice])
-
-  const formatMoney = (value) => `₹ ${Number(value || 0).toFixed(2)}`
-
-  const customerName = [invoice?.first_name, invoice?.last_name].filter(Boolean).join(' ').trim() || '—'
-  const customerEmail = invoice?.lead?.email || invoice?.billing_snapshot?.email || '—'
-  const customerPhone = invoice?.lead?.phone || invoice?.billing_snapshot?.phone || '—'
-
-  const handleExportPdf = async () => {
+    setCreatingTax(true);
     try {
-      await (await import('../services/invoiceService')).downloadProformaPdf(id)
-    } catch {
-      setNotification({
-        open: true,
-        message: 'PDF download failed.',
-        severity: 'error',
-      })
-    }
-  }
+      const result = await createTaxInvoiceFromProforma(id);
+      const taxId = result?.tax_invoice?.id || result?.tax_invoice?.invoice?.id;
+      notify(result?.already_existed ? 'Tax invoice already exists.' : 'Tax invoice created successfully.');
+      if (taxId) navigate(`/invoices/${taxId}`);
+      else await loadInvoice();
+    } catch (error) { notify(error?.response?.data?.error || 'Failed to create tax invoice.', 'error'); }
+    finally { setCreatingTax(false); }
+  };
 
-  const handleCreateTaxInvoice = async () => {
+  const share = async ({ sendEmail = true, sendWhatsApp = false }) => {
     try {
-      // If a tax invoice already exists, open it
-      if (taxInvoiceId) {
-        navigate(`/invoices/${taxInvoiceId}`)
-        return
-      }
+      if (sendEmail) await sendProformaEmail(id);
+      if (sendWhatsApp) await sendProformaWhatsApp(id);
+      notify('Proforma invoice shared');
+    } catch (_) { notify('Failed to share proforma invoice.', 'error'); }
+    finally { setShareOpen(false); }
+  };
 
-      setCreatingTax(true)
-      const res = await createTaxInvoiceFromProforma(id)
-      const createdId = res?.tax_invoice?.id || res?.tax_invoice?.invoice?.id || null
+  const fields = useMemo(() => [
+    { key:'status', label:'Status', readOnly:true, render:(value) => <span className={`status-pill status-${String(value || '').toLowerCase()}`}>{String(value || 'issued').toUpperCase()}</span> },
+    { key:'issue_date', label:'Issue date', type:'date', readOnly:true },
+    { key:'due_date', label:'Due date', type:'date', readOnly:true },
+    { key:'customer_name', label:'Customer', readOnly:true },
+    { key:'customer_email', label:'Email', readOnly:true },
+    { key:'customer_phone', label:'Phone', readOnly:true },
+    { key:'subtotal_display', label:'Subtotal', readOnly:true },
+    { key:'discount_display', label:'Discount', readOnly:true },
+    { key:'tax_display', label:'Tax', readOnly:true },
+    { key:'total_display', label:'Grand total', readOnly:true },
+  ], []);
 
-      setNotification({
-        open: true,
-        message: res?.already_existed
-          ? 'Tax invoice already exists for this proforma.'
-          : 'Tax invoice created successfully.',
-        severity: 'success',
-      })
+  const record = useMemo(() => invoice ? ({
+    ...invoice,
+    customer_name:customerName(invoice),
+    customer_email:invoice.lead?.email || invoice.billing_snapshot?.email || '—',
+    customer_phone:invoice.lead?.phone || invoice.billing_snapshot?.phone || '—',
+    subtotal_display:money(invoice.display_taxable_subtotal ?? invoice.subtotal),
+    discount_display:money(invoice._computed_discount || 0),
+    tax_display:money(Number(invoice.cgst_total || 0) + Number(invoice.sgst_total || 0) + Number(invoice.igst_total || 0)),
+    total_display:money(invoice.grand_total),
+  }) : null, [invoice, money]);
 
-      if (createdId) {
-        navigate(`/invoices/${createdId}`)
-      }
-    } catch (error) {
-      setNotification({
-        open: true,
-        message: error?.response?.data?.error || 'Failed to create tax invoice.',
-        severity: 'error',
-      })
-    } finally {
-      setCreatingTax(false)
-    }
-  }
+  const cards = useMemo(() => invoice ? [
+    { id:'customer-details', title:'Customer Details', position:'left', deletable:false, editable:false, fieldKeys:['customer_name', 'customer_email', 'customer_phone'] },
+    { id:'proforma-details', title:'Proforma Invoice Details', position:'left', deletable:false, editable:false, fieldKeys:['issue_date', 'due_date'] },
+    { id:'proforma-actions', title:'Actions', position:'right', fixed:true, disableDrag:true, deletable:false, allowSettings:false, titleEditable:false, fieldKeys:[], customContent:() => <div className="record-action-buttons"><button type="button" className="hs-listing__create" title="Download PDF" aria-label="Download PDF" onClick={download}><PictureAsPdfOutlined /></button><button type="button" className="hs-listing__create" title={invoice.tax_invoice_id ? 'Open tax invoice' : 'Create tax invoice'} aria-label={invoice.tax_invoice_id ? 'Open tax invoice' : 'Create tax invoice'} disabled={creatingTax} onClick={createTaxInvoice}><ReceiptLongOutlined /></button><button type="button" className="hs-listing__create" title="Share proforma invoice" aria-label="Share proforma invoice" onClick={() => setShareOpen(true)}><ShareOutlined /></button></div> },
+    { id:'related-documents', title:'Related Documents', position:'right', deletable:false, editable:false, fieldKeys:[], customContent:() => <div className="record-related-documents">{invoice.related_documents?.quotation && <a href={`/quotations/${invoice.related_documents.quotation.id}`}><RequestQuoteOutlined /><span>Approved quotation</span><strong>{invoice.related_documents.quotation.quotation_number || `#${invoice.related_documents.quotation.id}`}</strong></a>}{invoice.related_documents?.work_order && <a href={`/workorders/${invoice.related_documents.work_order.id}`}><WorkOutlineOutlined /><span>Work order</span><strong>{invoice.related_documents.work_order.work_order_number || `#${invoice.related_documents.work_order.id}`}</strong></a>}{invoice.tax_invoice_id && <a href={`/invoices/${invoice.tax_invoice_id}`}><ReceiptLongOutlined /><span>Tax invoice</span><strong>{invoice.related_documents?.tax_invoice?.invoice_number || `#${invoice.tax_invoice_id}`}</strong></a>}{!invoice.related_documents?.quotation && !invoice.related_documents?.work_order && !invoice.tax_invoice_id && <small>No related documents have been created yet.</small>}</div> },
+    { id:'proforma-totals', title:'Proforma Invoice Totals', position:'right', deletable:false, editable:false, fieldKeys:['subtotal_display', 'discount_display', 'tax_display', 'total_display'] },
+  ] : [], [creatingTax, invoice]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  
+  const summaryCard = useMemo(() => invoice ? ({
+    titleFieldKey:'invoice_number', backTo:'/proforma-invoices', backLabel:'Proforma invoices', subtitle:customerName(invoice), fieldKeys:['status', 'issue_date', 'due_date'], editable:false,
+    actions:[
+      { label:'Download PDF', icon:<PictureAsPdfOutlined />, onClick:download },
+      { label:invoice.tax_invoice_id ? 'Open tax invoice' : 'Create tax invoice', icon:<ReceiptLongOutlined />, onClick:createTaxInvoice },
+      { label:'Share proforma invoice', icon:<ShareOutlined />, onClick:() => setShareOpen(true) },
+    ],
+  }) : null, [invoice]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return (
-    <div className="quotation-detail-container finance-document-detail">
-      <Topbar />
-      <DetailBackLink to="/proforma-invoices" label="Proforma invoices" />
+  const lineItems = <div className="quotation-order-lines-workspace"><div className="quotation-items-section"><div className="quotation-section-heading qi-section-heading"><div><h2 className="section-title"><span className="sep" />Proforma invoice items</h2><p className="quotation-section-subtitle">Products and proposed billing amounts for this proforma invoice.</p></div></div><div className="qi-table-wrap"><table className="qi-table"><thead><tr><th>Description</th><th>Qty</th><th>Unit price</th><th>GST</th><th>Total</th></tr></thead><tbody>{(invoice?.items || []).length ? invoice.items.map((item) => <tr key={item.id}><td dangerouslySetInnerHTML={{ __html:DOMPurify.sanitize(String(item.description || '—')) }} /><td>{formatQty(item.quantity)}</td><td>{money(item.unit_price)}</td><td>{item.gst_rate || 0}%</td><td>{money(item.line_total)}</td></tr>) : <tr><td colSpan="5" className="empty-lines">No proforma invoice items found.</td></tr>}</tbody></table></div></div></div>;
+  const centerSummary = <RecordFinancialSummary items={[
+    { key:'subtotal', label:'Subtotal', value:money(invoice?.display_taxable_subtotal ?? invoice?.subtotal) },
+    { key:'discount', label:'Discount', value:money(invoice?._computed_discount || 0) },
+    { key:'tax', label:'Taxes', value:money(Number(invoice?.cgst_total || 0) + Number(invoice?.sgst_total || 0) + Number(invoice?.igst_total || 0)) },
+    { key:'total', label:'Grand Total', value:money(invoice?.grand_total) },
+  ]} />;
 
-      {loading ? (
-        <div className="quotation-card">
-          <PageLoader message="Loading proforma invoice details..." minHeight={220} />
-        </div>
-      ) : !invoice ? (
-        <div className="quotation-card" style={{ padding: '60px 0', textAlign: 'center' }}>
-          <Typography variant="h6">No proforma invoice found</Typography>
-        </div>
-      ) : (
-        <>
-          <div className="quotation-header">
-            <div className="quotation-head">
-              <div className="qh-content">
-                <h2>Proforma #{invoice.invoice_number}</h2>
-              </div>
-              <div className="quotation-meta">
-                <span>Issue Date: {formatLocalDate(invoice.issue_date) || '—'}</span>
-                <span className="chip">
-                  <span>{formatStatusLabel(invoice.status)}</span>
-                </span>
-              </div>
-            </div>
+  if (loading) return <div className="quotation-loading">Loading proforma invoice…</div>;
+  if (!invoice) return <div className="quotation-loading">Proforma invoice not found</div>;
 
-            <div className="quotation-actions">
-              <Chip
-                className="status-chip"
-                label={formatStatusLabel(invoice.status)}
-                color={statusColors[invoice.status] || 'default'}
-                size="small"
-              />
-
-              <button
-                className="hs-listing__create"
-                onClick={handleExportPdf}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                <PictureAsPdfOutlinedIcon fontSize="small" />
-                Export PDF
-              </button>
-
-              {/* Actions menu */}
-              <div>
-                <IconButton size="small" onClick={(e) => setActionsAnchor(e.currentTarget)}>
-                  <MoreVertIcon />
-                </IconButton>
-                <Menu
-                  anchorEl={actionsAnchor}
-                  open={Boolean(actionsAnchor)}
-                  onClose={() => setActionsAnchor(null)}
-                >
-                  <MenuItem onClick={() => { setActionsAnchor(null); handleCreateTaxInvoice(); }}>
-                    <ListItemIcon>
-                      <ReceiptLongIcon fontSize="small" />
-                    </ListItemIcon>
-                    {creatingTax ? 'Creating...' : (taxInvoiceId ? 'Open Tax Invoice' : 'Create Tax Invoice')}
-                  </MenuItem>
-                  <MenuItem onClick={() => { setChannelModalOpen(true); setActionsAnchor(null); }}>
-                    <ListItemIcon>
-                      <ShareIcon fontSize="small" />
-                    </ListItemIcon>
-                    Share Proforma Invoice
-                  </MenuItem>
-                </Menu>
-              </div>
-            </div>
-          </div>
-
-          <div className="quotation-card">
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-              Customer Details
-            </Typography>
-
-            <Grid container spacing={2}>
-              <Grid item xs={12} md={6}>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>Customer</Typography>
-                <Typography variant="body1">{customerName}</Typography>
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>Issue Date</Typography>
-                <Typography variant="body1">{formatLocalDate(invoice.issue_date) || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} md={3}>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>Due Date</Typography>
-                <Typography variant="body1">{formatLocalDate(invoice.due_date) || '—'}</Typography>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>Email</Typography>
-                <Typography variant="body1">{customerEmail}</Typography>
-              </Grid>
-              <Grid item xs={12} md={6}>
-                <Typography variant="caption" sx={{ color: 'text.secondary' }}>Phone</Typography>
-                <Typography variant="body1">{customerPhone}</Typography>
-              </Grid>
-            </Grid>
-          </div>
-
-          <div className="quotation-card table-container">
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-              Proforma Items
-            </Typography>
-            <table className="leads-table">
-              <thead>
-                <tr>
-                  <th>Description</th>
-                  <th>Qty</th>
-                  <th>Unit Price</th>
-                  <th>GST %</th>
-                  <th>Total</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {(invoice.items || []).length ? invoice.items.map((item) => (
-                  <tr key={item.id}>
-                    <td>{item.description}</td>
-                    <td>{formatQty(item.quantity)}</td>
-                    <td>{formatMoney(item.unit_price)}</td>
-                    <td>{item.gst_rate}%</td>
-                    <td>{formatMoney(item.line_total)}</td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan={5} style={{ textAlign: 'center' }}>No items found</td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="quotation-card">
-            <Box sx={{ maxWidth: 360, ml: 'auto' }}>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                <Typography variant="body2" color="text.secondary">Subtotal</Typography>
-                <Typography variant="body2">{formatMoney(invoice.display_taxable_subtotal ?? invoice.subtotal)}</Typography>
-              </Box>
-              {Number(invoice._computed_discount || invoice.discount || 0) > 0 && (
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">Discount{invoice.discount_percent ? ` (${invoice.discount_percent}%)` : ''}</Typography>
-                  <Typography variant="body2">-{formatMoney(invoice._computed_discount || invoice.discount)}</Typography>
-                </Box>
-              )}
-              {Number(invoice.cgst_total || 0) > 0 && (
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">CGST</Typography>
-                  <Typography variant="body2">{formatMoney(invoice.cgst_total)}</Typography>
-                </Box>
-              )}
-
-              {Number(invoice.sgst_total || 0) > 0 && (
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography variant="body2" color="text.secondary">SGST</Typography>
-                  <Typography variant="body2">{formatMoney(invoice.sgst_total)}</Typography>
-                </Box>
-              )}
-
-              {Number(invoice.igst_total || 0) > 0 && (
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">IGST</Typography>
-                  <Typography variant="body2">{formatMoney(invoice.igst_total)}</Typography>
-                </Box>
-              )}
-
-              <Divider sx={{ mb: 1.5 }} />
-
-              <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>Grand Total</Typography>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>{formatMoney(invoice.grand_total)}</Typography>
-              </Box>
-            </Box>
-          </div>
-        </>
-      )}
-
-      <NotificationSnackbar
-        {...notification}
-        onClose={() => setNotification((prev) => ({ ...prev, open: false }))}
-      />
-      <ChannelSelectModal
-        open={channelModalOpen}
-        onClose={() => setChannelModalOpen(false)}
-        title={`Share Proforma ${invoice?.invoice_number || ''} with ${customerName}`}
-        subtitle={getShareSubtitle()}
-        defaultEmail
-        defaultWhatsApp={false}
-        confirmLabel="Share Proforma"
-        onConfirm={async ({ sendEmail = true, sendWhatsApp = false }) => {
-          setChannelModalOpen(false)
-          try {
-            if (sendEmail) await sendProformaEmail(id)
-            if (sendWhatsApp) await sendProformaWhatsApp(id)
-            setNotification({ open: true, message: '📩 Notification sent', severity: 'success' })
-          } catch {
-            setNotification({ open: true, message: '❌ Failed to send notification', severity: 'error' })
-          }
-        }}
-      />
-    </div>
-  )
+  return <>
+    <SingleRecordWorkspace storageKey={`pav-erp:record:proforma-invoice:${id}`} backTo="/proforma-invoices" backLabel="Proforma invoices" title={invoice.invoice_number || `Proforma invoice #${id}`} record={record} fields={fields} initialCards={cards} summaryCard={summaryCard} hidePageHeader centerLabel={`Order Lines (${invoice.items?.length || 0})`} centerContent={lineItems} centerSummary={centerSummary} />
+    <ChannelSelectModal open={shareOpen} onClose={() => setShareOpen(false)} title={`Share Proforma ${invoice.invoice_number || ''} with ${customerName(invoice)}`} subtitle="Send this proforma invoice by email or WhatsApp." defaultEmail defaultWhatsApp={false} confirmLabel="Share Proforma" onConfirm={share} />
+    <NotificationSnackbar open={notification.open} message={notification.message} severity={notification.severity} onClose={() => setNotification((current) => ({ ...current, open:false }))} />
+  </>;
 }
-
-export default ProformaInvoiceView

@@ -6,8 +6,8 @@ import ChannelSelectModal from '../components/ui/ChannelSelectModal';
 import { formatDate } from '../utils/dateFormatter';
 import { getPendingPaymentReminders, sendPaymentReminderEmail, sendPaymentReminderWhatsApp } from '../services/paymentReminderService';
 import useAutoRefresh from '../hooks/useAutoRefresh';
-
-const money = (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(Number(value || 0));
+import { useSettings } from '../context/SettingsContext';
+import { formatCurrency } from '../utils/currencyUtils';
 const fields = [
   { key: 'invoice_number', label: 'Invoice number' }, { key: 'customer_name', label: 'Customer' },
   { key: 'customer_email', label: 'Email' }, { key: 'due_date', label: 'Due date' },
@@ -16,6 +16,8 @@ const fields = [
 ];
 
 export default function PaymentReminders() {
+  const { settings } = useSettings();
+  const money = (value) => formatCurrency(value, settings?.currency_code || 'INR');
   const [rows, setRows] = useState([]);
   const [sending, setSending] = useState({});
   const [activeInvoiceId, setActiveInvoiceId] = useState(null);

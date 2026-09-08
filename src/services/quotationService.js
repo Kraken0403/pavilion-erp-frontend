@@ -36,9 +36,9 @@ export const previewQuotationDocument = async (quotationData) => {
 /**
  * Update quotation status
  */
-export const updateQuotationStatus = async (id, status) => {
+export const updateQuotationStatus = async (id, status, options = {}) => {
   try {
-    const res = await api.put(`/quotations/${id}/status`, { status });
+    const res = await api.put(`/quotations/${id}/status`, { status, ...options });
     return res.data;
   } catch (error) {
     handleError(error, `Failed to update status for quotation ${id}`);

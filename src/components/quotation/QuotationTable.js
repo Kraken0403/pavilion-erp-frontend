@@ -5,5 +5,5 @@ import HubSpotListing from '../ui/HubSpotListing';
 export default function QuotationTable({ quotations = [], reload }) {
   const navigate = useNavigate();
   const rows = quotations.map((quotation) => ({ ...quotation, customer: `${quotation.first_name || quotation.lead_first_name || ''} ${quotation.last_name || quotation.lead_last_name || ''}`.trim() || '—' }));
-  return <HubSpotListing title="Quotations" createLabel="Create quotation" rows={rows} initialFields={['customer', 'quotation_number', 'quotation_date', 'total_amount', 'version', 'status']} onCreate={() => navigate('/quotation-create')} onRowOpen={(quotation) => navigate(`/quotations/${quotation.id}`)} onRefresh={reload} renderValue={(field, value) => field === 'total_amount' ? `₹${Number(value || 0).toFixed(2)}` : (value ?? '—')} />;
+  return <HubSpotListing title="Quotations" createLabel="Create quotation" rows={rows} initialFields={['customer', 'quotation_number', 'quotation_date', 'total_amount', 'version', 'status']} onCreate={() => navigate('/quotation-create')} onRowOpen={(quotation) => navigate(`/quotations/${quotation.id}`)} onRefresh={reload} />;
 }

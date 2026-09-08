@@ -60,11 +60,11 @@ export const fetchWorkOrderById = async (id) => {
 };
 
 // Update Work Order Status
-export const updateWorkOrderStatus = async (id, status) => {
+export const updateWorkOrderStatus = async (id, status, options = {}) => {
   try {
     const res = await api.put(
       `/work-orders/${id}/status`,
-      { status }
+      { status, ...options }
     );
     return res.data;
   } catch (error) {

@@ -1,18 +1,21 @@
 import React from 'react'
 import { Typography } from '@mui/material'
 import { useSettings } from '../../context/SettingsContext'
+import { displayCurrency } from '../../utils/currencyUtils'
 import '../../assets/styles/QuotationItems.scss'
 
 function WorkOrderItemsSection({ items = [] }) {
   const { settings } = useSettings()
-  const currency = settings?.currency_code || '₹'
+  const currency = displayCurrency(settings?.currency_code || 'INR')
 
   return (
     <div className="quotation-items-section">
-      <Typography className="section-title">
-        <span className="sep"></span>
-        Work Order Items
-      </Typography>
+      <div className="quotation-section-heading qi-section-heading">
+        <div>
+          <Typography className="section-title"><span className="sep"></span>Work Order Items</Typography>
+          <p className="quotation-section-subtitle">Products, quantities, taxes and totals included in this work order.</p>
+        </div>
+      </div>
 
       <div className="qi-table-wrap">
         <table className="qi-table">

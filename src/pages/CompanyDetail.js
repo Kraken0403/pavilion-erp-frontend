@@ -5,22 +5,25 @@ import SingleRecordWorkspace from '../components/ui/SingleRecordWorkspace';
 import { getCompanyById, updateCompany } from '../services/companyService';
 import { createActivity } from '../services/activityService';
 import { resolveBackendAssetUrl } from '../services/api';
-
-const money = (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(Number(value || 0));
+import { useSettings } from '../context/SettingsContext';
+import { formatCurrency } from '../utils/currencyUtils';
 
 function ContactList({ contacts }) {
   return <div className="record-quotation-list">{contacts.length ? contacts.slice(0, 10).map((contact) => <Link className="record-quotation-row" to={`/leads/${contact.id}`} key={contact.id}><strong>{`${contact.first_name || ''} ${contact.last_name || ''}`.trim() || contact.contact_name || `Contact #${contact.id}`}</strong><span><em>{contact.designation || contact.lead_status || 'Contact'}</em><b>{contact.email || contact.phone_number || ''}</b></span></Link>) : <p className="record-empty">No contacts are linked to this company.</p>}</div>;
 }
 
-function QuotationList({ quotations }) {
+function QuotationList({ quotations, currencyCode }) {
   const [query, setQuery] = useState('');
   const rows = quotations.filter((quotation) => `${quotation.quotation_number || ''} ${quotation.lead_name || ''} ${quotation.status || ''}`.toLowerCase().includes(query.toLowerCase()));
-  return <><div className="record-card-toolbar"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search quotations" /></div><div className="record-quotation-list">{rows.length ? rows.slice(0, 10).map((quotation) => <Link className="record-quotation-row" to={`/quotations/${quotation.id}`} key={quotation.id}><strong>{quotation.quotation_number || `Quotation #${quotation.id}`}</strong><span><em>{quotation.lead_name || quotation.status || ''}</em><b>{money(quotation.total_amount)}</b></span></Link>) : <p className="record-empty">No quotations found.</p>}</div></>;
+  return <><div className="record-card-toolbar"><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search quotations" /></div><div className="record-quotation-list">{rows.length ? rows.slice(0, 10).map((quotation) => <Link className="record-quotation-row" to={`/quotations/${quotation.id}`} key={quotation.id}><strong>{quotation.quotation_number || `Quotation #${quotation.id}`}</strong><span><em>{quotation.lead_name || quotation.status || ''}</em><b>{formatCurrency(quotation.total_amount, currencyCode)}</b></span></Link>) : <p className="record-empty">No quotations found.</p>}</div></>;
 }
 
 export default function CompanyDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { settings } = useSettings();
+  const currencyCode = settings?.currency_code || 'INR';
+  const money = useCallback((value) => formatCurrency(value, currencyCode), [currencyCode]);
   const [company, setCompany] = useState(null);
   const [error, setError] = useState('');
 
@@ -59,17 +62,17 @@ export default function CompanyDetail() {
   const cards = useMemo(() => company ? [
     { id: 'company-details', title: 'Company Details', position: 'left', fieldKeys: ['name', 'legal_name', 'email', 'phone', 'website', 'logo_url'], deletable: false },
     { id: 'key-information', title: 'Key Information', position: 'left', fieldKeys: ['gst_number', 'pan_number', 'company_type', 'registered_state'], deletable: false },
-    { id: 'quotations', title: 'Quotations', position: 'right', nonCollapsible: true, deletable: false, customContent: () => <QuotationList quotations={company.quotations || []} />, headerActions: () => company.contacts?.[0] ? <button type="button" title="Create quotation" onClick={() => navigate(`/quotation/create/${company.contacts[0].id}`)}><Add /></button> : null },
+    { id: 'quotations', title: 'Quotations', position: 'right', nonCollapsible: true, deletable: false, customContent: () => <QuotationList quotations={company.quotations || []} currencyCode={currencyCode} />, headerActions: () => company.contacts?.[0] ? <button type="button" title="Create quotation" onClick={() => navigate(`/quotation/create/${company.contacts[0].id}`)}><Add /></button> : null },
     { id: 'contacts', title: 'Linked Contacts', position: 'right', deletable: false, customContent: () => <ContactList contacts={company.contacts || []} /> },
     { id: 'billing', title: 'Billing Details', position: 'right', fieldKeys: ['billing_address', 'billing_city', 'billing_state', 'billing_pincode', 'gst_number'] },
     { id: 'shipping', title: 'Shipping Details', position: 'right', fieldKeys: ['shipping_address', 'shipping_city', 'shipping_state', 'shipping_pincode'] },
-  ] : [], [company, navigate]);
+  ] : [], [company, currencyCode, navigate]);
 
   const timeline = useMemo(() => company ? [
     ...(company.activities || []).map((activity) => ({ ...activity, id: `activity-${activity.id}`, title: activity.title || `${activity.type || 'Activity'} · ${activity.lead_name || ''}` })),
     ...(company.quotations || []).map((quotation) => ({ id: `quotation-${quotation.id}`, type: 'quotation', title: `Quotation ${quotation.quotation_number || `#${quotation.id}`}`, description: `${quotation.lead_name || 'Company'} · ${quotation.status || 'pending'} · ${money(quotation.total_amount)}`, created_at: quotation.created_at || quotation.quotation_date, meta: <Link to={`/quotations/${quotation.id}`}>Open quotation</Link> })),
     ...(company.invoices || []).map((invoice) => ({ id: `invoice-${invoice.id}`, type: 'invoice', title: `Invoice ${invoice.invoice_number || `#${invoice.id}`}`, description: `${invoice.status || ''} · ${money(invoice.grand_total)}`, created_at: invoice.created_at, meta: <Link to={`/invoices/${invoice.id}`}>Open invoice</Link> })),
-  ].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)) : [], [company]);
+  ].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)) : [], [company, money]);
 
   if (error) return <div className="record-load-error">{error}</div>;
   if (!company) return <div className="record-load-error">Loading company…</div>;

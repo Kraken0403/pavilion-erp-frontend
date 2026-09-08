@@ -119,8 +119,7 @@ function Passbook() {
   };
 
   const renderAccountList = () => (
-    <>
-      <div className="table-container module-card passbook-hero-card">
+    <div className="table-container module-card passbook-hero-card">
         <div className="module-header compact">
           <div>
             <h2>Passbook Accounts</h2>
@@ -131,7 +130,6 @@ function Passbook() {
             <span>Add Account</span>
           </button>
         </div>
-      </div>
 
       <div className="passbook-accounts-grid">
         {accounts.map((account) => (
@@ -150,14 +148,14 @@ function Passbook() {
         ))}
 
         {!accounts.length && !loading && (
-          <div className="table-container module-card passbook-empty-card">
+          <div className="passbook-empty-card">
             <h3>No accounts yet</h3>
             <p>Create your first cash, bank or wallet account to start tracking entries.</p>
             <button className="primary-btn" onClick={() => setAccountModalOpen(true)}>Add Account</button>
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 
   const renderEntries = () => (

@@ -6,8 +6,8 @@ import ReceiptsModal from '../components/invoices/ReceiptsModal';
 import { getInvoices } from '../services/invoiceService';
 import useAutoRefresh from '../hooks/useAutoRefresh';
 import { formatDate } from '../utils/dateFormatter';
-
-const money = (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(Number(value || 0));
+import { useSettings } from '../context/SettingsContext';
+import { formatCurrency } from '../utils/currencyUtils';
 const fields = [
   { key: 'invoice_number', label: 'Invoice number' }, { key: 'customer_name', label: 'Customer' },
   { key: 'paid_date', label: 'Paid date' }, { key: 'grand_total', label: 'Invoice total' },
@@ -16,6 +16,8 @@ const fields = [
 ];
 
 export default function PaymentHistory() {
+  const { settings } = useSettings();
+  const money = (value) => formatCurrency(value, settings?.currency_code || 'INR');
   const [rows, setRows] = useState([]);
   const [receiptInvoice, setReceiptInvoice] = useState(null);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'info' });

@@ -25,8 +25,12 @@ import ChannelSelectModal from '../ui/ChannelSelectModal';
 import { sendReceiptEmail, sendReceiptWhatsApp } from '../../services/invoiceService';
 import { downloadReceiptPdf } from "../../services/invoiceService";
 import { formatDate } from '../../utils/dateFormatter';
+import { useSettings } from '../../context/SettingsContext';
+import { formatCurrency } from '../../utils/currencyUtils';
 
 function ReceiptsModal({ open, onClose, invoice, onError }) {
+    const { settings } = useSettings();
+    const money = (value) => formatCurrency(value, settings?.currency_code || 'INR');
     const [downloading, setDownloading] = useState(null);
     const [channelOpen, setChannelOpen] = useState(false);
     const [selectedReceipt, setSelectedReceipt] = useState(null);
@@ -122,7 +126,7 @@ function ReceiptsModal({ open, onClose, invoice, onError }) {
                                     Invoice Total
                                 </Typography>
                                 <Typography variant="subtitle2">
-                                    ₹{Number(invoice?.grand_total || 0).toFixed(2)}
+                                    {money(invoice?.grand_total)}
                                 </Typography>
                             </Box>
                             <Box>
@@ -130,10 +134,7 @@ function ReceiptsModal({ open, onClose, invoice, onError }) {
                                     Total Paid
                                 </Typography>
                                 <Typography variant="subtitle2" color="success.main">
-                                    ₹
-                                    {payments
-                                        .reduce((s, p) => s + Number(p.amount || 0), 0)
-                                        .toFixed(2)}
+                                    {money(payments.reduce((s, p) => s + Number(p.amount || 0), 0))}
                                 </Typography>
                             </Box>
                             <Box>
@@ -141,11 +142,10 @@ function ReceiptsModal({ open, onClose, invoice, onError }) {
                                     Balance
                                 </Typography>
                                 <Typography variant="subtitle2" color="error.main">
-                                    ₹
-                                    {(
+                                    {money(
                                         Number(invoice?.grand_total || 0) -
                                         payments.reduce((s, p) => s + Number(p.amount || 0), 0)
-                                    ).toFixed(2)}
+                                    )}
                                 </Typography>
                             </Box>
                             <Box>
@@ -195,7 +195,7 @@ function ReceiptsModal({ open, onClose, invoice, onError }) {
                                             </TableCell>
                                             <TableCell align="right">
                                                 <Typography variant="body2" fontWeight={600}>
-                                                    ₹{Number(p.amount || 0).toFixed(2)}
+                                                    {money(p.amount)}
                                                 </Typography>
                                             </TableCell>
                                             <TableCell>

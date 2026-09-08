@@ -4,8 +4,8 @@ import { Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, 
 import HubSpotListing from '../ui/HubSpotListing';
 import { getVendorPayables, recordVendorPayment } from '../../services/vendorService';
 import { formatDate } from '../../utils/dateFormatter';
-
-const money = (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(Number(value || 0));
+import { formatCurrency } from '../../utils/currencyUtils';
+import { useSettings } from '../../context/SettingsContext';
 const fields = [
   { key: 'vendor_name', label: 'Vendor' }, { key: 'reference', label: 'Reference' },
   { key: 'product_name', label: 'Product' }, { key: 'amount', label: 'Amount' },
@@ -15,6 +15,8 @@ const fields = [
 ];
 
 export default function VendorPayablesPanel() {
+  const { settings } = useSettings();
+  const money = (value) => formatCurrency(value, settings?.currency_code || 'INR');
   const [rows, setRows] = useState([]);
   const [summary, setSummary] = useState({});
   const [activeRow, setActiveRow] = useState(null);

@@ -47,6 +47,7 @@ import QuotationTemplateEditor from './pages/QuotationTemplateEditor';
 import PublicQuotation from './pages/PublicQuotation';
 import Vendors from './pages/Vendors';
 import Passbook from './pages/Passbook';
+import ForgotPassword from './components/ForgotPassword';
 
 import './assets/styles/global.scss';
 
@@ -116,6 +117,7 @@ const AppRoutes = () => (
     <Route path="/public/quotations/:token" element={<PublicQuotation />} />
     <Route path="/quotation-create" element={<PrivateRoute requiredModule="quotations"><QuotationBuilder /></PrivateRoute>} />
     <Route path="/quotation/create/:leadId" element={<PrivateRoute requiredModule="quotations"><QuotationBuilder /></PrivateRoute>} />
+    <Route path="/forgot-password" element={<ForgotPassword />} />
     <Route element={<Layout />}>
       <Route path="/dashboard" element={<Protected requiredModule="dashboard"><Dashboard /></Protected>} />
 

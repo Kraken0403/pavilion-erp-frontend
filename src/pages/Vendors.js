@@ -14,5 +14,5 @@ export default function Vendors() {
   const load = async () => { const data = await getVendors({ includeInactive: true }); setVendors(data.map((vendor) => ({ ...vendor, status_label: vendor.is_active ? 'Active' : 'Inactive' }))); };
   useEffect(() => { load().catch(() => setVendors([])); }, []);
   const edit = (vendor) => { setEditing(vendor); setOpen(true); };
-  return <><HubSpotListing title="Vendors" createLabel="Add vendor" rows={vendors} initialFields={fields} onCreate={() => { setEditing(null); setOpen(true); }} onRowOpen={edit} onUpdateRow={edit} onRefresh={load} renderValue={(field, value) => field === 'payable_balance' ? `₹${Number(value || 0).toFixed(2)}` : (value ?? '—')} /><VendorFormDialog open={open} vendor={editing} onClose={() => { setOpen(false); setEditing(null); }} onSaved={() => { setOpen(false); setEditing(null); load(); }} /></>;
+  return <><HubSpotListing title="Vendors" createLabel="Add vendor" rows={vendors} initialFields={fields} onCreate={() => { setEditing(null); setOpen(true); }} onRowOpen={edit} onUpdateRow={edit} onRefresh={load} /><VendorFormDialog open={open} vendor={editing} onClose={() => { setOpen(false); setEditing(null); }} onSaved={() => { setOpen(false); setEditing(null); load(); }} /></>;
 }

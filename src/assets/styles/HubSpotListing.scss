@@ -15,6 +15,7 @@
 .hs-listing__upper { flex: 0 0 auto; }
 .hs-listing__heading { min-height: 42px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .hs-listing__heading h1 { margin: 0; font-size: 24px; font-weight: 500; }
+.hs-listing__heading-actions { display:flex; align-items:center; gap:8px; }
 .hs-listing__create { height: 32px; display: flex; align-items: center; gap: 6px; padding: 0 13px; border: 0; border-radius: 4px; color: #fff; background: #213343; font-size: 12px; font-weight: 600; }
 .hs-listing__create:hover { background: #33475b; }
 .hs-listing__create svg { font-size: 16px; }
@@ -25,6 +26,9 @@
 .hs-listing__view.is-selected input { color: #213343; font-weight: 600; }
 .hs-listing__view > button { width: 20px; height: 20px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; color: #718096; background: transparent; }
 .hs-listing__view > button:hover { background: #e5e8eb; }.hs-listing__view > button svg { font-size: 13px; }
+.hs-listing__view-button { height:46px; padding:0 2px; border:0; border-bottom:2px solid transparent; color:#516f90; background:transparent; font-size:12px; }
+.hs-listing__view-button.is-selected { border-bottom-color:#213343; color:#213343; font-weight:600; }
+.hs-listing__custom-content { flex:1 1 auto; min-height:0; overflow:auto; }
 .hs-listing__toolbar { flex: 0 0 auto; min-height: 54px; display: flex; align-items: center; gap: 8px; font-size: 12px; }
 .hs-listing__toolbar > button:not(.MuiIconButton-root), .hs-listing__footer button {
   min-height: 32px; display: flex; align-items: center; gap: 6px; padding: 8px 20px;
@@ -54,8 +58,12 @@
 .hs-listing__footer { position: absolute; z-index: 4; left: 0; right: 0; bottom: 0; height: 58px; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; border-top: 1px solid #dfe3eb; background: #fff; box-shadow: 0 -3px 10px rgba(33,53,71,.05); color: #33475b; font-size: 12px; line-height: 14px; }.hs-listing__footer > div { display: flex; gap: 8px; }
 .hs-listing__filter-menu, .hs-listing__sort-menu { width: 330px; display: grid; gap: 10px; padding: 16px; color: #213343; font-size: 14px; }.hs-listing__filter-menu strong, .hs-listing__sort-menu strong { font-size: 14px; }
 .hs-listing__filter-menu select, .hs-listing__filter-menu > input { width: 100%; height: 38px; padding: 0 10px; border: 1px solid #899bb0; border-radius: 4px; background: #fff; font-size: 14px; }
-.hs-listing__sort-menu .MuiInputBase-root, .hs-listing__sort-menu .MuiInputBase-input, .MuiAutocomplete-popper { font-size: 14px; }
-.hs-listing__option-search, .hs-listing__sort-menu label { height: 38px; display: flex; align-items: center; gap: 7px; padding: 0 10px; border: 1px solid #899bb0; border-radius: 20px; }.hs-listing__option-search svg, .hs-listing__sort-menu label svg { font-size: 17px; }.hs-listing__option-search input, .hs-listing__sort-menu label input { width: 100%; border: 0; outline: 0; font-size: 14px; }
+.hs-listing__sort-menu .MuiOutlinedInput-root { min-height:38px; padding-right:48px !important; border-radius:3px !important; font-size:14px; }
+.hs-listing__sort-menu .MuiInputBase-input, .MuiAutocomplete-popper .MuiAutocomplete-option { font-size:14px !important; }
+.hs-listing__sort-menu .MuiAutocomplete-endAdornment { right:5px; display:flex; align-items:center; }
+.hs-listing__sort-menu .MuiAutocomplete-endAdornment .MuiIconButton-root { width:21px; height:21px; padding:2px; }
+.hs-listing__sort-menu .MuiAutocomplete-endAdornment svg { width:15px; height:15px; }
+.hs-listing__option-search { height:38px; display:flex; align-items:center; gap:7px; padding:0 10px; border:1px solid #899bb0; border-radius:3px; }.hs-listing__option-search svg { font-size:17px; }.hs-listing__option-search input { width:100%; border:0; outline:0; font-size:14px; }
 .hs-listing__options { max-height: 210px; overflow-y: auto; margin: 0 -16px; }.hs-listing__options button { width: 100%; padding: 10px 16px; border: 0; background: #fff; text-align: left; font-size: 14px; }.hs-listing__options button:hover, .hs-listing__options button.is-selected { background: #e7e9eb; }
 .hs-listing__date-options button { display: grid; gap: 4px; }
 .hs-listing__date-options button strong { font-size: 14px; font-weight: 500; }

@@ -18,6 +18,7 @@ import WgiymEditor from '../components/ui/WgiymEditor';
 import FormattedDateInput from '../components/ui/FormattedDateInput';
 import { formatDate } from '../utils/dateFormatter';
 import { useSettings as useGlobalSettings } from '../context/SettingsContext';
+import { formatCurrency } from '../utils/currencyUtils';
 import '../assets/styles/QuotationBuilder.scss';
 
 const steps = ['Details', 'Customer details', 'Your info', 'Order lines', 'Review'];
@@ -50,7 +51,6 @@ const required = (label) => <span className="field-label-text">{label}<span clas
 const leadName = (lead) => lead?.name || `${lead?.first_name || ''} ${lead?.last_name || ''}`.trim() || lead?.email || (lead?.id ? `Lead #${lead.id}` : '');
 const companyName = (company) => company?.name || company?.company_name || (company?.id ? `Company #${company.id}` : '');
 const productName = (product) => product?.name || product?.product_name || `Product #${product?.id}`;
-const money = (value) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:2 }).format(Number(value || 0));
 const stripHtml = (value) => String(value || '').replace(/<[^>]*>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/\s+/g, ' ').trim();
 
 function buildCategoryTopMap(tree = []) {
@@ -73,9 +73,10 @@ function QuotationPreview({ html, loading, error }) {
 }
 
 export default function QuotationBuilder() {
+  const { settings: globalSettings } = useGlobalSettings() || {};
+  const money = (value) => formatCurrency(value, globalSettings?.currency_code || 'INR');
   const navigate = useNavigate();
   const { leadId } = useParams();
-  const { settings: globalSettings } = useGlobalSettings() || {};
   const [step, setStep] = useState(0);
   const [leads, setLeads] = useState([]);
   const [products, setProducts] = useState([]);

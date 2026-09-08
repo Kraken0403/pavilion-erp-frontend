@@ -8,6 +8,7 @@ import {
   Switch,
   FormControlLabel
 } from "@mui/material";
+import UploadFileOutlined from "@mui/icons-material/UploadFileOutlined";
 
 export default function SettingsForm({ settings, onSubmit }) {
   const [form, setForm] = useState({
@@ -109,6 +110,7 @@ export default function SettingsForm({ settings, onSubmit }) {
               />
             )}
             <Button variant="contained" component="label">
+              <UploadFileOutlined />
               Upload Logo
               <input hidden type="file" accept="image/*" onChange={handleLogoChange} />
             </Button>

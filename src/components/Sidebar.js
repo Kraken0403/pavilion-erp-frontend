@@ -18,6 +18,7 @@ import CategoryOutlinedIcon from '@mui/icons-material/CategoryOutlined';
 import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
 import ConfirmationNumberOutlinedIcon from '@mui/icons-material/ConfirmationNumberOutlined';
 import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined';
+import BusinessOutlinedIcon from '@mui/icons-material/BusinessOutlined';
 import AccountBalanceWalletOutlinedIcon from '@mui/icons-material/AccountBalanceWalletOutlined';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
@@ -64,7 +65,7 @@ const navGroups = [
   { key: 'reports', module: 'reports', label: 'Reports', icon: AssessmentOutlinedIcon, path: '/reports' },
   { key: 'more', module: 'settings', label: 'More', icon: SettingsOutlinedIcon, children: [
     { label: 'Settings', path: '/settings', icon: SettingsOutlinedIcon, module: 'settings' },
-    { label: 'My companies', path: '/my-companies', icon: SettingsOutlinedIcon, module: 'settings' },
+    { label: 'My Companies', path: '/my-companies', icon: BusinessOutlinedIcon, module: 'settings' },
   ] },
 ];
 

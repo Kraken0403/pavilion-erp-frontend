@@ -444,6 +444,11 @@ body {
   text-transform: uppercase !important;
 }
 
+.status-pending, .status-draft, .status-issued, .status-part-payment, .status-preparing, .status-ready { border-color:#ead38a !important; background:#fff8dc !important; color:#785d0b !important; }
+.status-approved, .status-converted, .status-completed, .status-paid, .status-active, .status-success { border-color:#a9dfc7 !important; background:#eaf8f1 !important; color:#176b4d !important; }
+.status-rejected, .status-cancelled, .status-overdue, .status-inactive, .status-error { border-color:#efb7b7 !important; background:#fff0f0 !important; color:#a33131 !important; }
+.status-info, .status-open, .status-sent { border-color:#b9d6ea !important; background:#edf7fd !important; color:#245d7c !important; }
+
 .MuiTextField-root .MuiOutlinedInput-root,
 .MuiSelect-select,
 input,

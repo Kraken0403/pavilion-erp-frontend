@@ -9,7 +9,7 @@
 .record-side-column { display:grid; align-content:start; gap:10px; }.record-side-column.is-over{background:#eef5f7;border-radius:6px;}
 .record-card { overflow:hidden; border:1px solid #dfe3eb; border-radius:7px; background:#fff; box-shadow:0 1px 2px rgba(33,51,67,.05); }.record-card.is-dragging{box-shadow:0 12px 24px rgba(33,51,67,.18)}
 .record-card__header { min-height:44px; display:flex; align-items:center; gap:5px; padding:0 8px; border-bottom:1px solid #edf1f5; }.record-card__header h2{flex:1;margin:0;font-size:13px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.record-card__title-input{flex:1;min-width:0;height:30px;padding:0 7px;border:1px solid #899bb0;border-radius:4px;font-size:13px;font-weight:700}
-.record-card__drag { width:22px; height:30px; display:grid; place-items:center; color:#8aa0b5; opacity:0; cursor:grab; transition:opacity .15s; }.record-card:hover .record-card__drag{opacity:1}.record-card__drag svg{font-size:18px}.record-card__actions{display:flex;align-items:center;margin-left:auto}.record-card__actions .MuiIconButton-root{width:29px;height:29px;color:#516f90}.record-card__actions svg{font-size:17px}
+.record-card__drag { width:22px; height:30px; display:grid; place-items:center; color:#8aa0b5; opacity:.32; cursor:grab; transition:opacity .15s; }.record-card:hover .record-card__drag{opacity:1}.record-card__drag svg{font-size:18px}.record-card__actions{display:flex;align-items:center;margin-left:auto}.record-card__actions .MuiIconButton-root{width:29px;height:29px;color:#516f90}.record-card__actions svg{font-size:17px}
 .record-card__body{padding:4px 12px 10px}.record-property{padding:9px 0;border-bottom:1px solid #edf1f5}.record-property:last-child{border-bottom:0}.record-property>span{display:block;margin-bottom:4px;color:#516f90;font-size:11px}.record-property>div{font-size:13px;line-height:1.45;word-break:break-word}.record-property input,.record-property select,.record-property textarea{width:100%;min-height:34px;box-sizing:border-box;padding:6px 8px;border:1px solid #899bb0;border-radius:4px;background:#fff;color:#213343;font:400 13px/18px inherit}.record-property textarea{resize:vertical}.record-readonly-value{display:block;padding:7px 8px;border-radius:4px;background:#f5f8fa;color:#516f90}.record-rich-value{max-height:160px;overflow:auto}.record-rich-value p{margin:0 0 5px}
 .record-add-card{width:100%;min-height:34px;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:5px;border:1px dashed #899bb0;border-radius:6px;background:#fff;color:#007a8c;font-size:12px;font-weight:600}.record-add-card svg{font-size:17px}
 .record-center{min-width:0;min-height:0;display:flex;flex-direction:column;overflow:hidden;background:#fff}.record-tabs{flex:0 0 46px;display:flex;gap:24px;padding:0 18px;border-bottom:1px solid #dfe3eb}.record-tabs button{border:0;border-bottom:2px solid transparent;background:transparent;color:#516f90;font-size:13px;font-weight:600}.record-tabs button.is-active{border-bottom-color:#007a8c;color:#213343}
@@ -231,6 +231,62 @@
   min-height: 0;
   overflow: auto;
 }
+
+.record-center-summary {
+  position: relative;
+  z-index: 3;
+  flex: 0 0 auto;
+  padding: 10px 12px;
+  border-top: 1px solid rgb(204, 204, 204);
+  background: #fff;
+  box-shadow: 0 -4px 12px rgba(33, 51, 67, .06);
+}
+
+.record-financial-summary {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(112px, 1fr);
+  align-items: stretch;
+  overflow-x: auto;
+  border: 1px solid #ccd6df;
+  border-radius: 6px;
+  background: #f8fafc;
+}
+
+.record-financial-summary__item {
+  min-width: 112px;
+  padding: 10px 12px;
+  border-right: 1px solid #dfe7ef;
+}
+
+.record-financial-summary__item:last-child { border-right: 0; text-align: right; }
+.record-financial-summary__item > span { display:block; margin-bottom:4px; color:#516f90; font-size:10px; font-weight:700; letter-spacing:.035em; text-transform:uppercase; white-space:nowrap; }
+.record-financial-summary__item > strong { display:block; color:#213343; font-size:14px; font-weight:750; white-space:nowrap; }
+.record-financial-summary__item > small { display:block; margin-top:2px; color:#7c98b6; font-size:10px; white-space:nowrap; }
+.record-financial-summary__item.is-positive > strong { color:#16835b; }
+.record-financial-summary__item.is-warning > strong { color:#9a6700; }
+.record-financial-summary__item.is-danger > strong { color:#b42318; }
+.record-financial-summary__item.is-total { background:#eef7f8; }
+.record-financial-summary__item.is-total > strong { color:#007a8c; font-size:16px; }
+
+.record-financial-summary input[type="number"] {
+  width: 100%;
+  max-width: 112px;
+  height: 30px;
+  padding: 5px 8px;
+  border: 1px solid #899bb0;
+  border-radius: 4px !important;
+  background: #fff;
+  color: #213343;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: right;
+  outline: none;
+}
+
+.record-financial-summary input[type="number"]::-webkit-inner-spin-button,
+.record-financial-summary input[type="number"]::-webkit-outer-spin-button { margin:0; appearance:none; }
+.record-financial-summary input[type="number"] { -moz-appearance:textfield; }
 
 .record-property .formatted-date-input > input,
 .record-summary-card__property .formatted-date-input > input {

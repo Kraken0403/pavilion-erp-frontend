@@ -2,11 +2,25 @@ export function displayCurrency(codeOrSymbol) {
   if (!codeOrSymbol) return '₹'
   const s = String(codeOrSymbol).trim()
   if (!s) return '₹'
-  // Map common currency codes to their symbol for UI display
   if (s.toUpperCase() === 'INR') return '₹'
-  // If caller already passed a symbol like '₹', just return it
   if (s.length <= 3 && /[^A-Za-z0-9]/.test(s)) return s
-  return s
+  try {
+    const symbol = new Intl.NumberFormat('en', { style: 'currency', currency: s.toUpperCase(), currencyDisplay: 'narrowSymbol' })
+      .formatToParts(0)
+      .find((part) => part.type === 'currency')?.value
+    return symbol || s
+  } catch (_) {
+    return s
+  }
+}
+
+export function formatCurrency(value, codeOrSymbol = 'INR', options = {}) {
+  const amount = Number(value || 0)
+  const digits = options.maximumFractionDigits ?? 2
+  return `${displayCurrency(codeOrSymbol)}${amount.toLocaleString('en-IN', {
+    minimumFractionDigits: options.minimumFractionDigits ?? digits,
+    maximumFractionDigits: digits,
+  })}`
 }
 
 export default displayCurrency

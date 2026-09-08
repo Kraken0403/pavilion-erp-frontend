@@ -31,6 +31,8 @@ import {
 } from "../../services/invoiceService";
 import { formatStatusLabel } from "../../utils/statusFormatter";
 import { toInputDateValue, formatDate } from "../../utils/dateFormatter";
+import { useSettings } from "../../context/SettingsContext";
+import { displayCurrency, formatCurrency } from "../../utils/currencyUtils";
 
 const statusColors = {
     draft: "default",
@@ -41,6 +43,9 @@ const statusColors = {
 };
 
 function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
+    const { settings } = useSettings();
+    const currency = displayCurrency(settings?.currency_code || 'INR');
+    const money = (value) => formatCurrency(value, settings?.currency_code || 'INR');
     const [loading, setLoading] = useState(false);
     const [invoice, setInvoice] = useState(null);
     const [fetching, setFetching] = useState(false);
@@ -199,7 +204,7 @@ function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
 
             if (paymentAmount > remainingAmount) {
                 onError?.(
-                    `Payment amount (₹${paymentAmount}) cannot exceed remaining amount (₹${remainingAmount.toFixed(2)})`
+                    `Payment amount (${money(paymentAmount)}) cannot exceed remaining amount (${money(remainingAmount)})`
                 );
                 return;
             }
@@ -327,16 +332,16 @@ function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
                             }}
                         >
                             <Typography variant="body2">
-                                <strong>Total:</strong> ₹{totalAmount.toFixed(2)}
+                                <strong>Total:</strong> {money(totalAmount)}
                             </Typography>
                             <Typography variant="body2">
-                                <strong>Paid:</strong> ₹{totalPaid.toFixed(2)}
+                                <strong>Paid:</strong> {money(totalPaid)}
                             </Typography>
                             <Typography
                                 variant="body2"
                                 color={remainingAmount > 0 ? "error" : "success.main"}
                             >
-                                <strong>Remaining:</strong> ₹{remainingAmount.toFixed(2)}
+                                <strong>Remaining:</strong> {money(remainingAmount)}
                             </Typography>
                         </Box>
 
@@ -430,7 +435,7 @@ function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
                                     <Grid item xs={12} sm={6}>
                                         <TextField
                                             fullWidth
-                                            label="Amount (₹)"
+                                            label={`Amount (${currency})`}
                                             name="amount"
                                             type="number"
                                             value={newPayment.amount}
@@ -536,7 +541,7 @@ function StatusUpdateModal({ open, onClose, invoiceId, onSuccess, onError }) {
                                             <TableRow key={idx}>
                                                 <TableCell>{p.recieptId || "-"}</TableCell>
                                                 <TableCell>{p.paymentType}</TableCell>
-                                                <TableCell>₹{Number(p.amount).toFixed(2)}</TableCell>
+                                                <TableCell>{money(p.amount)}</TableCell>
                                                 <TableCell>
                                                     {p.paymentDate ? formatDate(p.paymentDate) : "-"}
                                                 </TableCell>

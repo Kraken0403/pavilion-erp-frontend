@@ -33,8 +33,8 @@ export const createInvoiceFromWorkOrder = async (workOrderId) => {
   return res.data;
 };
 
-export const createProformaFromQuotation = async (quotationId) => {
-  const res = await api.post(`/proforma-invoices/from-quotation/${quotationId}`);
+export const createProformaFromQuotation = async (quotationId, options = {}) => {
+  const res = await api.post(`/proforma-invoices/from-quotation/${quotationId}`, options);
   return res.data;
 };
 

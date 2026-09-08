@@ -11,8 +11,8 @@ import { getInvoiceById } from '../services/invoiceService';
 import useAutoRefresh from '../hooks/useAutoRefresh';
 import { formatDate } from '../utils/dateFormatter';
 import { formatStatusLabel } from '../utils/statusFormatter';
-
-const money = (value) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(Number(value || 0));
+import { useSettings } from '../context/SettingsContext';
+import { formatCurrency } from '../utils/currencyUtils';
 const fields = [
   { key: 'invoice_number', label: 'Invoice number' }, { key: 'customer_name', label: 'Customer' },
   { key: 'due_date', label: 'Due date' }, { key: 'grand_total', label: 'Total' },
@@ -23,6 +23,8 @@ const fields = [
 
 export default function Payments() {
   const navigate = useNavigate();
+  const { settings } = useSettings();
+  const money = (value) => formatCurrency(value, settings?.currency_code || 'INR');
   const [rows, setRows] = useState([]);
   const [paymentInvoiceId, setPaymentInvoiceId] = useState(null);
   const [receiptInvoice, setReceiptInvoice] = useState(null);

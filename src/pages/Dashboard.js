@@ -7,13 +7,16 @@ import { generateDashboardReport } from '../services/reportService';
 import { getInvoices, getProformaInvoices } from '../services/invoiceService';
 import { getPendingPaymentReminders } from '../services/paymentReminderService';
 import { formatDate } from '../utils/dateFormatter';
+import { formatCurrency } from '../utils/currencyUtils';
+import { useSettings } from '../context/SettingsContext';
 import '../assets/styles/Dashboard.scss';
 
-const money = (value) => new Intl.NumberFormat('en-IN', { style:'currency', currency:'INR', maximumFractionDigits:0 }).format(Number(value || 0));
 const number = (value) => Number(value || 0).toLocaleString('en-IN');
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { settings } = useSettings();
+  const money = (value) => formatCurrency(value, settings?.currency_code || 'INR', { maximumFractionDigits: 0 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [dashboard, setDashboard] = useState(null);

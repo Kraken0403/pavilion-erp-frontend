@@ -6,6 +6,7 @@ import {
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import { useSettings } from '../../context/SettingsContext'
+import { displayCurrency } from '../../utils/currencyUtils'
 import '../../assets/styles/QuotationItems.scss'
 
 function QuotationItemsSection({
@@ -18,7 +19,7 @@ function QuotationItemsSection({
   products = [],
 }) {
   const { settings } = useSettings()
-  const currency = settings?.currency_code || 'INR'
+  const currency = displayCurrency(settings?.currency_code || 'INR')
 
   const dragFromIndex = useRef(null)
   const [dragOverIndex, setDragOverIndex] = useState(null)
@@ -180,8 +181,10 @@ function QuotationItemsSection({
                           className="form-input"
                           size="small"
                           disabled={isLocked}
+                          disableClearable
                           options={productOptions}
                           clearOnBlur={false}
+                          componentsProps={{ popper: { className: 'qi-product-popper' }, paper: { className: 'qi-product-dropdown' } }}
                           value={resolveProductValue(item.product)}
                           getOptionLabel={(o) => o?.__label || ''}
                           isOptionEqualToValue={(a, b) =>

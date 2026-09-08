@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle } from '@mui/material';
 import {
   Add, CheckCircleOutline, ContentCopyOutlined, FileCopyOutlined, LinkOutlined,
   OpenInNewOutlined, PictureAsPdfOutlined, SaveOutlined, WorkOutlineOutlined,
@@ -7,11 +7,13 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import SingleRecordWorkspace from '../ui/SingleRecordWorkspace';
 import NotificationSnackbar from '../ui/NotificationSnackbar';
+import DocumentGenerationModal from '../ui/DocumentGenerationModal';
 import AddLeadDialog from '../leads/AddLeadDialog';
 import QuotationItemsSection from './QuotationItemsSection';
 import QuotationSummary from './QuotationSummary';
 import QuotationProductPickerDrawer from './QuotationProductPickerDrawer';
 import { createWorkOrderFromQuotation } from '../../services/workOrderServices';
+import { createInvoice, createProformaFromQuotation } from '../../services/invoiceService';
 import {
   createPublicQuotationLink,
   createQuotation,
@@ -33,6 +35,8 @@ const COST_PRICING_MODES = ['absolute', 'percentage'];
 const normalizeCostMode = (mode) => COST_PRICING_MODES.includes(mode) ? mode : 'absolute';
 const leadName = (lead) => lead?.name || `${lead?.first_name || ''} ${lead?.last_name || ''}`.trim() || lead?.email || (lead?.id ? `Contact #${lead.id}` : '');
 const productName = (product) => product?.name || product?.product_name || product?.title || product?.label || `Product #${product?.id}`;
+const newAccessCode = () => String(Math.floor(100000 + Math.random() * 900000)).split('');
+const accessCodeDigits = (value = '') => Array.from({ length: 6 }, (_, index) => String(value || '')[index] || '');
 
 const formatMoney = (value, currencyCode = 'INR') => {
   const code = String(currencyCode || 'INR').trim() || 'INR';
@@ -61,7 +65,10 @@ export default function QuotationDetail() {
   const [productPickerOpen, setProductPickerOpen] = useState(false);
   const [leadDialogOpen, setLeadDialogOpen] = useState(false);
   const [publicLinkDialogOpen, setPublicLinkDialogOpen] = useState(false);
-  const [publicAccessCode, setPublicAccessCode] = useState('');
+  const [publicAccessDigits, setPublicAccessDigits] = useState(() => newAccessCode());
+  const accessCodeRefs = useRef([]);
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
+  const [approvalLoading, setApprovalLoading] = useState(false);
   const [notification, setNotification] = useState({ open: false, message: '', severity: 'success' });
 
   const showNotification = useCallback((message, severity = 'success') => {
@@ -108,7 +115,7 @@ export default function QuotationDetail() {
       setItems(normalizeItems(quotationData?.items, productRows));
       setOverallDiscount(Number(quotationData?.quotation_discount_amount || 0));
       setPax(Number(quotationData?.pax) || 1);
-      setPublicAccessCode(quotationData?.public_access_code_display || '');
+      setPublicAccessDigits(accessCodeDigits(quotationData?.public_access_code_display || ''));
     } catch (error) {
       console.error(error);
       setQuotation(null);
@@ -221,10 +228,34 @@ export default function QuotationDetail() {
     await loadQuotation();
   };
 
-  const changeStatus = useCallback(async (status, successMessage = 'Quotation status updated') => {
-    try { await updateQuotationStatus(id, status); showNotification(successMessage); await loadQuotation(); }
-    catch (error) { showNotification(error?.response?.data?.error || 'Failed to update quotation status', 'error'); }
-  }, [id, loadQuotation, showNotification]);
+  const approveQuotation = useCallback(async ({ proforma, taxInvoice, notes }) => {
+    setApprovalLoading(true);
+    try {
+      await updateQuotationStatus(id, 'approved');
+      if (proforma) await createProformaFromQuotation(id, { notes });
+      if (taxInvoice) {
+        await createInvoice({
+          lead_id: quotation.lead_id || null,
+          source_type: 'QUOTATION',
+          source_id: quotation.id,
+          issue_date: quotation.quotation_date || null,
+          due_date: quotation.valid_until || null,
+          notes: notes || quotation.notes || null,
+          items: buildSnapshotItemsPayload(),
+        });
+      }
+      setApprovalDialogOpen(false);
+      showNotification([proforma ? 'proforma invoice' : '', taxInvoice ? 'tax invoice' : ''].filter(Boolean).length
+        ? `Quotation approved and ${[proforma ? 'proforma invoice' : '', taxInvoice ? 'tax invoice' : ''].filter(Boolean).join(' and ')} generated`
+        : 'Quotation approved without generating an invoice');
+      await loadQuotation();
+    } catch (error) {
+      showNotification(error?.response?.data?.error || error.message || 'Failed to approve quotation', 'error');
+      await loadQuotation();
+    } finally {
+      setApprovalLoading(false);
+    }
+  }, [buildSnapshotItemsPayload, id, loadQuotation, quotation, showNotification]);
 
   const createVersion = useCallback(async () => {
     const payloadItems = buildSnapshotItemsPayload();
@@ -273,12 +304,22 @@ export default function QuotationDetail() {
   }, [navigate, quotation, showNotification]);
 
   const copyPublicLink = useCallback(async () => {
-    if (!publicUrl) { setPublicLinkDialogOpen(true); return; }
+    if (!publicUrl) {
+      setPublicAccessDigits(newAccessCode());
+      setPublicLinkDialogOpen(true);
+      return;
+    }
     await navigator.clipboard?.writeText(publicUrl);
     showNotification('Client quotation link copied to clipboard');
   }, [publicUrl, showNotification]);
 
+  const openPublicLinkDialog = useCallback(() => {
+    setPublicAccessDigits(quotation?.public_access_code_display ? accessCodeDigits(quotation.public_access_code_display) : newAccessCode());
+    setPublicLinkDialogOpen(true);
+  }, [quotation?.public_access_code_display]);
+
   const savePublicLink = async () => {
+    const publicAccessCode = publicAccessDigits.join('');
     if (publicAccessCode && !/^\d{6}$/.test(publicAccessCode)) return showNotification('Access code must contain exactly six digits', 'error');
     try {
       const result = await createPublicQuotationLink(quotation.id, { accessCode: publicAccessCode, acceptanceEnabled: true });
@@ -294,7 +335,7 @@ export default function QuotationDetail() {
     return [
       { key: 'quotation_number', label: 'Quotation number', readOnly: true },
       { key: 'version', label: 'Version', readOnly: true, render: (value) => value ? `Version ${value}` : '—' },
-      { key: 'status', label: 'Status', type: 'select', options: ['pending', 'rejected'], readOnly: isLocked || ['approved', 'converted'].includes(String(quotation?.status || '').toLowerCase()) },
+      { key: 'status', label: 'Status', type: 'select', options: ['pending', 'rejected'], readOnly: isLocked || ['approved', 'converted'].includes(String(quotation?.status || '').toLowerCase()), render: (value) => <span className={`status-pill status-${String(value || '').toLowerCase()}`}>{String(value || 'pending').toUpperCase()}</span> },
       { key: 'quotation_date', label: 'Quotation date', type: 'date', readOnly: isLocked },
       { key: 'valid_until', label: 'Expiration date', type: 'date', readOnly: isLocked },
       { key: 'lead_id', label: 'Contact', type: 'autocomplete', options: leadOptions, readOnly: isLocked, render: () => leadName(selectedLead) || '—' },
@@ -337,31 +378,32 @@ export default function QuotationDetail() {
     { id: 'quotation-details', title: 'Quotation Details', position: 'left', deletable: false, editable: !isLocked, fieldKeys: ['quotation_date', 'valid_until', 'quotation_mode', 'quotation_type', 'quotation_template'] },
     { id: 'notes', title: 'Notes', position: 'left', editable: !isLocked, fieldKeys: ['notes'] },
     ...(quotation.quotation_mode === 'CATERING' ? [{ id: 'event-details', title: 'Event Details', position: 'left', editable: !isLocked, fieldKeys: ['event_name', 'event_date', 'event_start_time', 'event_end_time', 'event_location', 'pax'] }] : []),
-    { id: 'quotation-actions', title: 'Actions', position: 'right', fixed: true, disableDrag: true, deletable: false, allowSettings: false, titleEditable: false, fieldKeys: [], customContent: () => <div className="record-action-buttons"><button type="button" className="hs-listing__create" title="Save quotation" aria-label="Save quotation" disabled={isLocked} onClick={saveQuotation}><SaveOutlined /></button><button type="button" className="hs-listing__create" title="Download PDF" aria-label="Download PDF" onClick={() => generateQuotationPdf(quotation.id)}><PictureAsPdfOutlined /></button><button type="button" className="hs-listing__create" title={publicUrl ? 'Copy client link' : 'Create client link'} aria-label={publicUrl ? 'Copy client link' : 'Create client link'} onClick={copyPublicLink}><LinkOutlined /></button>{quotation.status === 'pending' && !isLocked && <button type="button" className="hs-listing__create" title="Approve quotation" aria-label="Approve quotation" onClick={() => changeStatus('approved', 'Quotation approved')}><CheckCircleOutline /></button>}{quotation.status === 'approved' && <button type="button" className="hs-listing__create" title="Create work order" aria-label="Create work order" onClick={createWorkOrder}><WorkOutlineOutlined /></button>}</div> },
-    { id: 'client-link', title: 'Client Link', position: 'right', deletable: false, fieldKeys: [], customContent: () => <div className="quotation-link-card"><div className={`quotation-view-state ${quotation.public_viewed_at ? 'is-viewed' : ''}`}><span />{quotation.public_viewed_at ? `Viewed ${formatDateTime(quotation.public_viewed_at)}` : publicUrl ? 'Not viewed yet' : 'No client link created'}</div>{publicUrl && <a href={publicUrl} target="_blank" rel="noreferrer">{publicUrl}<OpenInNewOutlined /></a>}<div><button type="button" onClick={copyPublicLink} disabled={!publicUrl}><ContentCopyOutlined />Copy</button><button type="button" onClick={() => setPublicLinkDialogOpen(true)}><LinkOutlined />{publicUrl ? 'Update link' : 'Create link'}</button></div>{quotation.public_access_code_display && <small>Access code: <b>{quotation.public_access_code_display}</b></small>}<small>Online acceptance: <b>{Number(quotation.public_acceptance_enabled || 0) ? 'Enabled' : 'Disabled'}</b></small></div> },
-    { id: 'related-documents', title: 'Related documents', position: 'right', deletable: false, editable: false, fieldKeys: [], customContent: () => <div className="record-related-documents">{quotation.related_documents?.work_orders?.map((workOrder) => <a key={`work-order-${workOrder.id}`} href={`/workorders/${workOrder.id}`}><WorkOutlineOutlined /><span>Work order</span><strong>{workOrder.work_order_number || `#${workOrder.id}`}</strong></a>)}{quotation.related_documents?.invoices?.map((invoice) => <a key={`invoice-${invoice.id}`} href={`/invoices/${invoice.id}`}><PictureAsPdfOutlined /><span>{String(invoice.source_type || '').toUpperCase() === 'PROFORMA' ? 'Proforma invoice' : 'Invoice'}</span><strong>{invoice.invoice_number || `#${invoice.id}`}</strong></a>)}{!quotation.related_documents?.work_orders?.length && !quotation.related_documents?.invoices?.length && <small>No work orders, invoices, or receipts have been created yet.</small>}</div> },
+    { id: 'quotation-actions', title: 'Actions', position: 'right', fixed: true, disableDrag: true, deletable: false, allowSettings: false, titleEditable: false, fieldKeys: [], customContent: () => <div className="record-action-buttons"><button type="button" className="hs-listing__create" title="Save quotation" aria-label="Save quotation" disabled={isLocked} onClick={saveQuotation}><SaveOutlined /></button><button type="button" className="hs-listing__create" title="Download PDF" aria-label="Download PDF" onClick={() => generateQuotationPdf(quotation.id)}><PictureAsPdfOutlined /></button><button type="button" className="hs-listing__create" title={publicUrl ? 'Copy client link' : 'Create client link'} aria-label={publicUrl ? 'Copy client link' : 'Create client link'} onClick={copyPublicLink}><LinkOutlined /></button>{quotation.status === 'pending' && !isLocked && <button type="button" className="hs-listing__create" title="Approve quotation" aria-label="Approve quotation" onClick={() => setApprovalDialogOpen(true)}><CheckCircleOutline /></button>}{quotation.status === 'approved' && <button type="button" className="hs-listing__create" title="Create work order" aria-label="Create work order" onClick={createWorkOrder}><WorkOutlineOutlined /></button>}</div> },
+    { id: 'client-link', title: 'Client Link', position: 'right', deletable: false, fieldKeys: [], customContent: () => <div className="quotation-link-card"><div className={`quotation-view-state ${quotation.public_viewed_at ? 'is-viewed' : ''}`}><span />{quotation.public_viewed_at ? `Viewed ${formatDateTime(quotation.public_viewed_at)}` : publicUrl ? 'Not viewed yet' : 'No client link created'}</div>{publicUrl && <a href={publicUrl} target="_blank" rel="noreferrer">{publicUrl}<OpenInNewOutlined /></a>}<div><button type="button" onClick={copyPublicLink} disabled={!publicUrl}><ContentCopyOutlined />Copy</button><button type="button" onClick={openPublicLinkDialog}><LinkOutlined />{publicUrl ? 'Update link' : 'Create link'}</button></div>{quotation.public_access_code_display && <small>Access code: <b>{quotation.public_access_code_display}</b></small>}<small>Online acceptance: <b>{Number(quotation.public_acceptance_enabled || 0) ? 'Enabled' : 'Disabled'}</b></small></div> },
+    { id: 'related-documents', title: 'Related documents', position: 'right', deletable: false, editable: false, fieldKeys: [], customContent: () => <div className="record-related-documents">{quotation.related_documents?.work_orders?.map((workOrder) => <a key={`work-order-${workOrder.id}`} href={`/workorders/${workOrder.id}`}><WorkOutlineOutlined /><span>Work order</span><strong>{workOrder.work_order_number || `#${workOrder.id}`}</strong></a>)}{quotation.related_documents?.proforma_invoices?.map((invoice) => <a key={`proforma-${invoice.id}`} href={`/proforma-invoices/${invoice.id}`}><PictureAsPdfOutlined /><span>Proforma invoice</span><strong>{invoice.proforma_number || `#${invoice.id}`}</strong></a>)}{quotation.related_documents?.invoices?.map((invoice) => <a key={`invoice-${invoice.id}`} href={`/invoices/${invoice.id}`}><PictureAsPdfOutlined /><span>{String(invoice.source_type || '').toUpperCase().includes('PROFORMA') ? 'Proforma invoice' : 'Tax invoice'}</span><strong>{invoice.invoice_number || `#${invoice.id}`}</strong></a>)}{!quotation.related_documents?.work_orders?.length && !quotation.related_documents?.proforma_invoices?.length && !quotation.related_documents?.invoices?.length && <small>No work orders or invoices have been created yet.</small>}</div> },
     { id: 'totals', title: 'Quotation Totals', position: 'right', deletable: false, editable: false, fieldKeys: ['subtotal_display', 'discount_display', 'tax_display', 'total_display'] },
-  ] : [], [changeStatus, copyPublicLink, createWorkOrder, isLocked, publicUrl, quotation, saveQuotation]);
+  ] : [], [copyPublicLink, createWorkOrder, isLocked, openPublicLinkDialog, publicUrl, quotation, saveQuotation]);
 
   const summaryCard = useMemo(() => quotation ? {
     titleFieldKey: 'quotation_number', backTo: '/quotations', backLabel: 'Quotations', subtitle: [leadName(selectedLead), quotation.version ? `Version ${quotation.version}` : null].filter(Boolean).join(' · '), fieldKeys: ['status', 'quotation_date', 'valid_until'], editable: !isLocked,
     actions: [
       { label: 'Download PDF', icon: <PictureAsPdfOutlined />, onClick: () => generateQuotationPdf(quotation.id) },
       { label: publicUrl ? 'Copy client link' : 'Create client link', icon: <LinkOutlined />, onClick: copyPublicLink },
-      ...(quotation.status === 'pending' && !isLocked ? [{ label: 'Approve quotation', icon: <CheckCircleOutline />, onClick: () => changeStatus('approved', 'Quotation approved') }] : []),
+      ...(quotation.status === 'pending' && !isLocked ? [{ label: 'Approve quotation', icon: <CheckCircleOutline />, onClick: () => setApprovalDialogOpen(true) }] : []),
       ...(quotation.status === 'approved' ? [{ label: 'Create work order', icon: <WorkOutlineOutlined />, onClick: createWorkOrder }] : []),
       ...(quotation.status !== 'converted' && quotation.status !== 'rejected' ? [{ label: 'Create new version', icon: <FileCopyOutlined />, onClick: createVersion }] : []),
     ],
-  } : null, [changeStatus, copyPublicLink, createVersion, createWorkOrder, isLocked, publicUrl, quotation, selectedLead]);
+  } : null, [copyPublicLink, createVersion, createWorkOrder, isLocked, publicUrl, quotation, selectedLead]);
 
   if (loading) return <div className="quotation-loading">Loading quotation…</div>;
   if (!quotation) return <div className="quotation-loading">Quotation not found</div>;
 
   return <>
-    <SingleRecordWorkspace storageKey={`pav-erp:record:quotation:${id}`} backTo="/quotations" backLabel="Quotations" title={quotation.quotation_number || `Quotation #${id}`} record={record} fields={fields} initialCards={cards} summaryCard={summaryCard} hidePageHeader onSaveFields={saveFields} centerLabel={`Order Lines (${items.length})`} centerContent={<div className="quotation-order-lines-workspace"><QuotationItemsSection items={items} setItems={setItems} updateItem={updateItem} reorderItems={reorderItems} onAddProducts={() => setProductPickerOpen(true)} isLocked={isLocked} products={products} /><div className="quotation-order-summary-card"><QuotationSummary totals={totals} overallDiscount={overallDiscount} setOverallDiscount={setOverallDiscount} currency={currencyLabel} isLocked={isLocked} /></div></div>} />
+    <SingleRecordWorkspace storageKey={`pav-erp:record:quotation:${id}`} backTo="/quotations" backLabel="Quotations" title={quotation.quotation_number || `Quotation #${id}`} record={record} fields={fields} initialCards={cards} summaryCard={summaryCard} hidePageHeader onSaveFields={saveFields} centerLabel={`Order Lines (${items.length})`} centerContent={<div className="quotation-order-lines-workspace"><QuotationItemsSection items={items} setItems={setItems} updateItem={updateItem} reorderItems={reorderItems} onAddProducts={() => setProductPickerOpen(true)} isLocked={isLocked} products={products} /></div>} centerSummary={<QuotationSummary totals={totals} overallDiscount={overallDiscount} setOverallDiscount={setOverallDiscount} currency={currencyLabel} isLocked={isLocked} />} />
     <QuotationProductPickerDrawer open={productPickerOpen} products={products} onClose={() => setProductPickerOpen(false)} onAdd={addProducts} />
     <AddLeadDialog open={leadDialogOpen} onClose={() => setLeadDialogOpen(false)} onLeadCreated={async (lead) => { setLeads((current) => [...current, lead]); setLeadDialogOpen(false); try { await updateQuotation(id, { lead_id: lead.id }); await loadQuotation(); } catch (error) { showNotification(error?.response?.data?.error || 'Unable to update contact', 'error'); } }} />
-    <Dialog open={publicLinkDialogOpen} onClose={() => setPublicLinkDialogOpen(false)} fullWidth maxWidth="xs"><DialogTitle>{publicUrl ? 'Update client quotation link' : 'Create client quotation link'}</DialogTitle><DialogContent><p>Set an optional six-digit access code. Leave it blank for an open link.</p><TextField autoFocus fullWidth label="Access code" value={publicAccessCode} onChange={(event) => setPublicAccessCode(event.target.value.replace(/\D/g, '').slice(0, 6))} inputProps={{ inputMode: 'numeric', maxLength: 6 }} /></DialogContent><DialogActions><Button onClick={() => setPublicLinkDialogOpen(false)}>Cancel</Button><Button variant="contained" onClick={savePublicLink}>Save and copy link</Button></DialogActions></Dialog>
+    <Dialog className="quotation-link-dialog" open={publicLinkDialogOpen} onClose={() => setPublicLinkDialogOpen(false)} fullWidth maxWidth="xs"><DialogTitle>{publicUrl ? 'Update client quotation link' : 'Create client quotation link'}</DialogTitle><DialogContent><p>A secure six-digit access code has been generated. You can replace any digit before saving.</p><label className="quotation-access-code-label"><span>Access code</span><div className="quotation-access-code-inputs" onPaste={(event) => { const pasted = event.clipboardData.getData('text').replace(/\D/g, '').slice(0, 6); if (!pasted) return; event.preventDefault(); setPublicAccessDigits(accessCodeDigits(pasted)); accessCodeRefs.current[Math.min(pasted.length, 6) - 1]?.focus(); }}>{publicAccessDigits.map((digit, index) => <input key={index} ref={(node) => { accessCodeRefs.current[index] = node; }} autoFocus={index === 0} inputMode="numeric" maxLength="1" aria-label={`Access code digit ${index + 1}`} value={digit} onChange={(event) => { const nextDigit = event.target.value.replace(/\D/g, '').slice(-1); setPublicAccessDigits((current) => current.map((value, itemIndex) => itemIndex === index ? nextDigit : value)); if (nextDigit && index < 5) accessCodeRefs.current[index + 1]?.focus(); }} onKeyDown={(event) => { if (event.key === 'Backspace' && !digit && index > 0) accessCodeRefs.current[index - 1]?.focus(); if (event.key === 'ArrowLeft' && index > 0) accessCodeRefs.current[index - 1]?.focus(); if (event.key === 'ArrowRight' && index < 5) accessCodeRefs.current[index + 1]?.focus(); }} />)}</div></label></DialogContent><DialogActions><Button onClick={() => setPublicLinkDialogOpen(false)}>Cancel</Button><Button onClick={savePublicLink}>Save and copy link</Button></DialogActions></Dialog>
+    <DocumentGenerationModal open={approvalDialogOpen} title="Approve quotation" description="The work order will be generated automatically. Choose which invoice documents should also be created." confirmLabel="Approve quotation" loading={approvalLoading} onClose={() => setApprovalDialogOpen(false)} onConfirm={approveQuotation} />
     <NotificationSnackbar open={notification.open} message={notification.message} severity={notification.severity} onClose={() => setNotification((current) => ({ ...current, open: false }))} />
   </>;
 }

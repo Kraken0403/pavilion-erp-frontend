@@ -23,9 +23,13 @@ import {
 import { createWorkOrder } from "../services/workOrderServices";
 
 import { useNavigate } from "react-router-dom";
+import { useSettings } from "../context/SettingsContext";
+import { formatCurrency } from "../utils/currencyUtils";
 
 export default function CreateWorkOrder() {
   const navigate = useNavigate();
+  const { settings } = useSettings();
+  const money = (value) => formatCurrency(value, settings?.currency_code || 'INR');
 
   const [quotations, setQuotations] = useState([]);
   const [selectedQuotationId, setSelectedQuotationId] = useState("");
@@ -206,17 +210,17 @@ export default function CreateWorkOrder() {
                   <strong>{i.product_name}</strong>
                 </Typography>
                 <Typography>Qty: {i.quantity}</Typography>
-                <Typography>Unit Price: ₹{i.unit_price}</Typography>
-                <Typography>Discount: ₹{i.discount}</Typography>
-                <Typography>Tax: ₹{i.tax}</Typography>
+                <Typography>Unit Price: {money(i.unit_price)}</Typography>
+                <Typography>Discount: {money(i.discount)}</Typography>
+                <Typography>Tax: {money(i.tax)}</Typography>
                 <Typography>
-                  <strong>Line Total: ₹{i.line_total}</strong>
+                  <strong>Line Total: {money(i.line_total)}</strong>
                 </Typography>
               </Box>
             ))}
 
             <Typography variant="h6" align="right">
-              Total: ₹{total.toFixed(2)}
+              Total: {money(total)}
             </Typography>
           </Paper>
         )}

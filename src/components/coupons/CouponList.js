@@ -19,8 +19,13 @@ import DeleteIcon from '@mui/icons-material/Delete'
 import { fetchCouponsAdmin, createCouponAdmin, updateCouponAdmin, deleteCouponAdmin } from '../../services/couponService'
 import EditIcon from '@mui/icons-material/Edit'
 import { formatDate } from '../../utils/dateFormatter'
+import { useSettings } from '../../context/SettingsContext'
+import { displayCurrency, formatCurrency } from '../../utils/currencyUtils'
 
 export default function CouponList() {
+  const { settings } = useSettings()
+  const currency = displayCurrency(settings?.currency_code || 'INR')
+  const money = (value) => formatCurrency(value, settings?.currency_code || 'INR')
   const [coupons, setCoupons] = useState([])
   const [loading, setLoading] = useState(true)
   const [confirmOpen, setConfirmOpen] = useState(false)
@@ -141,8 +146,8 @@ export default function CouponList() {
           onRowOpen={onEdit}
           onRefresh={load}
           renderValue={(field, value, coupon) => {
-            if (field === 'value') return coupon.type === 'percent' ? `${Number(value || 0).toFixed(2)} %` : `₹ ${Number(value || 0).toFixed(2)}`;
-            if (field === 'min_order_amount') return `₹ ${Number(value || 0).toFixed(2)}`;
+            if (field === 'value') return coupon.type === 'percent' ? `${Number(value || 0).toFixed(2)} %` : money(value);
+            if (field === 'min_order_amount') return money(value);
             if (field === 'starts_at' || field === 'ends_at') return formatDate(value) || '—';
             if (field === 'active_label') return value;
             if (field === '_actions') return <span className="hs-listing__row-actions" onClick={(event) => event.stopPropagation()}><IconButton aria-label="edit coupon" onClick={() => onEdit(coupon)} size="small"><EditIcon fontSize="small" /></IconButton><IconButton aria-label="delete coupon" color="error" onClick={() => confirmDelete(coupon.id)} size="small"><DeleteIcon fontSize="small" /></IconButton></span>;
@@ -188,7 +193,7 @@ export default function CouponList() {
               </TextField>
 
               <TextField
-                label={form.type === 'percent' ? 'Percentage (%)' : 'Value (₹)'}
+                label={form.type === 'percent' ? 'Percentage (%)' : `Value (${currency})`}
                 type="number"
                 value={form.value}
                 onChange={e => setForm({ ...form, value: e.target.value })}
@@ -198,7 +203,7 @@ export default function CouponList() {
               />
 
               <TextField
-                label="Minimum Order Amount (₹)"
+                label={`Minimum Order Amount (${currency})`}
                 type="number"
                 value={form.min_order_amount}
                 onChange={e => setForm({ ...form, min_order_amount: e.target.value })}

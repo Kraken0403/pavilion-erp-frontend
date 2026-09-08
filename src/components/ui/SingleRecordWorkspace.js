@@ -490,6 +490,7 @@ export default function SingleRecordWorkspace({
   activityTypes = ['call', 'email', 'meeting', 'task', 'note'],
   toolbarActions,
   centerContent,
+  centerSummary,
   centerLabel = 'Details',
 }) {
   const navigate = useNavigate();
@@ -717,6 +718,7 @@ export default function SingleRecordWorkspace({
           {centerContent ? <>
             <div className="record-tabs"><button type="button" className="is-active">{centerLabel}</button></div>
             <div className="record-center-custom-content">{typeof centerContent === 'function' ? centerContent({ record, notify }) : centerContent}</div>
+            {centerSummary && <div className="record-center-summary">{typeof centerSummary === 'function' ? centerSummary({ record, notify }) : centerSummary}</div>}
           </> : <>
           <div className="record-tabs">{centerTabs.map((tab) => <button type="button" key={tab.id} className={activityTab === tab.id ? 'is-active' : ''} onClick={() => setActivityTab(tab.id)}>{tab.label}</button>)}</div>
           {activityTab === 'activities' ? <>

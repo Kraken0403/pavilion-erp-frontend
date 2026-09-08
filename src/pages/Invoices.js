@@ -19,5 +19,5 @@ export default function Invoices() {
   useEffect(() => { if (new URLSearchParams(location.search).get('create') === '1') setCreateOpen(true); }, [location.search]);
   useAutoRefresh(load, { intervalMs: 20000 });
   const closeCreate = () => { setCreateOpen(false); if (new URLSearchParams(location.search).has('create')) navigate('/invoices', { replace: true }); };
-  return <><HubSpotListing title="Invoices" createLabel="Create invoice" rows={invoices} initialFields={fields} onCreate={() => setCreateOpen(true)} onRowOpen={(invoice) => navigate(`/invoices/${invoice.id}`)} onRefresh={load} renderValue={(field, value) => ['grand_total', 'paid_amount', 'balance_due'].includes(field) ? `₹${Number(value || 0).toFixed(2)}` : (value ?? '—')} /><EntityFormDrawer open={createOpen} title="Create invoice" onClose={closeCreate}><CreateInvoice onSaved={() => { closeCreate(); load(); }} /></EntityFormDrawer></>;
+  return <><HubSpotListing title="Invoices" createLabel="Create invoice" rows={invoices} initialFields={fields} onCreate={() => setCreateOpen(true)} onRowOpen={(invoice) => navigate(`/invoices/${invoice.id}`)} onRefresh={load} /><EntityFormDrawer open={createOpen} title="Create invoice" onClose={closeCreate}><CreateInvoice onSaved={() => { closeCreate(); load(); }} /></EntityFormDrawer></>;
 }

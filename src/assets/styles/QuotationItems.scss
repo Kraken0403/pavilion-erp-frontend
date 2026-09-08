@@ -24,7 +24,7 @@
     .MuiInputBase-root {
       min-height: 36px;
       background: #ffffff;
-      border-radius: 8px;
+      border-radius: 4px !important;
     }
 
     .MuiOutlinedInput-notchedOutline {
@@ -151,10 +151,39 @@
   padding-bottom: 0 !important;
 }
 
+.qi-table .MuiOutlinedInput-root,
+.qi-table .MuiInputBase-root,
+.qi-table .form-input {
+  border-radius: 4px !important;
+}
+
+.qi-table input[type="number"]::-webkit-inner-spin-button,
+.qi-table input[type="number"]::-webkit-outer-spin-button {
+  margin: 0;
+  appearance: none;
+}
+
+.qi-table input[type="number"] { -moz-appearance: textfield; }
+
+.qi-product-popper .MuiAutocomplete-paper,
+.qi-product-dropdown {
+  overflow: hidden;
+  border: 1px solid #ccd6df;
+  border-radius: 4px !important;
+  box-shadow: 0 8px 22px rgba(33, 51, 67, .14) !important;
+}
+
+.qi-product-popper .MuiAutocomplete-option {
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 14px !important;
+  line-height: 1.4;
+}
+
 .qi-dropdown {
   overflow: hidden;
   border: 1px solid #e5e7eb;
-  border-radius: 8px;
+  border-radius: 4px;
   background: #ffffff;
   box-shadow: 0 8px 22px rgba(17, 24, 39, 0.08);
 }

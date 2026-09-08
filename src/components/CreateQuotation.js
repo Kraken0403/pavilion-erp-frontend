@@ -23,6 +23,7 @@ import { getQuotationSettings } from '../services/quotationSettingsService'
 import { calculateQuotationTotals } from '../utils/quotationCalculator'
 import QuotationHeader from '../components/quotation/QuotationHeader'
 import { useSettings } from '../context/SettingsContext'
+import { displayCurrency } from '../utils/currencyUtils'
 import '../assets/styles/QuotationDetail.scss'
 
 
@@ -90,7 +91,7 @@ function CreateQuotation() {
             : 'GENERAL'
         setQuotationMode(nextMode)
         setGstPricingMode(settings?.gst_pricing_mode || globalSettings?.gst_pricing_mode || 'EXCLUSIVE')
-        setCurrency(settings?.currency_code || '₹')
+        setCurrency(displayCurrency(settings?.currency_code || globalSettings?.currency_code || 'INR'))
       })
       .catch(err => console.error('Failed to load quotation settings', err))
   }, [globalSettings])

@@ -1,5 +1,6 @@
 import React, { useMemo, useRef, useState } from 'react';
 import { Box, Button, Typography } from '@mui/material';
+import UploadFileOutlined from '@mui/icons-material/UploadFileOutlined';
 import api, { resolveBackendAssetUrl } from '../../services/api.js';
 
 function FileUploader({ label = "Upload File", fileUrl, onFileUploaded }) {
@@ -45,6 +46,7 @@ function FileUploader({ label = "Upload File", fileUrl, onFileUploaded }) {
         onClick={() => fileInputRef.current.click()}
         disabled={uploading}
       >
+        <UploadFileOutlined sx={{ width: 16, height: 16 }} />
         {uploading ? 'Uploading…' : fileUrl ? 'Change File' : 'Choose File'}
       </Button>
       <input

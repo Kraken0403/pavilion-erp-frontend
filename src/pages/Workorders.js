@@ -14,5 +14,5 @@ export default function Workorders() {
   useEffect(() => { if (new URLSearchParams(location.search).get('create') === '1') setCreateOpen(true); }, [location.search]);
   const update = async (row) => { const original = orders.find((item) => item.id === row.id); if (!original || row.status === original.status) return; await updateWorkOrderStatus(row.id, row.status); await load(); };
   const closeCreate = () => { setCreateOpen(false); if (new URLSearchParams(location.search).has('create')) navigate('/workorders', { replace: true }); };
-  return <><HubSpotListing title="Work orders" createLabel="Create work order" rows={orders} initialFields={fields} onCreate={() => setCreateOpen(true)} onRowOpen={(row) => navigate(`/workorders/${row.id}`)} onUpdateRow={update} renderValue={(field, value) => field === 'total_amount' ? `₹${Number(value || 0).toFixed(2)}` : (value ?? '—')} /><EntityFormDrawer open={createOpen} title="Create work order" onClose={closeCreate}><CreateWorkOrder /></EntityFormDrawer></>;
+  return <><HubSpotListing title="Work orders" createLabel="Create work order" rows={orders} initialFields={fields} onCreate={() => setCreateOpen(true)} onRowOpen={(row) => navigate(`/workorders/${row.id}`)} onUpdateRow={update} /><EntityFormDrawer open={createOpen} title="Create work order" onClose={closeCreate}><CreateWorkOrder /></EntityFormDrawer></>;
 }
